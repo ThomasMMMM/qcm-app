@@ -1,0 +1,8 @@
+name = "qcm-app"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "./public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "qcm-db"
+database_id = "6d01ac01-53aa-4b85-a031-9404ea3352ff"
