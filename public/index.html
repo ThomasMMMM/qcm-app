@@ -7,14 +7,14 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; color: #1a1a1a; }
     .container { max-width: 680px; margin: 0 auto; }
-    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-    h1, h2 { color: #0d47a1; margin-top: 0; }
-    .input-field { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+    .card { background: white; border-radius: 12px; padding: 22px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    h1, h2, h3 { color: #0d47a1; margin-top: 0; }
+    .input-field { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
     .alerte { background: #fff3cd; color: #856404; border-left: 4px solid #ffeeba; padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem; }
     .btn { display: block; width: 100%; padding: 14px; background: #0070f3; color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
     .btn:hover { background: #005bb5; }
-    .btn-secondary { background: #6b7280; margin-top: 10px; }
-    .btn-secondary:hover { background: #4b5563; }
+    .btn-secondary { background: #4b5563; margin-top: 10px; }
+    .btn-secondary:hover { background: #374151; }
     .question-block { border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; }
     .question-title { font-weight: bold; font-size: 1.05rem; margin-bottom: 8px; }
     .question-enonce { margin-bottom: 12px; }
@@ -23,98 +23,131 @@
     .reponse-label input { margin-right: 12px; transform: scale(1.2); }
     .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
     .matching-row select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.95rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
     th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; }
     th { background: #f3f4f6; }
-    .tab-btn { background: none; border: none; color: #0070f3; cursor: pointer; text-decoration: underline; padding: 0; font-size: 0.9rem; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
+    .link-mode { text-align: center; margin-top: 20px; font-size: 0.9rem; }
+    .link-mode a { color: #0070f3; cursor: pointer; text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div id="stepIdentite" class="card">
-      <h1>Identification de l'élève</h1>
+
+    <!-- 1. VUE ÉLÈVE : ACCUEIL SIMPLE -->
+    <div id="viewEleveLogin" class="card">
+      <h1>Rejoindre l'évaluation</h1>
       <label>Nom :</label>
-      <input type="text" id="nomInput" class="input-field" placeholder="Ex : DUPONT">
+      <input type="text" id="eleveNom" class="input-field" placeholder="Ex : DUPONT">
 
       <label>Prénom :</label>
-      <input type="text" id="prenomInput" class="input-field" placeholder="Ex : Alice">
+      <input type="text" id="elevePrenom" class="input-field" placeholder="Ex : Alice">
 
-      <label>Classe / Groupe :</label>
-      <input type="text" id="classeInput" class="input-field" placeholder="Ex : 2nde 4">
+      <label>Classe :</label>
+      <input type="text" id="eleveClasse" class="input-field" placeholder="Ex : 2nde 4">
 
-      <hr style="border:0; border-top:1px solid #eee; margin: 15px 0;">
+      <label>Code de l'épreuve (donné par le professeur) :</label>
+      <input type="text" id="eleveCode" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex : TEST01">
 
-      <label><strong>Fichier QCM (.xml Pronote) :</strong></label>
-      <input type="file" id="xmlFileInput" accept=".xml" class="input-field">
-
-      <button type="button" class="btn" onclick="demarrerEpreuve()">Commencer l'évaluation</button>
+      <button type="button" class="btn" onclick="lancerQcmEleve()">Entrer dans l'épreuve</button>
       
-      <div style="text-align: center; margin-top: 20px;">
-        <button type="button" class="tab-btn" onclick="afficherDashboardProf()">Espace Enseignant (Résultats D1)</button>
+      <div class="link-mode">
+        <a onclick="basculerMode('prof')">Accès Enseignant (Gestion / Résultats)</a>
       </div>
     </div>
 
-    <div id="stepQCM" class="card" style="display: none;">
-      <h2 id="qcmTitre">Épreuve</h2>
+    <!-- 2. VUE ÉLÈVE : PASSATION DU QCM -->
+    <div id="viewEleveQcm" class="card" style="display: none;">
+      <h2 id="qcmTitreAffiche">Épreuve</h2>
       <div class="alerte">
-        ⚠️ <strong>Avertissement :</strong> Vos allers-retours en dehors de cette page sont consignés.
+        ⚠️ <strong>Rappel :</strong> Les sorties d'écran et changements d'application sont transmis en direct au professeur.
       </div>
 
       <form id="qcmForm">
         <div id="questionsContainer"></div>
-        <button type="button" class="btn" onclick="terminerEtSoumettre()">Valider et envoyer mes réponses</button>
+        <button type="button" class="btn" onclick="soumettreCopie()">Valider et transmettre la copie</button>
       </form>
     </div>
 
-    <div id="stepFin" class="card" style="display: none; text-align: center;">
-      <h2>Copie transmise</h2>
-      <p>Merci, vos réponses et votre note ont été enregistrées avec succès sur le serveur.</p>
-      <h3 id="noteFinaleText" style="color: #0d47a1; font-size: 1.5rem;"></h3>
+    <!-- 3. VUE ÉLÈVE : CONFIRMATION RENDU -->
+    <div id="viewEleveFin" class="card" style="display: none; text-align: center;">
+      <h2>Copie transmise !</h2>
+      <p>Votre évaluation a bien été prise en compte par le serveur.</p>
+      <h3 id="noteFinaleText" style="color: #0d47a1; font-size: 1.6rem;"></h3>
     </div>
 
-    <div id="stepProf" class="card" style="display: none;">
-      <h2>Résultats & Alertes (Base D1)</h2>
-      <button class="btn btn-secondary" onclick="chargerDonneesProf()">Actualiser</button>
+    <!-- 4. VUE ENSEIGNANT : CHARGEMENT XML & GESTION DES CODES -->
+    <div id="viewProf" class="card" style="display: none;">
+      <h1>Espace Enseignant</h1>
+      
+      <div style="background:#eef6ff; border:1px solid #bfdbfe; padding:15px; border-radius:8px; margin-bottom:20px;">
+        <h3>📤 Publier un nouveau QCM Pronote</h3>
+        <label>1. Choisir le fichier XML Pronote :</label>
+        <input type="file" id="xmlProfInput" accept=".xml" class="input-field">
 
-      <h3>Copies soumises</h3>
+        <label>2. Définir un code court pour les élèves (ex: BIO2A, DS1...) :</label>
+        <input type="text" id="codeProfInput" class="input-field" style="text-transform:uppercase;" placeholder="Code du QCM">
+
+        <button type="button" class="btn" onclick="enregistrerQcmProf()">Enregistrer et activer le QCM</button>
+      </div>
+
+      <h3>Sessions actives</h3>
       <div style="overflow-x:auto;">
         <table>
-          <thead>
-            <tr><th>Date</th><th>Élève</th><th>Classe</th><th>QCM</th><th>Note</th></tr>
-          </thead>
+          <thead><tr><th>Code</th><th>Titre</th><th>Création</th></tr></thead>
+          <tbody id="tableSessionsBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:25px;">Copies soumises (D1)</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Heure</th><th>Élève</th><th>Classe</th><th>QCM</th><th>Note</th></tr></thead>
           <tbody id="tableNotesBody"><tr><td colspan="5">Chargement...</td></tr></tbody>
         </table>
       </div>
 
-      <h3 style="margin-top:25px;">Journal des sorties d'écran</h3>
+      <h3 style="margin-top:25px;">Journal des alertes écran (D1)</h3>
       <div style="overflow-x:auto;">
         <table>
-          <thead>
-            <tr><th>Heure</th><th>Identifiant</th><th>Événement</th></tr>
-          </thead>
+          <thead><tr><th>Heure</th><th>Élève</th><th>Alerte</th></tr></thead>
           <tbody id="tableSortiesBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
         </table>
       </div>
 
-      <button class="btn btn-secondary" onclick="retourAccueil()">Retour à l'accueil</button>
+      <button class="btn btn-secondary" onclick="basculerMode('eleve')">Retour à l'écran élève</button>
     </div>
+
   </div>
 
   <script>
-    let questionsData = [];
-    let qcmTitreGlobal = "Évaluation";
-    let eleveID = "";
-    let eleveNom = "";
-    let elevePrenom = "";
-    let eleveClasse = "";
-    let fichierXmlContenu = null;
+    let currentQuestions = [];
+    let currentCode = "";
+    let eleveInfo = { nom: "", prenom: "", classe: "" };
+    let xmlContenuProf = null;
 
-    document.getElementById('xmlFileInput').addEventListener('change', function(e) {
+    // Détection de l'URL pour ouvrir le mode prof direct : ?mode=prof
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') === 'prof') {
+        basculerMode('prof');
+      }
+    });
+
+    function basculerMode(mode) {
+      document.getElementById('viewEleveLogin').style.display = mode === 'eleve' ? 'block' : 'none';
+      document.getElementById('viewEleveQcm').style.display = 'none';
+      document.getElementById('viewEleveFin').style.display = 'none';
+      document.getElementById('viewProf').style.display = mode === 'prof' ? 'block' : 'none';
+      if (mode === 'prof') chargerDonneesProf();
+    }
+
+    // ==================== CÔTÉ PROFESSEUR ====================
+    document.getElementById('xmlProfInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (evt) => { fichierXmlContenu = evt.target.result; };
-      // Encodage UTF-8 explicite lors de la lecture du fichier XML
+      reader.onload = (evt) => { xmlContenuProf = evt.target.result; };
       reader.readAsText(file, "UTF-8");
     });
 
@@ -124,78 +157,129 @@
       return div.innerText || div.textContent || "";
     }
 
-    function demarrerEpreuve() {
-      eleveNom = document.getElementById('nomInput').value.trim();
-      elevePrenom = document.getElementById('prenomInput').value.trim();
-      eleveClasse = document.getElementById('classeInput').value.trim();
+    async function enregistrerQcmProf() {
+      const code = document.getElementById('codeProfInput').value.trim();
+      if (!code) { alert("Veuillez choisir un code pour le QCM."); return; }
+      if (!xmlContenuProf) { alert("Veuillez importer un fichier XML Pronote."); return; }
 
-      if (!eleveNom || !elevePrenom) {
-        alert("Veuillez renseigner votre nom et prénom.");
-        return;
-      }
-      if (!fichierXmlContenu) {
-        alert("Veuillez sélectionner le fichier QCM XML.");
-        return;
-      }
-
-      eleveID = `${eleveNom}_${elevePrenom}`.toLowerCase().replace(/\s+/g, '_');
-
+      // Parsing du XML
       const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(fichierXmlContenu, "application/xml");
-      const questionNodes = xmlDoc.getElementsByTagName("question");
+      const xmlDoc = parser.parseFromString(xmlContenuProf, "application/xml");
+      const qNodes = xmlDoc.getElementsByTagName("question");
 
-      questionsData = [];
-      for (let i = 0; i < questionNodes.length; i++) {
-        const qNode = questionNodes[i];
+      let titreQcm = "QCM Pronote";
+      const questions = [];
+
+      for (let i = 0; i < qNodes.length; i++) {
+        const qNode = qNodes[i];
         const type = qNode.getAttribute("type");
 
         if (type === "category") {
-          const catText = qNode.getElementsByTagName("text")[0]?.textContent || "";
-          const match = catText.match(/<name>(.*?)<\/name>/);
-          if (match && match[1]) qcmTitreGlobal = match[1];
+          const match = (qNode.getElementsByTagName("text")[0]?.textContent || "").match(/<name>(.*?)<\/name>/);
+          if (match && match[1]) titreQcm = match[1];
           continue;
         }
 
         const name = qNode.getElementsByTagName("name")[0]?.getElementsByTagName("text")[0]?.textContent || `Question ${i}`;
-        const enonceRaw = qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "";
-        const enonce = cleanHTML(enonceRaw);
-        const qImg = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
-        const pts = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
+        const enonce = cleanHTML(qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "");
+        const image = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
+        const points = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
 
         if (type === "multichoice") {
           const isSingle = qNode.getElementsByTagName("single")[0]?.textContent?.trim() === "true";
-          const answers = [];
           const ansNodes = qNode.getElementsByTagName("answer");
+          const answers = [];
           for (let j = 0; j < ansNodes.length; j++) {
-            const aNode = ansNodes[j];
+            const a = ansNodes[j];
             answers.push({
-              text: aNode.getElementsByTagName("text")[0]?.textContent || "",
-              fraction: parseFloat(aNode.getAttribute("fraction") || "0"),
-              image: aNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null
+              text: a.getElementsByTagName("text")[0]?.textContent || "",
+              fraction: parseFloat(a.getAttribute("fraction") || "0"),
+              image: a.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null
             });
           }
-          questionsData.push({ type, title: name, enonce, image: qImg, single: isSingle, points: pts, answers });
-        } 
-        else if (type === "matching") {
-          const subquestions = [];
+          questions.push({ type, title: name, enonce, image, single: isSingle, points, answers });
+        } else if (type === "matching") {
           const subNodes = qNode.getElementsByTagName("subquestion");
+          const subquestions = [];
           for (let j = 0; j < subNodes.length; j++) {
-            const sNode = subNodes[j];
-            const qTxt = sNode.getElementsByTagName("text")[0]?.textContent || "";
-            const aTxt = sNode.getElementsByTagName("answer")[0]?.getElementsByTagName("text")[0]?.textContent || "";
-            if (qTxt.trim() !== "") subquestions.push({ question: qTxt, answer: aTxt });
+            const s = subNodes[j];
+            const q = s.getElementsByTagName("text")[0]?.textContent || "";
+            const a = s.getElementsByTagName("answer")[0]?.getElementsByTagName("text")[0]?.textContent || "";
+            if (q.trim()) subquestions.push({ question: q, answer: a });
           }
-          questionsData.push({ type, title: name, enonce, image: qImg, points: pts, subquestions });
+          questions.push({ type, title: name, enonce, image, points, subquestions });
         }
       }
 
-      document.getElementById('stepIdentite').style.display = 'none';
-      document.getElementById('stepQCM').style.display = 'block';
-      document.getElementById('qcmTitre').innerText = qcmTitreGlobal;
+      // Envoi du QCM complet au serveur pour stockage D1
+      const res = await fetch('/api/prof_quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, titre: titreQcm, questions })
+      });
 
+      if (res.ok) {
+        alert(`QCM enregistré avec succès !\nLes élèves peuvent maintenant entrer le code : ${code.toUpperCase()}`);
+        document.getElementById('codeProfInput').value = "";
+        document.getElementById('xmlProfInput').value = "";
+        xmlContenuProf = null;
+        chargerDonneesProf();
+      } else {
+        alert("Erreur lors de l'enregistrement.");
+      }
+    }
+
+    async function chargerDonneesProf() {
+      // Sessions
+      try {
+        const r1 = await fetch('/api/prof_quiz');
+        const sessions = await r1.json();
+        document.getElementById('tableSessionsBody').innerHTML = sessions.length === 0 ? "<tr><td colspan='3'>Aucun QCM créé.</td></tr>" :
+          sessions.map(s => `<tr><td><span class="badge">${s.code}</span></td><td>${s.titre}</td><td>${new Date(s.date_creation).toLocaleDateString()}</td></tr>`).join('');
+      } catch(e) {}
+
+      // Résultats et sorties
+      try {
+        const r2 = await fetch('/api/resultats');
+        const d = await r2.json();
+        document.getElementById('tableNotesBody').innerHTML = d.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie soumise.</td></tr>" :
+          d.notes.map(n => `<tr><td>${new Date(n.date_soumission).toLocaleTimeString()}</td><td>${n.nom} ${n.prenom}</td><td>${n.classe}</td><td>${n.qcm_titre}</td><td><strong>${n.note} / ${n.total}</strong></td></tr>`).join('');
+
+        document.getElementById('tableSortiesBody').innerHTML = d.sorties.length === 0 ? "<tr><td colspan='3'>Aucune alerte.</td></tr>" :
+          d.sorties.map(s => `<tr><td>${new Date(s.horodatage).toLocaleTimeString()}</td><td>${s.eleve_id}</td><td style="color:${s.type_evenement === 'page_masquee' ? '#d97706':'#2563eb'}; font-weight:bold;">${s.type_evenement}</td></tr>`).join('');
+      } catch(e) {}
+    }
+
+    // ==================== CÔTÉ ÉLÈVE ====================
+    async function lancerQcmEleve() {
+      eleveInfo.nom = document.getElementById('eleveNom').value.trim();
+      eleveInfo.prenom = document.getElementById('elevePrenom').value.trim();
+      eleveInfo.classe = document.getElementById('eleveClasse').value.trim();
+      currentCode = document.getElementById('eleveCode').value.trim().toUpperCase();
+
+      if (!eleveInfo.nom || !eleveInfo.prenom || !currentCode) {
+        alert("Veuillez remplir votre nom, prénom et le code du QCM.");
+        return;
+      }
+
+      // Récupération automatique du QCM depuis D1
+      const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(currentCode)}`);
+      if (!res.ok) {
+        alert("Code de QCM incorrect ou indisponible. Demandez le code au professeur.");
+        return;
+      }
+
+      const data = await res.json();
+      currentQuestions = data.questions;
+
+      document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveQcm').style.display = 'block';
+      document.getElementById('qcmTitreAffiche').innerText = `${data.titre} (Code : ${data.code})`;
+
+      // Génération de l'interface
       const container = document.getElementById('questionsContainer');
       container.innerHTML = "";
-      questionsData.forEach((q, idx) => {
+      currentQuestions.forEach((q, idx) => {
         const block = document.createElement("div");
         block.className = "question-block";
         let h = `<div class="question-title">${q.title} (${q.points} pt)</div>`;
@@ -234,35 +318,38 @@
       });
     }
 
+    // Traque de visibilité pendant l'épreuve
     async function logSortie(type) {
-      if (!eleveID) return;
+      if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
       try {
         await fetch('/api/evenement', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eleve_id: `${eleveNom} ${elevePrenom} (${eleveClasse})`, type_evenement: type })
+          body: JSON.stringify({
+            eleve_id: `${eleveInfo.nom} ${eleveInfo.prenom} (${eleveInfo.classe})`,
+            type_evenement: type
+          })
         });
       } catch(e) {}
     }
 
     document.addEventListener("visibilitychange", () => {
-      if (document.getElementById('stepQCM').style.display === 'block') {
-        if (document.visibilityState === "hidden") {
-          logSortie("page_masquee");
-        } else if (document.visibilityState === "visible") {
-          logSortie("retour_qcm");
-          alert("Attention : vous avez quitté la page du QCM. Cette sortie est transmise au professeur.");
-        }
+      if (document.visibilityState === "hidden") {
+        logSortie("page_masquee");
+      } else if (document.visibilityState === "visible") {
+        logSortie("retour_qcm");
+        alert("Attention : vous avez quitté la page du QCM. Cette sortie est transmise au professeur.");
       }
     });
 
-    async function terminerEtSoumettre() {
-      if (!confirm("Voulez-vous vraiment valider et envoyer votre copie ?")) return;
+    // Calcul de note et enregistrement final
+    async function soumettreCopie() {
+      if (!confirm("Voulez-vous valider et transmettre définitivement votre copie ?")) return;
 
       let totalObtenu = 0;
       let totalPossible = 0;
 
-      questionsData.forEach((q, idx) => {
+      currentQuestions.forEach((q, idx) => {
         totalPossible += q.points;
         if (q.type === "multichoice") {
           const checked = document.querySelectorAll(`input[name="q_${idx}"]:checked`);
@@ -281,72 +368,22 @@
 
       const note20 = ((totalObtenu / totalPossible) * 20).toFixed(2);
 
-      try {
-        await fetch('/api/soumettre', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nom: eleveNom,
-            prenom: elevePrenom,
-            classe: eleveClasse,
-            qcm_titre: qcmTitreGlobal,
-            note: parseFloat(note20),
-            total: 20
-          })
-        });
-      } catch(e) {
-        console.error("Erreur enregistrement note:", e);
-      }
+      await fetch('/api/soumettre', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom: eleveInfo.nom,
+          prenom: eleveInfo.prenom,
+          classe: eleveInfo.classe,
+          qcm_titre: document.getElementById('qcmTitreAffiche').innerText,
+          note: parseFloat(note20),
+          total: 20
+        })
+      });
 
-      document.getElementById('stepQCM').style.display = 'none';
-      document.getElementById('stepFin').style.display = 'block';
-      document.getElementById('noteFinaleText').innerText = `Note obtenue : ${note20} / 20`;
-    }
-
-    function afficherDashboardProf() {
-      document.getElementById('stepIdentite').style.display = 'none';
-      document.getElementById('stepProf').style.display = 'block';
-      chargerDonneesProf();
-    }
-
-    function retourAccueil() {
-      document.getElementById('stepProf').style.display = 'none';
-      document.getElementById('stepIdentite').style.display = 'block';
-    }
-
-    async function chargerDonneesProf() {
-      const notesBody = document.getElementById('tableNotesBody');
-      const sortiesBody = document.getElementById('tableSortiesBody');
-      notesBody.innerHTML = "<tr><td colspan='5'>Chargement...</td></tr>";
-      sortiesBody.innerHTML = "<tr><td colspan='3'>Chargement...</td></tr>";
-
-      try {
-        const res = await fetch('/api/resultats');
-        const data = await res.json();
-
-        notesBody.innerHTML = data.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie reçue.</td></tr>" :
-          data.notes.map(n => `
-            <tr>
-              <td>${new Date(n.date_soumission).toLocaleTimeString()}</td>
-              <td><strong>${n.nom}</strong> ${n.prenom}</td>
-              <td>${n.classe || '-'}</td>
-              <td>${n.qcm_titre}</td>
-              <td><strong>${n.note} / ${n.total}</strong></td>
-            </tr>
-          `).join('');
-
-        sortiesBody.innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3'>Aucun incident relevé.</td></tr>" :
-          data.sorties.map(s => `
-            <tr>
-              <td>${new Date(s.horodatage).toLocaleTimeString()}</td>
-              <td>${s.eleve_id}</td>
-              <td style="color:${s.type_evenement === 'page_masquee' ? '#d97706' : '#2563eb'}; font-weight:bold;">${s.type_evenement}</td>
-            </tr>
-          `).join('');
-      } catch(e) {
-        notesBody.innerHTML = "<tr><td colspan='5'>Erreur de chargement.</td></tr>";
-        sortiesBody.innerHTML = "<tr><td colspan='3'>Erreur de chargement.</td></tr>";
-      }
+      document.getElementById('viewEleveQcm').style.display = 'none';
+      document.getElementById('viewEleveFin').style.display = 'block';
+      document.getElementById('noteFinaleText').innerText = `Note : ${note20} / 20`;
     }
   </script>
 </body>
