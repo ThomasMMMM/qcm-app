@@ -5,32 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Évaluation QCM</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; color: #1a1a1a; }
+    :root {
+      --pronote-blue: #0b5cab;
+      --pronote-bg: #eef2f6;
+      --pronote-card: #ffffff;
+      --border-color: #d1d5db;
+      --correct-bg: #dcfce7;
+      --correct-border: #22c55e;
+      --correct-text: #15803d;
+      --incorrect-bg: #fee2e2;
+      --incorrect-border: #ef4444;
+      --incorrect-text: #b91c1c;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 15px; background: var(--pronote-bg); color: #1e293b; }
     .container { max-width: 680px; margin: 0 auto; }
-    .card { background: white; border-radius: 12px; padding: 22px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-    h1, h2, h3 { color: #0d47a1; margin-top: 0; }
-    .input-field { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-    .alerte { background: #fff3cd; color: #856404; border-left: 4px solid #ffeeba; padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem; }
-    .btn { display: block; width: 100%; padding: 14px; background: #0070f3; color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
-    .btn:hover { background: #005bb5; }
-    .btn-secondary { background: #4b5563; margin-top: 10px; }
-    .btn-secondary:hover { background: #374151; }
-    .question-block { border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; }
-    .question-title { font-weight: bold; font-size: 1.05rem; margin-bottom: 8px; }
-    .question-enonce { margin-bottom: 12px; }
-    .img-qcm { max-width: 100%; height: auto; border-radius: 6px; margin: 10px 0; border: 1px solid #e5e7eb; display: block; }
-    .reponse-label { display: flex; align-items: center; padding: 10px 12px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
-    .reponse-label input { margin-right: 12px; transform: scale(1.2); }
-    .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
-    .matching-row select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.95rem; }
+    .card { background: var(--pronote-card); border-radius: 8px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    h1, h2, h3 { color: var(--pronote-blue); margin-top: 0; }
+    
+    .input-field { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+    .alerte { background: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 0.88rem; }
+    
+    .btn { display: block; width: 100%; padding: 13px; background: var(--pronote-blue); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background 0.15s; }
+    .btn:hover { background: #08437d; }
+    .btn-secondary { background: #64748b; margin-top: 10px; }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Barre de progression style Pronote */
+    .progress-bar-container { background: #e2e8f0; border-radius: 999px; height: 8px; width: 100%; overflow: hidden; margin: 12px 0 20px 0; }
+    .progress-bar-fill { background: var(--pronote-blue); height: 100%; width: 0%; transition: width 0.3s ease; }
+    .q-counter { font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .question-enonce { font-size: 1.05rem; font-weight: 500; margin: 12px 0 16px 0; line-height: 1.45; }
+    .img-qcm { max-width: 100%; height: auto; border-radius: 6px; margin: 12px 0; border: 1px solid #e2e8f0; display: block; }
+    
+    .reponse-label { display: flex; align-items: flex-start; padding: 12px 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+    .reponse-label:hover { background: #f1f5f9; }
+    .reponse-label input { margin-top: 3px; margin-right: 12px; transform: scale(1.2); }
+    
+    /* Styles du corrigé instantané */
+    .reponse-label.is-correct { background: var(--correct-bg) !important; border-color: var(--correct-border) !important; color: var(--correct-text) !important; font-weight: 500; }
+    .reponse-label.is-wrong { background: var(--incorrect-bg) !important; border-color: var(--incorrect-border) !important; color: var(--incorrect-text) !important; }
+    .feedback-box { background: #f0fdf4; border-left: 4px solid var(--correct-border); padding: 12px; border-radius: 4px; margin-top: 15px; font-size: 0.95rem; color: #166534; }
+    .feedback-box.has-error { background: #fef2f2; border-left-color: var(--incorrect-border); color: #991b1b; }
+    
+    .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #cbd5e1; }
+    .matching-row select { padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.95rem; background: white; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
-    th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; }
-    th { background: #f3f4f6; }
+    th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+    th { background: #f8fafc; color: #475569; }
     .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
     .link-mode { text-align: center; margin-top: 20px; font-size: 0.9rem; }
-    .link-mode a { color: #0070f3; cursor: pointer; text-decoration: underline; }
-    .auth-toggle { font-size: 0.9rem; margin-top: 10px; text-align: center; color: #4b5563; }
-    .auth-toggle a { color: #0070f3; cursor: pointer; font-weight: bold; }
+    .link-mode a { color: var(--pronote-blue); cursor: pointer; text-decoration: underline; }
+    .auth-toggle { font-size: 0.9rem; margin-top: 10px; text-align: center; color: #475569; }
+    .auth-toggle a { color: var(--pronote-blue); cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -38,7 +67,7 @@
 
     <!-- 1. VUE ÉLÈVE : ACCUEIL -->
     <div id="viewEleveLogin" class="card">
-      <h1>Rejoindre l'évaluation</h1>
+      <h1>Connexion à l'évaluation</h1>
       <label>Nom :</label>
       <input type="text" id="eleveNom" class="input-field" placeholder="Ex : DUPONT">
 
@@ -49,36 +78,50 @@
       <input type="text" id="eleveClasse" class="input-field" placeholder="Ex : 2nde 4">
 
       <label>Code de l'épreuve :</label>
-      <input type="text" id="eleveCode" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex : BIO2A">
+      <input type="text" id="eleveCode" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex : TEST1">
 
-      <button type="button" class="btn" onclick="lancerQcmEleve()">Entrer dans l'épreuve</button>
+      <button type="button" class="btn" onclick="lancerQcmEleve()">Commencer le QCM</button>
       
       <div class="link-mode">
         <a onclick="basculerMode('prof')">Espace Enseignant</a>
       </div>
     </div>
 
-    <!-- 2. VUE ÉLÈVE : PASSATION -->
+    <!-- 2. VUE ÉLÈVE : QUESTION PAR QUESTION (STYLE PRONOTE) -->
     <div id="viewEleveQcm" class="card" style="display: none;">
-      <h2 id="qcmTitreAffiche">Épreuve</h2>
-      <div class="alerte">
-        ⚠️ <strong>Avertissement :</strong> Les sorties d'écran et changements d'application sont consignés et visibles par votre professeur.
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <span class="q-counter" id="questionProgressionText">Question 1 sur 5</span>
+        <span style="font-size: 0.85rem; font-weight: bold; color: var(--pronote-blue);" id="questionPointsText">1 pt</span>
       </div>
 
-      <form id="qcmForm">
-        <div id="questionsContainer"></div>
-        <button type="button" class="btn" onclick="soumettreCopie()">Valider et transmettre la copie</button>
-      </form>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+
+      <div class="alerte">
+        ⚠️ Attention : Les changements d'application ou d'onglet sont consignés.
+      </div>
+
+      <div id="singleQuestionContainer"></div>
+
+      <!-- Zone de Feedback / Corrigé après validation -->
+      <div id="feedbackContainer" style="display: none;"></div>
+
+      <button type="button" class="btn" id="btnValiderQuestion" onclick="validerQuestionCourante()">Valider la réponse</button>
+      <button type="button" class="btn" id="btnQuestionSuivante" style="display: none;" onclick="passerQuestionSuivante()">Question suivante &rarr;</button>
     </div>
 
-    <!-- 3. VUE ÉLÈVE : FIN -->
+    <!-- 3. VUE ÉLÈVE : BILAN FINAL -->
     <div id="viewEleveFin" class="card" style="display: none; text-align: center;">
-      <h2>Copie transmise !</h2>
-      <p>Votre évaluation a bien été enregistrée sur le serveur.</p>
-      <h3 id="noteFinaleText" style="color: #0d47a1; font-size: 1.6rem;"></h3>
+      <h2>Évaluation terminée !</h2>
+      <p>Votre copie a été transmise avec succès au professeur.</p>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <span style="font-size: 0.9rem; color: #64748b;">Note finale</span>
+        <h3 id="noteFinaleText" style="color: var(--pronote-blue); font-size: 2rem; margin: 5px 0 0 0;"></h3>
+      </div>
     </div>
 
-    <!-- 4. VUE ENSEIGNANT : CONNEXION / INSCRIPTION -->
+    <!-- 4. VUE ENSEIGNANT : AUTHENTIFICATION -->
     <div id="viewProfAuth" class="card" style="display: none;">
       <h1 id="authTitle">Connexion Enseignant</h1>
       
@@ -87,7 +130,7 @@
         <input type="text" id="profNom" class="input-field" placeholder="Ex : M. Martin">
       </div>
 
-      <label>Email académique ou personnel :</label>
+      <label>Email :</label>
       <input type="email" id="profEmail" class="input-field" placeholder="enseignant@etablissement.fr">
 
       <label>Mot de passe :</label>
@@ -105,26 +148,26 @@
       </div>
     </div>
 
-    <!-- 5. VUE ENSEIGNANT : TABLEAU DE BORD CONNECTÉ -->
+    <!-- 5. VUE ENSEIGNANT : DASHBOARD -->
     <div id="viewProfDashboard" class="card" style="display: none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">Tableau de bord</h2>
-        <button class="tab-btn" onclick="deconnecterProf()" style="color:#dc2626;">Se déconnecter</button>
+        <button class="tab-btn" onclick="deconnecterProf()" style="color:#dc2626; border:none; background:none; cursor:pointer;">Se déconnecter</button>
       </div>
-      <p style="margin-top:0; color:#4b5563;">Connecté en tant que : <strong id="profNomConnecte"></strong></p>
+      <p style="margin-top:0; color:#64748b;">Connecté en tant que : <strong id="profNomConnecte"></strong></p>
 
-      <div style="background:#eef6ff; border:1px solid #bfdbfe; padding:15px; border-radius:8px; margin-bottom:20px;">
-        <h3>📤 Publier un nouveau QCM Pronote</h3>
-        <label>1. Fichier XML Pronote :</label>
+      <div style="background:#f0f7ff; border:1px solid #bae6fd; padding:15px; border-radius:8px; margin-bottom:20px;">
+        <h3>📤 Publier un QCM Pronote (.xml)</h3>
+        <label>1. Fichier XML :</label>
         <input type="file" id="xmlProfInput" accept=".xml" class="input-field">
 
-        <label>2. Code de session (ex: MATHS2, TEST1) :</label>
+        <label>2. Code de session (ex: TEST1) :</label>
         <input type="text" id="codeProfInput" class="input-field" style="text-transform:uppercase;" placeholder="Code du QCM">
 
-        <button type="button" class="btn" onclick="enregistrerQcmProf()">Enregistrer et activer le QCM</button>
+        <button type="button" class="btn" onclick="enregistrerQcmProf()">Enregistrer le QCM</button>
       </div>
 
-      <h3>Mes QCM créés</h3>
+      <h3>Mes QCM actifs</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>Code</th><th>Titre</th><th>Date</th></tr></thead>
@@ -132,7 +175,7 @@
         </table>
       </div>
 
-      <h3 style="margin-top:25px;">Copies reçues pour mes QCM</h3>
+      <h3 style="margin-top:25px;">Copies reçues</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>Heure</th><th>Élève</th><th>Classe</th><th>QCM</th><th>Note</th></tr></thead>
@@ -140,7 +183,7 @@
         </table>
       </div>
 
-      <h3 style="margin-top:25px;">Journal des alertes écran</h3>
+      <h3 style="margin-top:25px;">Journal des alertes de sortie</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>Heure</th><th>Élève</th><th>Alerte</th></tr></thead>
@@ -158,14 +201,17 @@
     let currentCode = "";
     let eleveInfo = { nom: "", prenom: "", classe: "" };
     let xmlContenuProf = null;
-    let authMode = "login"; // "login" ou "register"
+    let authMode = "login";
     let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
+
+    // Suivi de l'avancement élève
+    let currentQuestionIndex = 0;
+    let totalScoreObtenu = 0;
+    let totalScorePossible = 0;
 
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('mode') === 'prof') {
-        basculerMode('prof');
-      }
+      if (urlParams.get('mode') === 'prof') basculerMode('prof');
     });
 
     function basculerMode(mode) {
@@ -189,7 +235,7 @@
       }
     }
 
-    // ==================== AUTHENTIFICATION ENSEIGNANT ====================
+    // ==================== AUTHENTIFICATION PROF ====================
     function toggleAuthMode() {
       authMode = authMode === "login" ? "register" : "login";
       if (authMode === "register") {
@@ -221,10 +267,7 @@
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Erreur d'authentification");
-        return;
-      }
+      if (!res.ok) { alert(data.error || "Erreur d'authentification"); return; }
 
       currentProf = data.user;
       localStorage.setItem('qcm_prof_user', JSON.stringify(currentProf));
@@ -237,7 +280,7 @@
       basculerMode('prof');
     }
 
-    // ==================== TABLEAU DE BORD PROFESSEUR ====================
+    // ==================== DASHBOARD PROF ====================
     document.getElementById('xmlProfInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -253,7 +296,7 @@
     }
 
     async function enregistrerQcmProf() {
-      if (!currentProf) { alert("Session expirée. Veuillez vous reconnecter."); basculerMode('prof'); return; }
+      if (!currentProf) { alert("Session expirée."); basculerMode('prof'); return; }
       const code = document.getElementById('codeProfInput').value.trim();
       if (!code) { alert("Veuillez définir un code de session."); return; }
       if (!xmlContenuProf) { alert("Veuillez sélectionner un fichier XML Pronote."); return; }
@@ -279,6 +322,9 @@
         const enonce = cleanHTML(qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "");
         const image = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
         const points = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
+        
+        // Explication globale de la question (balise generalfeedback de Moodle)
+        const generalFeedback = cleanHTML(qNode.getElementsByTagName("generalfeedback")[0]?.getElementsByTagName("text")[0]?.textContent || "");
 
         if (type === "multichoice") {
           const isSingle = qNode.getElementsByTagName("single")[0]?.textContent?.trim() === "true";
@@ -286,13 +332,16 @@
           const answers = [];
           for (let j = 0; j < ansNodes.length; j++) {
             const a = ansNodes[j];
+            // Explication spécifique liée à la proposition de réponse
+            const fbText = cleanHTML(a.getElementsByTagName("feedback")[0]?.getElementsByTagName("text")[0]?.textContent || "");
             answers.push({
               text: a.getElementsByTagName("text")[0]?.textContent || "",
               fraction: parseFloat(a.getAttribute("fraction") || "0"),
-              image: a.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null
+              image: a.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null,
+              feedback: fbText
             });
           }
-          questions.push({ type, title: name, enonce, image, single: isSingle, points, answers });
+          questions.push({ type, title: name, enonce, image, single: isSingle, points, generalFeedback, answers });
         } else if (type === "matching") {
           const subNodes = qNode.getElementsByTagName("subquestion");
           const subquestions = [];
@@ -302,7 +351,7 @@
             const a = s.getElementsByTagName("answer")[0]?.getElementsByTagName("text")[0]?.textContent || "";
             if (q.trim()) subquestions.push({ question: q, answer: a });
           }
-          questions.push({ type, title: name, enonce, image, points, subquestions });
+          questions.push({ type, title: name, enonce, image, points, generalFeedback, subquestions });
         }
       }
 
@@ -313,7 +362,7 @@
       });
 
       if (res.ok) {
-        alert(`QCM enregistré avec succès !\nCode distribué aux élèves : ${code.toUpperCase()}`);
+        alert(`QCM enregistré avec succès !\nCode pour les élèves : ${code.toUpperCase()}`);
         document.getElementById('codeProfInput').value = "";
         document.getElementById('xmlProfInput').value = "";
         xmlContenuProf = null;
@@ -325,16 +374,13 @@
 
     async function chargerDonneesProf() {
       if (!currentProf) return;
-
-      // QCM de l'enseignant connecté
       try {
         const r1 = await fetch(`/api/prof_quiz?prof_id=${currentProf.id}`);
         const sessions = await r1.json();
-        document.getElementById('tableSessionsBody').innerHTML = sessions.length === 0 ? "<tr><td colspan='3'>Aucun QCM créé pour le moment.</td></tr>" :
+        document.getElementById('tableSessionsBody').innerHTML = sessions.length === 0 ? "<tr><td colspan='3'>Aucun QCM créé.</td></tr>" :
           sessions.map(s => `<tr><td><span class="badge">${s.code}</span></td><td>${s.titre}</td><td>${new Date(s.date_creation).toLocaleDateString()}</td></tr>`).join('');
       } catch(e) {}
 
-      // Résultats des élèves
       try {
         const r2 = await fetch(`/api/resultats?prof_id=${currentProf.id}`);
         const d = await r2.json();
@@ -346,7 +392,7 @@
       } catch(e) {}
     }
 
-    // ==================== CÔTÉ ÉLÈVE ====================
+    // ==================== CÔTÉ ÉLÈVE : DÉROULEMENT STYLE PRONOTE ====================
     async function lancerQcmEleve() {
       eleveInfo.nom = document.getElementById('eleveNom').value.trim();
       eleveInfo.prenom = document.getElementById('elevePrenom').value.trim();
@@ -354,7 +400,7 @@
       currentCode = document.getElementById('eleveCode').value.trim().toUpperCase();
 
       if (!eleveInfo.nom || !eleveInfo.prenom || !currentCode) {
-        alert("Veuillez remplir votre nom, prénom et le code du QCM.");
+        alert("Veuillez renseigner votre nom, prénom et le code du QCM.");
         return;
       }
 
@@ -366,52 +412,207 @@
 
       const data = await res.json();
       currentQuestions = data.questions;
+      currentQuestionIndex = 0;
+      totalScoreObtenu = 0;
+      totalScorePossible = 0;
+
+      currentQuestions.forEach(q => { totalScorePossible += q.points; });
 
       document.getElementById('viewEleveLogin').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'block';
-      document.getElementById('qcmTitreAffiche').innerText = `${data.titre} (Code : ${data.code})`;
 
-      const container = document.getElementById('questionsContainer');
-      container.innerHTML = "";
-      currentQuestions.forEach((q, idx) => {
-        const block = document.createElement("div");
-        block.className = "question-block";
-        let h = `<div class="question-title">${q.title} (${q.points} pt)</div>`;
-        h += `<div class="question-enonce">${q.enonce}</div>`;
-        if (q.image) h += `<img class="img-qcm" src="data:image/png;base64,${q.image}">`;
-
-        if (q.type === "multichoice") {
-          const inputType = q.single ? "radio" : "checkbox";
-          q.answers.forEach((ans, aIdx) => {
-            h += `
-              <label class="reponse-label">
-                <input type="${inputType}" name="q_${idx}" value="${aIdx}">
-                <div>
-                  ${ans.text}
-                  ${ans.image ? `<br><img class="img-qcm" style="max-height:120px;" src="data:image/png;base64,${ans.image}">` : ''}
-                </div>
-              </label>
-            `;
-          });
-        } else if (q.type === "matching") {
-          const opts = [...q.subquestions.map(s => s.answer)].sort(() => Math.random() - 0.5);
-          q.subquestions.forEach((sub, sIdx) => {
-            h += `
-              <div class="matching-row">
-                <span><strong>${sub.question}</strong></span>
-                <select name="matching_${idx}_${sIdx}">
-                  <option value="">-- Choisir --</option>
-                  ${opts.map(o => `<option value="${o}">${o}</option>`).join('')}
-                </select>
-              </div>
-            `;
-          });
-        }
-        block.innerHTML = h;
-        container.appendChild(block);
-      });
+      afficherQuestionCourante();
     }
 
+    function afficherQuestionCourante() {
+      const q = currentQuestions[currentQuestionIndex];
+      const totalQ = currentQuestions.length;
+
+      // Progression
+      document.getElementById('questionProgressionText').innerText = `Question ${currentQuestionIndex + 1} sur ${totalQ}`;
+      document.getElementById('questionPointsText').innerText = `${q.points} pt${q.points > 1 ? 's' : ''}`;
+      document.getElementById('progressBarFill').style.width = `${((currentQuestionIndex + 1) / totalQ) * 100}%`;
+
+      // Réinitialiser les boutons et le feedback
+      document.getElementById('feedbackContainer').style.display = 'none';
+      document.getElementById('feedbackContainer').innerHTML = '';
+      document.getElementById('btnValiderQuestion').style.display = 'block';
+      document.getElementById('btnQuestionSuivante').style.display = 'none';
+
+      const container = document.getElementById('singleQuestionContainer');
+      let h = `<div class="question-enonce">${q.enonce}</div>`;
+      if (q.image) h += `<img class="img-qcm" src="data:image/png;base64,${q.image}">`;
+
+      if (q.type === "multichoice") {
+        const inputType = q.single ? "radio" : "checkbox";
+        q.answers.forEach((ans, aIdx) => {
+          h += `
+            <label class="reponse-label" id="label_ans_${aIdx}">
+              <input type="${inputType}" name="current_q_ans" value="${aIdx}">
+              <div>
+                ${ans.text}
+                ${ans.image ? `<br><img class="img-qcm" style="max-height:120px;" src="data:image/png;base64,${ans.image}">` : ''}
+              </div>
+            </label>
+          `;
+        });
+      } else if (q.type === "matching") {
+        const opts = [...q.subquestions.map(s => s.answer)].sort(() => Math.random() - 0.5);
+        q.subquestions.forEach((sub, sIdx) => {
+          h += `
+            <div class="matching-row" id="matching_row_${sIdx}">
+              <span><strong>${sub.question}</strong></span>
+              <select name="matching_sel_${sIdx}">
+                <option value="">-- Choisir --</option>
+                ${opts.map(o => `<option value="${o}">${o}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        });
+      }
+
+      container.innerHTML = h;
+    }
+
+    function validerQuestionCourante() {
+      const q = currentQuestions[currentQuestionIndex];
+      let scoreQuestion = 0;
+      let explications = [];
+
+      if (q.type === "multichoice") {
+        const inputs = document.querySelectorAll('input[name="current_q_ans"]');
+        const checkedInputs = document.querySelectorAll('input[name="current_q_ans"]:checked');
+
+        if (checkedInputs.length === 0) {
+          alert("Veuillez sélectionner au moins une réponse avant de valider.");
+          return;
+        }
+
+        // Verrouiller les cases
+        inputs.forEach(i => i.disabled = true);
+
+        let fracTotale = 0;
+        inputs.forEach(input => {
+          const idx = parseInt(input.value);
+          const ans = q.answers[idx];
+          const label = document.getElementById(`label_ans_${idx}`);
+
+          // Indiquer les bonnes réponses en vert
+          if (ans.fraction > 0) {
+            label.classList.add('is-correct');
+          }
+
+          // Si cochée
+          if (input.checked) {
+            fracTotale += ans.fraction;
+            if (ans.fraction <= 0) {
+              label.classList.add('is-wrong');
+            }
+            if (ans.feedback) {
+              explications.push(`<strong>${ans.text} :</strong> ${ans.feedback}`);
+            }
+          }
+        });
+
+        scoreQuestion = q.points * (Math.max(0, fracTotale) / 100);
+      } 
+      else if (q.type === "matching") {
+        const selects = document.querySelectorAll('select[name^="matching_sel_"]');
+        let complet = true;
+        selects.forEach(s => { if (!s.value) complet = false; });
+        if (!complet) {
+          alert("Veuillez associer toutes les propositions avant de valider.");
+          return;
+        }
+
+        let corrects = 0;
+        q.subquestions.forEach((sub, sIdx) => {
+          const sel = document.querySelector(`select[name="matching_sel_${sIdx}"]`);
+          sel.disabled = true;
+          const row = document.getElementById(`matching_row_${sIdx}`);
+          if (sel.value === sub.answer) {
+            corrects++;
+            row.style.background = "var(--correct-bg)";
+            row.style.borderColor = "var(--correct-border)";
+          } else {
+            row.style.background = "var(--incorrect-bg)";
+            row.style.borderColor = "var(--incorrect-border)";
+          }
+        });
+        scoreQuestion = q.points * (corrects / q.subquestions.length);
+      }
+
+      totalScoreObtenu += scoreQuestion;
+
+      // Affichage du corrigé et des feedbacks
+      const fbBox = document.getElementById('feedbackContainer');
+      let fbHtml = "";
+
+      if (scoreQuestion === q.points) {
+        fbHtml += `<div><strong>Bravo !</strong> Réponse correcte (+${scoreQuestion.toFixed(2)} pt).</div>`;
+      } else {
+        fbHtml += `<div><strong>Correction :</strong> Vous obtenez ${scoreQuestion.toFixed(2)} / ${q.points} pt.</div>`;
+      }
+
+      // Ajout de l'explication générale (generalfeedback de Moodle)
+      if (q.generalFeedback) {
+        fbHtml += `<div style="margin-top:8px;">💡 <strong>Explication :</strong> ${q.generalFeedback}</div>`;
+      }
+
+      // Ajout des feedbacks spécifiques aux réponses choisies
+      if (explications.length > 0) {
+        fbHtml += `<div style="margin-top:8px;">${explications.join('<br>')}</div>`;
+      }
+
+      fbBox.className = `feedback-box ${scoreQuestion === q.points ? '' : 'has-error'}`;
+      fbBox.innerHTML = fbHtml;
+      fbBox.style.display = 'block';
+
+      // Basculer sur le bouton suivant
+      document.getElementById('btnValiderQuestion').style.display = 'none';
+      const btnSuivant = document.getElementById('btnQuestionSuivante');
+      btnSuivant.style.display = 'block';
+
+      if (currentQuestionIndex === currentQuestions.length - 1) {
+        btnSuivant.innerText = "Terminer et soumettre l'évaluation";
+      } else {
+        btnSuivant.innerText = "Question suivante →";
+      }
+    }
+
+    async function passerQuestionSuivante() {
+      if (currentQuestionIndex < currentQuestions.length - 1) {
+        currentQuestionIndex++;
+        afficherQuestionCourante();
+      } else {
+        await terminerEvaluation();
+      }
+    }
+
+    async function terminerEvaluation() {
+      const note20 = ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2);
+
+      // Enregistrement de la note en D1
+      await fetch('/api/soumettre', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom: eleveInfo.nom,
+          prenom: eleveInfo.prenom,
+          classe: eleveInfo.classe,
+          qcm_titre: currentCode,
+          session_code: currentCode,
+          note: parseFloat(note20),
+          total: 20
+        })
+      });
+
+      document.getElementById('viewEleveQcm').style.display = 'none';
+      document.getElementById('viewEleveFin').style.display = 'block';
+      document.getElementById('noteFinaleText').innerText = `${note20} / 20`;
+    }
+
+    // Suivi de visibilité
     async function logSortie(type) {
       if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
       try {
@@ -431,53 +632,9 @@
         logSortie("page_masquee");
       } else if (document.visibilityState === "visible") {
         logSortie("retour_qcm");
-        alert("Attention : vous avez quitté la page du QCM. Cette sortie est signalée à l'enseignant.");
+        alert("Attention : vous avez quitté la page du QCM. Cette sortie est signalée au professeur.");
       }
     });
-
-    async function soumettreCopie() {
-      if (!confirm("Voulez-vous valider et envoyer définitivement votre copie ?")) return;
-
-      let totalObtenu = 0;
-      let totalPossible = 0;
-
-      currentQuestions.forEach((q, idx) => {
-        totalPossible += q.points;
-        if (q.type === "multichoice") {
-          const checked = document.querySelectorAll(`input[name="q_${idx}"]:checked`);
-          let frac = 0;
-          checked.forEach(c => { frac += q.answers[parseInt(c.value)].fraction; });
-          totalObtenu += (q.points * (Math.max(0, frac) / 100));
-        } else if (q.type === "matching") {
-          let corrects = 0;
-          q.subquestions.forEach((sub, sIdx) => {
-            const val = document.querySelector(`select[name="matching_${idx}_${sIdx}"]`)?.value;
-            if (val === sub.answer) corrects++;
-          });
-          totalObtenu += (q.points * (corrects / q.subquestions.length));
-        }
-      });
-
-      const note20 = ((totalObtenu / totalPossible) * 20).toFixed(2);
-
-      await fetch('/api/soumettre', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nom: eleveInfo.nom,
-          prenom: eleveInfo.prenom,
-          classe: eleveInfo.classe,
-          qcm_titre: document.getElementById('qcmTitreAffiche').innerText,
-          session_code: currentCode,
-          note: parseFloat(note20),
-          total: 20
-        })
-      });
-
-      document.getElementById('viewEleveQcm').style.display = 'none';
-      document.getElementById('viewEleveFin').style.display = 'block';
-      document.getElementById('noteFinaleText').innerText = `Note : ${note20} / 20`;
-    }
   </script>
 </body>
 </html>
