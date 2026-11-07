@@ -1,25 +1,57 @@
-﻿export async function onRequestGet(context) {
+﻿function aseptiserQuestions(questions) {
+  return questions.map(q => {
+    const propre = {
+      type: q.type,
+      title: q.title,
+      enonce: q.enonce,
+      image: q.image,
+      points: q.points
+    };
+
+    if (q.type === "multichoice") {
+      propre.single = q.single;
+      // On retire fraction et feedback
+      propre.answers = q.answers.map((a, idx) => ({
+        id: idx,
+        text: a.text,
+        image: a.image
+      }));
+    } else if (q.type === "matching") {
+      // Pour l'appariement, on mélange les choix sans révéler les paires
+      const tousLesChoix = q.subquestions.map(s => s.answer).sort(() => Math.random() - 0.5);
+      propre.subquestions = q.subquestions.map((s, idx) => ({
+        id: idx,
+        question: s.question
+      }));
+      propre.choices = tousLesChoix;
+    }
+    return propre;
+  });
+}
+
+export async function onRequestGet(context) {
   try {
     const { request, env } = context;
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
     const code_eleve = url.searchParams.get("code_eleve");
     
-    // Paramètres dédiés au simulateur enseignant
     const simuQcmId = url.searchParams.get("simulateur_qcm_id");
     const simuSeanceId = url.searchParams.get("simulateur_seance_id");
 
-    // 1. Simulation directe depuis la Banque de QCM
+    // 1. Simulation Banque
     if (simuQcmId) {
       const qcm = await env.DB.prepare("SELECT id, titre, data_json FROM qcm_banque WHERE id = ?").bind(simuQcmId).first();
-      if (!qcm) return new Response(JSON.stringify({ error: "QCM introuvable dans la banque" }), { status: 404 });
+      if (!qcm) return new Response(JSON.stringify({ error: "QCM introuvable" }), { status: 404 });
+      const brute = JSON.parse(qcm.data_json);
       return new Response(JSON.stringify({
+        qcm_id: qcm.id,
         titre: qcm.titre,
-        questions: JSON.parse(qcm.data_json)
+        questions: aseptiserQuestions(brute)
       }), { headers: { "Content-Type": "application/json" } });
     }
 
-    // 2. Simulation depuis une Séance programmée
+    // 2. Simulation Séance
     if (simuSeanceId) {
       const seance = await env.DB.prepare(`
         SELECT s.id, s.code_session, q.titre, q.data_json
@@ -28,14 +60,16 @@
         WHERE s.id = ?
       `).bind(simuSeanceId).first();
       if (!seance) return new Response(JSON.stringify({ error: "Séance introuvable" }), { status: 404 });
+      const brute = JSON.parse(seance.data_json);
       return new Response(JSON.stringify({
+        seance_id: seance.id,
         titre: seance.titre,
         code_session: seance.code_session,
-        questions: JSON.parse(seance.data_json)
+        questions: aseptiserQuestions(brute)
       }), { headers: { "Content-Type": "application/json" } });
     }
 
-    // 3. Passation normale par un élève
+    // 3. Passation Élève
     if (!code || !code_eleve) {
       return new Response(JSON.stringify({ error: "Code d'épreuve et code élève requis" }), { status: 400 });
     }
@@ -51,21 +85,16 @@
       WHERE s.code_session = ?
     `).bind(cleanCode).first();
 
-    if (!seance) {
-      return new Response(JSON.stringify({ error: "Séance introuvable. Vérifiez le code." }), { status: 404 });
-    }
-
-    if (!seance.actif) {
-      return new Response(JSON.stringify({ error: "Cette épreuve est actuellement clôturée par le professeur." }), { status: 403 });
-    }
+    if (!seance) return new Response(JSON.stringify({ error: "Séance introuvable. Vérifiez le code." }), { status: 404 });
+    if (!seance.actif) return new Response(JSON.stringify({ error: "Cette épreuve est actuellement clôturée par le professeur." }), { status: 403 });
 
     const eleve = await env.DB.prepare(
       "SELECT id, prenom FROM eleves WHERE code_eleve = ? AND classe_id = ?"
     ).bind(cleanCodeEleve, seance.classe_id).first();
 
-    if (!eleve) {
-      return new Response(JSON.stringify({ error: "Code personnel élève inconnu ou n'appartenant pas à la classe de cette épreuve." }), { status: 403 });
-    }
+    if (!eleve) return new Response(JSON.stringify({ error: "Code individuel élève non reconnu dans cette classe." }), { status: 403 });
+
+    const questionsBrutes = JSON.parse(seance.data_json);
 
     return new Response(JSON.stringify({
       seance_id: seance.seance_id,
@@ -73,7 +102,7 @@
       titre: seance.titre,
       classe_nom: seance.classe_nom,
       eleve_prenom: eleve.prenom,
-      questions: JSON.parse(seance.data_json)
+      questions: aseptiserQuestions(questionsBrutes)
     }), { headers: { "Content-Type": "application/json" } });
 
   } catch (err) {

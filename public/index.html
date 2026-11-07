@@ -780,7 +780,7 @@
           alert("Erreur simulateur : " + (data.error || "Questions introuvables"));
           return;
         }
-        demarrerSimulation(data.questions, `[Simulation] ${data.titre}`);
+        demarrerSimulation(data.questions, `[Simulation] ${data.titre}`, data.qcm_id || qcmId);
       } catch(e) {
         alert("Erreur au chargement du simulateur : " + e.message);
       }
@@ -797,13 +797,15 @@
           alert("Erreur simulateur : " + (data.error || "Questions introuvables"));
           return;
         }
-        demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`);
+        currentSeanceId = seanceId; demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`);
       } catch(e) {
         alert("Erreur au chargement du simulateur : " + e.message);
       }
     }
 
-    function demarrerSimulation(questions, titre) {
+    let currentSimuQcmId = null;
+    function demarrerSimulation(questions, titre, simuQcmId = null) {
+      currentSimuQcmId = simuQcmId;
       isModeSimulation = true;
       currentQuestions = questions;
       currentQuestionIndex = 0;
@@ -962,7 +964,7 @@
           `;
         });
       } else if (q.type === "matching") {
-        const opts = [...q.subquestions.map(s => s.answer)].sort(() => Math.random() - 0.5);
+        const opts = q.choices || [];
         q.subquestions.forEach((sub, sIdx) => {
           h += `
             <div class="matching-row" id="matching_row_${sIdx}">
