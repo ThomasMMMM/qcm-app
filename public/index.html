@@ -53,7 +53,6 @@
     let questionsData = [];
     const ELEVE_ID = "eleve_pilote_01";
 
-    // 1. Détection de visibilité (Étape 2 du mémoire)
     async function logSortie(type) {
       document.getElementById('statusBar').innerText = "Événement : " + type + " (" + new Date().toLocaleTimeString() + ")";
       try {
@@ -74,7 +73,6 @@
       }
     });
 
-    // 2. Parser XML Pronote
     document.getElementById('xmlFileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -104,7 +102,6 @@
         const qNode = questionNodes[i];
         const type = qNode.getAttribute("type");
 
-        // Récupération du titre du QCM
         if (type === "category") {
           const categoryText = qNode.getElementsByTagName("text")[0]?.textContent || "";
           const match = categoryText.match(/<name>(.*?)<\/name>/);
@@ -115,8 +112,6 @@
         const name = qNode.getElementsByTagName("name")[0]?.getElementsByTagName("text")[0]?.textContent || `Question ${i}`;
         const questionTextRaw = qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "";
         const enonce = cleanHTML(questionTextRaw);
-        
-        // Image éventuelle de la question
         const qImgBase64 = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
         const defaultGrade = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
 
@@ -170,7 +165,6 @@
       afficherQCM(titreQCM);
     }
 
-    // 3. Affichage dynamique du QCM
     function afficherQCM(titre) {
       document.getElementById('qcmTitre').innerText = titre;
       const container = document.getElementById('questionsContainer');
@@ -205,7 +199,6 @@
         } 
         else if (q.type === "matching") {
           const allOptions = q.subquestions.map(s => s.answer);
-          // Mélange des propositions du menu déroulant
           const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
 
           q.subquestions.forEach((sub, sIndex) => {
@@ -228,7 +221,6 @@
       document.getElementById('qcmZone').style.display = 'block';
     }
 
-    // 4. Barème et calcul de note
     function corrigerQCM() {
       let totalObtenu = 0;
       let totalPossible = 0;
@@ -245,7 +237,6 @@
             fractionTotale += q.answers[ansIndex].fraction;
           });
 
-          // Empêche les scores négatifs sur une question
           fractionTotale = Math.max(0, fractionTotale);
           totalObtenu += (q.points * (fractionTotale / 100));
         } 
