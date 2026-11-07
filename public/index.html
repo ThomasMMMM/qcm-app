@@ -1,1 +1,64 @@
-<!DOCTYPE html><html><body><h1>Site QCM operationnel</h1></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test QCM</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; background: #f4f6f8; color: #222; }
+    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 480px; margin: 0 auto; }
+    h2 { margin-top: 0; color: #0d47a1; font-size: 1.25rem; }
+    .alerte { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; }
+    .btn { display: block; width: 100%; padding: 12px; background: #0070f3; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-top: 15px; }
+    .log { margin-top: 20px; font-size: 0.85rem; color: #555; background: #eee; padding: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>QCM de démonstration</h2>
+    <div class="alerte">
+      ?? <strong>Rappel :</strong> Les passages hors de cette page (changement d'application, verrouillage) sont enregistrés pendant l'épreuve.
+    </div>
+    
+    <p><strong>Question 1 :</strong> Quelle est la capitale de la France ?</p>
+    <label><input type="radio" name="q1" value="A"> Lyon</label><br><br>
+    <label><input type="radio" name="q1" value="B"> Paris</label><br><br>
+    <label><input type="radio" name="q1" value="C"> Marseille</label>
+
+    <button class="btn" onclick="alert('Réponse enregistrée')">Valider</button>
+
+    <div class="log" id="statusLog">État : En cours sur la page...</div>
+  </div>
+
+  <script>
+    const ELEVE_ID = "eleve_test_01"; // Simulation d'un code élève
+
+    async function envoyerSignal(type) {
+      document.getElementById('statusLog').innerText = "Dernier signal : " + type + " (" + new Date().toLocaleTimeString() + ")";
+      try {
+        await fetch('/api/evenement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eleve_id: ELEVE_ID, type_evenement: type })
+        });
+      } catch (e) {
+        console.warn("Échec d'envoi immédiat (hors ligne)");
+      }
+    }
+
+    // Détection de sortie / changement d'application
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        envoyerSignal("page_masquee");
+      } else if (document.visibilityState === "visible") {
+        envoyerSignal("retour_qcm");
+        alert("Attention : vous avez quitté la page du QCM.");
+      }
+    });
+
+    // Détection de perte réseau
+    window.addEventListener("offline", () => envoyerSignal("connexion_interrompue"));
+    window.addEventListener("online", () => envoyerSignal("connexion_retablie"));
+  </script>
+</body>
+</html>
