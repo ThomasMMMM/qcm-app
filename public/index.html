@@ -29,12 +29,14 @@
     .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
     .link-mode { text-align: center; margin-top: 20px; font-size: 0.9rem; }
     .link-mode a { color: #0070f3; cursor: pointer; text-decoration: underline; }
+    .auth-toggle { font-size: 0.9rem; margin-top: 10px; text-align: center; color: #4b5563; }
+    .auth-toggle a { color: #0070f3; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="container">
 
-    <!-- 1. VUE ÉLÈVE : ACCUEIL SIMPLE -->
+    <!-- 1. VUE ÉLÈVE : ACCUEIL -->
     <div id="viewEleveLogin" class="card">
       <h1>Rejoindre l'évaluation</h1>
       <label>Nom :</label>
@@ -46,21 +48,21 @@
       <label>Classe :</label>
       <input type="text" id="eleveClasse" class="input-field" placeholder="Ex : 2nde 4">
 
-      <label>Code de l'épreuve (donné par le professeur) :</label>
-      <input type="text" id="eleveCode" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex : TEST01">
+      <label>Code de l'épreuve :</label>
+      <input type="text" id="eleveCode" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex : BIO2A">
 
       <button type="button" class="btn" onclick="lancerQcmEleve()">Entrer dans l'épreuve</button>
       
       <div class="link-mode">
-        <a onclick="basculerMode('prof')">Accès Enseignant (Gestion / Résultats)</a>
+        <a onclick="basculerMode('prof')">Espace Enseignant</a>
       </div>
     </div>
 
-    <!-- 2. VUE ÉLÈVE : PASSATION DU QCM -->
+    <!-- 2. VUE ÉLÈVE : PASSATION -->
     <div id="viewEleveQcm" class="card" style="display: none;">
       <h2 id="qcmTitreAffiche">Épreuve</h2>
       <div class="alerte">
-        ⚠️ <strong>Rappel :</strong> Les sorties d'écran et changements d'application sont transmis en direct au professeur.
+        ⚠️ <strong>Avertissement :</strong> Les sorties d'écran et changements d'application sont consignés et visibles par votre professeur.
       </div>
 
       <form id="qcmForm">
@@ -69,37 +71,68 @@
       </form>
     </div>
 
-    <!-- 3. VUE ÉLÈVE : CONFIRMATION RENDU -->
+    <!-- 3. VUE ÉLÈVE : FIN -->
     <div id="viewEleveFin" class="card" style="display: none; text-align: center;">
       <h2>Copie transmise !</h2>
-      <p>Votre évaluation a bien été prise en compte par le serveur.</p>
+      <p>Votre évaluation a bien été enregistrée sur le serveur.</p>
       <h3 id="noteFinaleText" style="color: #0d47a1; font-size: 1.6rem;"></h3>
     </div>
 
-    <!-- 4. VUE ENSEIGNANT : CHARGEMENT XML & GESTION DES CODES -->
-    <div id="viewProf" class="card" style="display: none;">
-      <h1>Espace Enseignant</h1>
+    <!-- 4. VUE ENSEIGNANT : CONNEXION / INSCRIPTION -->
+    <div id="viewProfAuth" class="card" style="display: none;">
+      <h1 id="authTitle">Connexion Enseignant</h1>
       
+      <div id="nomRegisterGroup" style="display: none;">
+        <label>Nom complet / Titre :</label>
+        <input type="text" id="profNom" class="input-field" placeholder="Ex : M. Martin">
+      </div>
+
+      <label>Email académique ou personnel :</label>
+      <input type="email" id="profEmail" class="input-field" placeholder="enseignant@etablissement.fr">
+
+      <label>Mot de passe :</label>
+      <input type="password" id="profPassword" class="input-field" placeholder="••••••••">
+
+      <button type="button" class="btn" id="btnAuthSubmit" onclick="traiterAuthProf()">Se connecter</button>
+
+      <div class="auth-toggle">
+        <span id="authToggleText">Pas encore de compte ?</span>
+        <a id="authToggleLink" onclick="toggleAuthMode()">Créer un compte</a>
+      </div>
+
+      <div class="link-mode">
+        <a onclick="basculerMode('eleve')">Retour à l'écran élève</a>
+      </div>
+    </div>
+
+    <!-- 5. VUE ENSEIGNANT : TABLEAU DE BORD CONNECTÉ -->
+    <div id="viewProfDashboard" class="card" style="display: none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0;">Tableau de bord</h2>
+        <button class="tab-btn" onclick="deconnecterProf()" style="color:#dc2626;">Se déconnecter</button>
+      </div>
+      <p style="margin-top:0; color:#4b5563;">Connecté en tant que : <strong id="profNomConnecte"></strong></p>
+
       <div style="background:#eef6ff; border:1px solid #bfdbfe; padding:15px; border-radius:8px; margin-bottom:20px;">
         <h3>📤 Publier un nouveau QCM Pronote</h3>
-        <label>1. Choisir le fichier XML Pronote :</label>
+        <label>1. Fichier XML Pronote :</label>
         <input type="file" id="xmlProfInput" accept=".xml" class="input-field">
 
-        <label>2. Définir un code court pour les élèves (ex: BIO2A, DS1...) :</label>
+        <label>2. Code de session (ex: MATHS2, TEST1) :</label>
         <input type="text" id="codeProfInput" class="input-field" style="text-transform:uppercase;" placeholder="Code du QCM">
 
         <button type="button" class="btn" onclick="enregistrerQcmProf()">Enregistrer et activer le QCM</button>
       </div>
 
-      <h3>Sessions actives</h3>
+      <h3>Mes QCM créés</h3>
       <div style="overflow-x:auto;">
         <table>
-          <thead><tr><th>Code</th><th>Titre</th><th>Création</th></tr></thead>
+          <thead><tr><th>Code</th><th>Titre</th><th>Date</th></tr></thead>
           <tbody id="tableSessionsBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
         </table>
       </div>
 
-      <h3 style="margin-top:25px;">Copies soumises (D1)</h3>
+      <h3 style="margin-top:25px;">Copies reçues pour mes QCM</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>Heure</th><th>Élève</th><th>Classe</th><th>QCM</th><th>Note</th></tr></thead>
@@ -107,7 +140,7 @@
         </table>
       </div>
 
-      <h3 style="margin-top:25px;">Journal des alertes écran (D1)</h3>
+      <h3 style="margin-top:25px;">Journal des alertes écran</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>Heure</th><th>Élève</th><th>Alerte</th></tr></thead>
@@ -115,7 +148,7 @@
         </table>
       </div>
 
-      <button class="btn btn-secondary" onclick="basculerMode('eleve')">Retour à l'écran élève</button>
+      <button class="btn btn-secondary" onclick="basculerMode('eleve')">Accéder à l'écran élève</button>
     </div>
 
   </div>
@@ -125,8 +158,9 @@
     let currentCode = "";
     let eleveInfo = { nom: "", prenom: "", classe: "" };
     let xmlContenuProf = null;
+    let authMode = "login"; // "login" ou "register"
+    let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
 
-    // Détection de l'URL pour ouvrir le mode prof direct : ?mode=prof
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('mode') === 'prof') {
@@ -138,11 +172,72 @@
       document.getElementById('viewEleveLogin').style.display = mode === 'eleve' ? 'block' : 'none';
       document.getElementById('viewEleveQcm').style.display = 'none';
       document.getElementById('viewEleveFin').style.display = 'none';
-      document.getElementById('viewProf').style.display = mode === 'prof' ? 'block' : 'none';
-      if (mode === 'prof') chargerDonneesProf();
+
+      if (mode === 'prof') {
+        if (currentProf) {
+          document.getElementById('viewProfAuth').style.display = 'none';
+          document.getElementById('viewProfDashboard').style.display = 'block';
+          document.getElementById('profNomConnecte').innerText = currentProf.nom || currentProf.email;
+          chargerDonneesProf();
+        } else {
+          document.getElementById('viewProfAuth').style.display = 'block';
+          document.getElementById('viewProfDashboard').style.display = 'none';
+        }
+      } else {
+        document.getElementById('viewProfAuth').style.display = 'none';
+        document.getElementById('viewProfDashboard').style.display = 'none';
+      }
     }
 
-    // ==================== CÔTÉ PROFESSEUR ====================
+    // ==================== AUTHENTIFICATION ENSEIGNANT ====================
+    function toggleAuthMode() {
+      authMode = authMode === "login" ? "register" : "login";
+      if (authMode === "register") {
+        document.getElementById('authTitle').innerText = "Inscription Enseignant";
+        document.getElementById('nomRegisterGroup').style.display = 'block';
+        document.getElementById('btnAuthSubmit').innerText = "Créer mon compte";
+        document.getElementById('authToggleText').innerText = "Déjà inscrit ?";
+        document.getElementById('authToggleLink').innerText = "Se connecter";
+      } else {
+        document.getElementById('authTitle').innerText = "Connexion Enseignant";
+        document.getElementById('nomRegisterGroup').style.display = 'none';
+        document.getElementById('btnAuthSubmit').innerText = "Se connecter";
+        document.getElementById('authToggleText').innerText = "Pas encore de compte ?";
+        document.getElementById('authToggleLink').innerText = "Créer un compte";
+      }
+    }
+
+    async function traiterAuthProf() {
+      const email = document.getElementById('profEmail').value.trim();
+      const password = document.getElementById('profPassword').value;
+      const nom = document.getElementById('profNom').value.trim();
+
+      if (!email || !password) { alert("Veuillez renseigner un email et un mot de passe."); return; }
+
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: authMode, email, password, nom })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Erreur d'authentification");
+        return;
+      }
+
+      currentProf = data.user;
+      localStorage.setItem('qcm_prof_user', JSON.stringify(currentProf));
+      basculerMode('prof');
+    }
+
+    function deconnecterProf() {
+      currentProf = null;
+      localStorage.removeItem('qcm_prof_user');
+      basculerMode('prof');
+    }
+
+    // ==================== TABLEAU DE BORD PROFESSEUR ====================
     document.getElementById('xmlProfInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -158,11 +253,11 @@
     }
 
     async function enregistrerQcmProf() {
+      if (!currentProf) { alert("Session expirée. Veuillez vous reconnecter."); basculerMode('prof'); return; }
       const code = document.getElementById('codeProfInput').value.trim();
-      if (!code) { alert("Veuillez choisir un code pour le QCM."); return; }
-      if (!xmlContenuProf) { alert("Veuillez importer un fichier XML Pronote."); return; }
+      if (!code) { alert("Veuillez définir un code de session."); return; }
+      if (!xmlContenuProf) { alert("Veuillez sélectionner un fichier XML Pronote."); return; }
 
-      // Parsing du XML
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlContenuProf, "application/xml");
       const qNodes = xmlDoc.getElementsByTagName("question");
@@ -211,15 +306,14 @@
         }
       }
 
-      // Envoi du QCM complet au serveur pour stockage D1
       const res = await fetch('/api/prof_quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, titre: titreQcm, questions })
+        body: JSON.stringify({ code, titre: titreQcm, questions, prof_id: currentProf.id })
       });
 
       if (res.ok) {
-        alert(`QCM enregistré avec succès !\nLes élèves peuvent maintenant entrer le code : ${code.toUpperCase()}`);
+        alert(`QCM enregistré avec succès !\nCode distribué aux élèves : ${code.toUpperCase()}`);
         document.getElementById('codeProfInput').value = "";
         document.getElementById('xmlProfInput').value = "";
         xmlContenuProf = null;
@@ -230,19 +324,21 @@
     }
 
     async function chargerDonneesProf() {
-      // Sessions
+      if (!currentProf) return;
+
+      // QCM de l'enseignant connecté
       try {
-        const r1 = await fetch('/api/prof_quiz');
+        const r1 = await fetch(`/api/prof_quiz?prof_id=${currentProf.id}`);
         const sessions = await r1.json();
-        document.getElementById('tableSessionsBody').innerHTML = sessions.length === 0 ? "<tr><td colspan='3'>Aucun QCM créé.</td></tr>" :
+        document.getElementById('tableSessionsBody').innerHTML = sessions.length === 0 ? "<tr><td colspan='3'>Aucun QCM créé pour le moment.</td></tr>" :
           sessions.map(s => `<tr><td><span class="badge">${s.code}</span></td><td>${s.titre}</td><td>${new Date(s.date_creation).toLocaleDateString()}</td></tr>`).join('');
       } catch(e) {}
 
-      // Résultats et sorties
+      // Résultats des élèves
       try {
-        const r2 = await fetch('/api/resultats');
+        const r2 = await fetch(`/api/resultats?prof_id=${currentProf.id}`);
         const d = await r2.json();
-        document.getElementById('tableNotesBody').innerHTML = d.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie soumise.</td></tr>" :
+        document.getElementById('tableNotesBody').innerHTML = d.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie reçue.</td></tr>" :
           d.notes.map(n => `<tr><td>${new Date(n.date_soumission).toLocaleTimeString()}</td><td>${n.nom} ${n.prenom}</td><td>${n.classe}</td><td>${n.qcm_titre}</td><td><strong>${n.note} / ${n.total}</strong></td></tr>`).join('');
 
         document.getElementById('tableSortiesBody').innerHTML = d.sorties.length === 0 ? "<tr><td colspan='3'>Aucune alerte.</td></tr>" :
@@ -262,10 +358,9 @@
         return;
       }
 
-      // Récupération automatique du QCM depuis D1
       const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(currentCode)}`);
       if (!res.ok) {
-        alert("Code de QCM incorrect ou indisponible. Demandez le code au professeur.");
+        alert("Code de QCM invalide ou épreuve inactive.");
         return;
       }
 
@@ -276,7 +371,6 @@
       document.getElementById('viewEleveQcm').style.display = 'block';
       document.getElementById('qcmTitreAffiche').innerText = `${data.titre} (Code : ${data.code})`;
 
-      // Génération de l'interface
       const container = document.getElementById('questionsContainer');
       container.innerHTML = "";
       currentQuestions.forEach((q, idx) => {
@@ -318,7 +412,6 @@
       });
     }
 
-    // Traque de visibilité pendant l'épreuve
     async function logSortie(type) {
       if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
       try {
@@ -338,13 +431,12 @@
         logSortie("page_masquee");
       } else if (document.visibilityState === "visible") {
         logSortie("retour_qcm");
-        alert("Attention : vous avez quitté la page du QCM. Cette sortie est transmise au professeur.");
+        alert("Attention : vous avez quitté la page du QCM. Cette sortie est signalée à l'enseignant.");
       }
     });
 
-    // Calcul de note et enregistrement final
     async function soumettreCopie() {
-      if (!confirm("Voulez-vous valider et transmettre définitivement votre copie ?")) return;
+      if (!confirm("Voulez-vous valider et envoyer définitivement votre copie ?")) return;
 
       let totalObtenu = 0;
       let totalPossible = 0;
@@ -376,6 +468,7 @@
           prenom: eleveInfo.prenom,
           classe: eleveInfo.classe,
           qcm_titre: document.getElementById('qcmTitreAffiche').innerText,
+          session_code: currentCode,
           note: parseFloat(note20),
           total: 20
         })

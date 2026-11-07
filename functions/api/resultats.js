@@ -1,13 +1,22 @@
-export async function onRequestGet(context) {
+Ôªøexport async function onRequestGet(context) {
   try {
-    const { env } = context;
-    
-    // RÈcupÈration des notes soumises
-    const { results: notes } = await env.DB.prepare(
-      "SELECT * FROM resultats_qcm ORDER BY date_soumission DESC LIMIT 100"
-    ).all();
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const prof_id = url.searchParams.get("prof_id");
 
-    // RÈcupÈration des sorties d'Ècran
+    if (!prof_id) {
+      return new Response(JSON.stringify({ notes: [], sorties: [] }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // R√©cup√®re uniquement les notes des QCM cr√©√©s par ce professeur
+    const { results: notes } = await env.DB.prepare(`
+      SELECT r.* FROM resultats_qcm r
+      INNER JOIN quiz_sessions q ON r.session_code = q.code
+      WHERE q.prof_id = ?
+      ORDER BY r.date_soumission DESC LIMIT 100
+    `).bind(prof_id).all();
+
+    // R√©cup√®re les alertes de sorties d'√©cran
     const { results: sorties } = await env.DB.prepare(
       "SELECT * FROM sorties_ecran ORDER BY horodatage DESC LIMIT 100"
     ).all();

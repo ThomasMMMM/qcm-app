@@ -1,16 +1,16 @@
-export async function onRequestPost(context) {
+ï»¿export async function onRequestPost(context) {
   try {
     const { request, env } = context;
     const body = await request.json();
-    const { nom, prenom, classe, qcm_titre, note, total } = body;
+    const { nom, prenom, classe, qcm_titre, note, total, session_code } = body;
 
     if (!nom || !prenom || note === undefined || total === undefined) {
-      return new Response(JSON.stringify({ error: "Données incomplètes" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "DonnÃ©es incomplÃ¨tes" }), { status: 400 });
     }
 
     await env.DB.prepare(
-      "INSERT INTO resultats_qcm (nom, prenom, classe, qcm_titre, note, total) VALUES (?, ?, ?, ?, ?, ?)"
-    ).bind(nom, prenom, classe || "", qcm_titre || "Sans titre", note, total).run();
+      "INSERT INTO resultats_qcm (nom, prenom, classe, qcm_titre, note, total, session_code) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).bind(nom, prenom, classe || "", qcm_titre || "Sans titre", note, total, session_code || "").run();
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" }
