@@ -19,19 +19,21 @@
     }
 
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 15px; background: var(--pronote-bg); color: #1e293b; }
-    .container { max-width: 680px; margin: 0 auto; }
+    .container { max-width: 720px; margin: 0 auto; }
     .card { background: var(--pronote-card); border-radius: 8px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid #e2e8f0; }
     h1, h2, h3 { color: var(--pronote-blue); margin-top: 0; }
     
-    .input-field { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+    .input-field { width: 100%; padding: 11px; margin: 6px 0 14px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
     .alerte { background: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 0.88rem; }
     
     .btn { display: block; width: 100%; padding: 13px; background: var(--pronote-blue); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background 0.15s; }
     .btn:hover { background: #08437d; }
     .btn-secondary { background: #64748b; margin-top: 10px; }
     .btn-secondary:hover { background: #475569; }
+    .btn-success { background: #16a34a; }
+    .btn-success:hover { background: #15803d; }
+    .btn-danger { background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
 
-    /* Barre de progression style Pronote */
     .progress-bar-container { background: #e2e8f0; border-radius: 999px; height: 8px; width: 100%; overflow: hidden; margin: 12px 0 20px 0; }
     .progress-bar-fill { background: var(--pronote-blue); height: 100%; width: 0%; transition: width 0.3s ease; }
     .q-counter { font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -43,7 +45,6 @@
     .reponse-label:hover { background: #f1f5f9; }
     .reponse-label input { margin-top: 3px; margin-right: 12px; transform: scale(1.2); }
     
-    /* Styles du corrigé instantané */
     .reponse-label.is-correct { background: var(--correct-bg) !important; border-color: var(--correct-border) !important; color: var(--correct-text) !important; font-weight: 500; }
     .reponse-label.is-wrong { background: var(--incorrect-bg) !important; border-color: var(--incorrect-border) !important; color: var(--incorrect-text) !important; }
     .feedback-box { background: #f0fdf4; border-left: 4px solid var(--correct-border); padding: 12px; border-radius: 4px; margin-top: 15px; font-size: 0.95rem; color: #166534; }
@@ -56,10 +57,14 @@
     th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
     th { background: #f8fafc; color: #475569; }
     .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
+    .badge-code { font-family: monospace; font-size: 0.95rem; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; }
+    .badge-duplicate { background: #fee2e2; color: #b91c1c; font-size: 0.75rem; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
+
     .link-mode { text-align: center; margin-top: 20px; font-size: 0.9rem; }
     .link-mode a { color: var(--pronote-blue); cursor: pointer; text-decoration: underline; }
     .auth-toggle { font-size: 0.9rem; margin-top: 10px; text-align: center; color: #475569; }
     .auth-toggle a { color: var(--pronote-blue); cursor: pointer; font-weight: bold; }
+    .section-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
@@ -68,17 +73,14 @@
     <!-- 1. VUE ÉLÈVE : ACCUEIL -->
     <div id="viewEleveLogin" class="card">
       <h1>Connexion à l'évaluation</h1>
-      <label>Nom :</label>
-      <input type="text" id="eleveNom" class="input-field" placeholder="Ex : DUPONT">
+      <label>Votre Prénom (ex: Alice ou Alice D.) :</label>
+      <input type="text" id="elevePrenom" class="input-field" placeholder="Votre prénom tel qu'enregistré">
 
-      <label>Prénom :</label>
-      <input type="text" id="elevePrenom" class="input-field" placeholder="Ex : Alice">
+      <label>Votre Code individuel (fourni par le professeur) :</label>
+      <input type="text" id="eleveCodePerso" class="input-field" style="text-transform:uppercase; font-family:monospace; font-weight:bold; letter-spacing:1px;" placeholder="Ex: 7B2K">
 
-      <label>Classe :</label>
-      <input type="text" id="eleveClasse" class="input-field" placeholder="Ex : 2nde 4">
-
-      <label>Code de l'épreuve :</label>
-      <input type="text" id="eleveCode" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex : TEST1">
+      <label>Code de l'épreuve (au tableau) :</label>
+      <input type="text" id="eleveCodeSession" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex: BIO2A">
 
       <button type="button" class="btn" onclick="lancerQcmEleve()">Commencer le QCM</button>
       
@@ -87,7 +89,7 @@
       </div>
     </div>
 
-    <!-- 2. VUE ÉLÈVE : QUESTION PAR QUESTION (STYLE PRONOTE) -->
+    <!-- 2. VUE ÉLÈVE : PASSATION DÉFILANTE -->
     <div id="viewEleveQcm" class="card" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <span class="q-counter" id="questionProgressionText">Question 1 sur 5</span>
@@ -103,20 +105,18 @@
       </div>
 
       <div id="singleQuestionContainer"></div>
-
-      <!-- Zone de Feedback / Corrigé après validation -->
       <div id="feedbackContainer" style="display: none;"></div>
 
       <button type="button" class="btn" id="btnValiderQuestion" onclick="validerQuestionCourante()">Valider la réponse</button>
       <button type="button" class="btn" id="btnQuestionSuivante" style="display: none;" onclick="passerQuestionSuivante()">Question suivante &rarr;</button>
     </div>
 
-    <!-- 3. VUE ÉLÈVE : BILAN FINAL -->
+    <!-- 3. VUE ÉLÈVE : CONFIRMATION RENDU -->
     <div id="viewEleveFin" class="card" style="display: none; text-align: center;">
       <h2>Évaluation terminée !</h2>
       <p>Votre copie a été transmise avec succès au professeur.</p>
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <span style="font-size: 0.9rem; color: #64748b;">Note finale</span>
+        <span style="font-size: 0.9rem; color: #64748b;">Note obtenue</span>
         <h3 id="noteFinaleText" style="color: var(--pronote-blue); font-size: 2rem; margin: 5px 0 0 0;"></h3>
       </div>
     </div>
@@ -126,7 +126,7 @@
       <h1 id="authTitle">Connexion Enseignant</h1>
       
       <div id="nomRegisterGroup" style="display: none;">
-        <label>Nom complet / Titre :</label>
+        <label>Nom / Titre :</label>
         <input type="text" id="profNom" class="input-field" placeholder="Ex : M. Martin">
       </div>
 
@@ -148,26 +148,74 @@
       </div>
     </div>
 
-    <!-- 5. VUE ENSEIGNANT : DASHBOARD -->
+    <!-- 5. VUE ENSEIGNANT : DASHBOARD COMPLET -->
     <div id="viewProfDashboard" class="card" style="display: none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">Tableau de bord</h2>
-        <button class="tab-btn" onclick="deconnecterProf()" style="color:#dc2626; border:none; background:none; cursor:pointer;">Se déconnecter</button>
+        <button onclick="deconnecterProf()" style="color:#dc2626; border:none; background:none; cursor:pointer; text-decoration:underline;">Se déconnecter</button>
       </div>
-      <p style="margin-top:0; color:#64748b;">Connecté en tant que : <strong id="profNomConnecte"></strong></p>
+      <p style="margin-top:0; color:#64748b;">Connecté : <strong id="profNomConnecte"></strong></p>
 
-      <div style="background:#f0f7ff; border:1px solid #bae6fd; padding:15px; border-radius:8px; margin-bottom:20px;">
+      <!-- MODULE 1 : GESTION DES CLASSES & IMPORT PRONOTE -->
+      <div class="section-box">
+        <h3>👥 Module Classes & Élèves (Import Pronote)</h3>
+        
+        <label>Nom de la classe à importer :</label>
+        <input type="text" id="nomClasseInput" class="input-field" placeholder="Ex : 2nde 4">
+
+        <div style="display:flex; gap:10px;">
+          <div style="flex:2;">
+            <label>Fichier CSV exporté de Pronote :</label>
+            <input type="file" id="csvElevesInput" accept=".csv,.txt" class="input-field">
+          </div>
+          <div style="flex:1;">
+            <label>Séparateur :</label>
+            <select id="csvSeparateurSelect" class="input-field">
+              <option value="auto">Auto (; , \t)</option>
+              <option value=";">Point-virgule (;)</option>
+              <option value=",">Virgule (,)</option>
+              <option value="tab">Tabulation (\t)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ZONE DE PRÉVISUALISATION DU CSV -->
+        <div id="previewZone" style="display:none; margin-top:15px; background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1;">
+          <h4 style="margin:0 0 10px 0; color:#0d47a1;">Aperçu de l'import (<span id="previewCount">0</span> élèves détectés)</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-top:0;">Vérifiez les prénoms extraits et les codes générés. Vous pouvez ajuster un prénom manuellement si souhaité.</p>
+          <div style="max-height:220px; overflow-y:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Prénom (affiché)</th>
+                  <th>Né(e) le</th>
+                  <th>Code individuel</th>
+                </tr>
+              </thead>
+              <tbody id="previewTableBody"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-success" style="margin-top:15px;" onclick="enregistrerClasseValidee()">Valider et enregistrer cette classe</button>
+        </div>
+
+        <h4 style="margin-top:20px; margin-bottom:8px;">Classes enregistrées</h4>
+        <div id="listeClassesContainer">Chargement des classes...</div>
+      </div>
+
+      <!-- MODULE 2 : PUBLIER UN QCM PRONOTE -->
+      <div class="section-box">
         <h3>📤 Publier un QCM Pronote (.xml)</h3>
-        <label>1. Fichier XML :</label>
+        <label>1. Fichier XML Pronote :</label>
         <input type="file" id="xmlProfInput" accept=".xml" class="input-field">
 
-        <label>2. Code de session (ex: TEST1) :</label>
+        <label>2. Code de session pour les élèves (ex: BIO2A) :</label>
         <input type="text" id="codeProfInput" class="input-field" style="text-transform:uppercase;" placeholder="Code du QCM">
 
         <button type="button" class="btn" onclick="enregistrerQcmProf()">Enregistrer le QCM</button>
       </div>
 
-      <h3>Mes QCM actifs</h3>
+      <!-- MODULE 3 : QCM ACTIFS & RÉSULTATS -->
+      <h3>Mes QCM créés</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>Code</th><th>Titre</th><th>Date</th></tr></thead>
@@ -183,7 +231,7 @@
         </table>
       </div>
 
-      <h3 style="margin-top:25px;">Journal des alertes de sortie</h3>
+      <h3 style="margin-top:25px;">Journal des alertes écran</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>Heure</th><th>Élève</th><th>Alerte</th></tr></thead>
@@ -199,15 +247,18 @@
   <script>
     let currentQuestions = [];
     let currentCode = "";
-    let eleveInfo = { nom: "", prenom: "", classe: "" };
+    let eleveInfo = { prenom: "", code_perso: "" };
     let xmlContenuProf = null;
     let authMode = "login";
     let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
 
-    // Suivi de l'avancement élève
+    // Déroulement élève
     let currentQuestionIndex = 0;
     let totalScoreObtenu = 0;
     let totalScorePossible = 0;
+
+    // Cache pour la prévisualisation de la classe
+    let parsedElevesPreview = [];
 
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -225,6 +276,7 @@
           document.getElementById('viewProfDashboard').style.display = 'block';
           document.getElementById('profNomConnecte').innerText = currentProf.nom || currentProf.email;
           chargerDonneesProf();
+          chargerClassesProf();
         } else {
           document.getElementById('viewProfAuth').style.display = 'block';
           document.getElementById('viewProfDashboard').style.display = 'none';
@@ -233,6 +285,256 @@
         document.getElementById('viewProfAuth').style.display = 'none';
         document.getElementById('viewProfDashboard').style.display = 'none';
       }
+    }
+
+    // ==================== PARSER CSV PRONOTE & DÉTECTION DOUBLONS ====================
+    document.getElementById('csvElevesInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        analyserFichierCsvPronote(evt.target.result);
+      };
+      reader.readAsText(file, "UTF-8");
+    });
+
+    function detecterSeparateur(texte, choix) {
+      if (choix !== 'auto') return choix === 'tab' ? '\t' : choix;
+      const premiereLigne = texte.split(/\r\n|\n/)[0];
+      const nbPointVirgule = (premiereLigne.match(/;/g) || []).length;
+      const nbVirgule = (premiereLigne.match(/,/g) || []).length;
+      const nbTab = (premiereLigne.match(/\t/g) || []).length;
+      if (nbTab > nbPointVirgule && nbTab > nbVirgule) return '\t';
+      if (nbVirgule > nbPointVirgule) return ',';
+      return ';';
+    }
+
+    function genererCodeCourt() {
+      // Code de 4 caractères alphanumériques simples (évite 0, O, 1, I pour éviter toute confusion)
+      const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+      let code = "";
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    function analyserFichierCsvPronote(contenu) {
+      const separateurChoisi = document.getElementById('csvSeparateurSelect').value;
+      const sep = detecterSeparateur(contenu, separateurChoisi);
+      const lignes = contenu.split(/\r\n|\n/).filter(l => l.trim() !== "");
+      if (lignes.length < 2) {
+        alert("Fichier CSV vide ou incomplet.");
+        return;
+      }
+
+      // Nettoyer les guillemets et séparer les colonnes
+      const headers = lignes[0].split(sep).map(h => h.replace(/^["'\s\uFEFF]+|["'\s]+$/g, ''));
+      
+      let colEleveIdx = headers.findIndex(h => /Élèves|Eleves|Nom/i.test(h));
+      let colDateIdx = headers.findIndex(h => /Né\(e\)\s*le|Date.*naiss/i.test(h));
+
+      if (colEleveIdx === -1) {
+        alert("Colonne 'Élèves' introuvable dans le CSV.");
+        return;
+      }
+
+      const elevesBruts = [];
+
+      for (let i = 1; i < lignes.length; i++) {
+        const row = lignes[i].split(sep).map(c => c.replace(/^["'\s]+|["'\s]+$/g, ''));
+        const celluleEleve = row[colEleveIdx];
+        if (!celluleEleve) continue;
+
+        const dateNaiss = colDateIdx !== -1 && row[colDateIdx] ? row[colDateIdx] : "";
+
+        // Séparation NOM / Prénom
+        // Règle Pronote : les mots en MAJUSCULES constituent le NOM
+        const tokens = celluleEleve.split(/\s+/).filter(t => t.length > 0);
+        const nomTokens = tokens.filter(t => t === t.toUpperCase() && /[A-Z]/.test(t));
+        const prenomTokens = tokens.filter(t => t !== t.toUpperCase() || !/[A-Z]/.test(t));
+
+        let prenom = prenomTokens.join(' ');
+        let nom = nomTokens.join(' ');
+
+        // Si le découpage n'a pas trouvé (cas de noms tout en minuscules), fallback sur le dernier mot
+        if (!prenom && tokens.length > 1) {
+          prenom = tokens.slice(1).join(' ');
+          nom = tokens[0];
+        } else if (!prenom && tokens.length === 1) {
+          prenom = tokens[0];
+        }
+
+        elevesBruts.push({
+          nom: nom,
+          prenomBrut: prenom,
+          dateNaissance: dateNaiss,
+          nomInitiale: nom ? nom.charAt(0).toUpperCase() + '.' : ''
+        });
+      }
+
+      // Détection des doublons de prénom
+      const comptePrenoms = {};
+      elevesBruts.forEach(e => {
+        const p = e.prenomBrut.toLowerCase();
+        comptePrenoms[p] = (comptePrenoms[p] || 0) + 1;
+      });
+
+      // Attribution du prénom affiché et du code unique
+      const codesGeneres = new Set();
+      parsedElevesPreview = elevesBruts.map(e => {
+        const estDoublon = comptePrenoms[e.prenomBrut.toLowerCase()] > 1;
+        let prenomAffiche = e.prenomBrut;
+        if (estDoublon && e.nomInitiale) {
+          prenomAffiche = `${e.prenomBrut} ${e.nomInitiale}`;
+        }
+
+        let code = genererCodeCourt();
+        while (codesGeneres.has(code)) {
+          code = genererCodeCourt();
+        }
+        codesGeneres.add(code);
+
+        return {
+          prenom: prenomAffiche,
+          date_naissance: e.dateNaissance,
+          code_eleve: code,
+          estDoublon: estDoublon
+        };
+      });
+
+      afficherPreviewTable();
+    }
+
+    function afficherPreviewTable() {
+      const tbody = document.getElementById('previewTableBody');
+      tbody.innerHTML = "";
+      document.getElementById('previewCount').innerText = parsedElevesPreview.length;
+
+      parsedElevesPreview.forEach((el, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="input-field" style="margin:0; padding:6px; font-size:0.9rem;" value="${el.prenom}" onchange="ajusterPrenomPreview(${idx}, this.value)">
+            ${el.estDoublon ? '<span class="badge-duplicate">Homonyme résolu</span>' : ''}
+          </td>
+          <td>${el.date_naissance || '-'}</td>
+          <td><span class="badge-code">${el.code_eleve}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('previewZone').style.display = 'block';
+    }
+
+    function ajusterPrenomPreview(index, nouveauPrenom) {
+      if (parsedElevesPreview[index]) {
+        parsedElevesPreview[index].prenom = nouveauPrenom.trim();
+      }
+    }
+
+    async function enregistrerClasseValidee() {
+      const nomClasse = document.getElementById('nomClasseInput').value.trim();
+      if (!nomClasse) {
+        alert("Veuillez renseigner un nom pour cette classe (ex: 2nde 4).");
+        return;
+      }
+      if (!parsedElevesPreview || parsedElevesPreview.length === 0) {
+        alert("Aucun élève à enregistrer.");
+        return;
+      }
+
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom_classe: nomClasse,
+          prof_id: currentProf.id,
+          eleves: parsedElevesPreview
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Classe "${nomClasse}" enregistrée avec succès (${data.total} élèves) !`);
+        document.getElementById('previewZone').style.display = 'none';
+        document.getElementById('nomClasseInput').value = "";
+        document.getElementById('csvElevesInput').value = "";
+        parsedElevesPreview = [];
+        chargerClassesProf();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + (data.error || "erreur serveur"));
+      }
+    }
+
+    async function chargerClassesProf() {
+      if (!currentProf) return;
+      const cont = document.getElementById('listeClassesContainer');
+      try {
+        const res = await fetch(`/api/classes?prof_id=${currentProf.id}`);
+        const classes = await res.json();
+
+        if (classes.length === 0) {
+          cont.innerHTML = "<p style='font-size:0.85rem; color:#64748b;'>Aucune classe enregistrée.</p>";
+          return;
+        }
+
+        cont.innerHTML = `
+          <table>
+            <thead>
+              <tr><th>Classe</th><th>Effectif</th><th>Création</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${classes.map(c => `
+                <tr>
+                  <td><strong>${c.nom}</strong></td>
+                  <td>${c.effectif} élèves</td>
+                  <td>${new Date(c.date_creation).toLocaleDateString()}</td>
+                  <td>
+                    <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem; margin:0; display:inline-block; width:auto;" onclick="voirElevesClasse(${c.id}, '${c.nom}')">Voir les codes</button>
+                    <button class="btn-danger" style="margin-left:5px;" onclick="supprimerClasse(${c.id}, '${c.nom}')">Suppr</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch(e) {
+        cont.innerHTML = "<p>Erreur de chargement des classes.</p>";
+      }
+    }
+
+    async function voirElevesClasse(classeId, nomClasse) {
+      try {
+        const res = await fetch(`/api/classes?classe_id=${classeId}`);
+        const eleves = await res.json();
+        
+        const win = window.open("", "_blank");
+        win.document.write(`
+          <html><head><title>Liste élèves - ${nomClasse}</title>
+          <style>body { font-family:sans-serif; padding:20px; } table { border-collapse:collapse; width:100%; } th, td { border:1px solid #ccc; padding:8px; text-align:left; } th { background:#eee; } .code { font-family:monospace; font-weight:bold; font-size:1.1rem; }</style>
+          </head><body>
+          <h2>Codes de connexion - Classe ${nomClasse}</h2>
+          <p>Distribuez chaque code individuel à son élève correspondant.</p>
+          <table>
+            <thead><tr><th>Prénom</th><th>Date de naissance</th><th>Code personnel élève</th></tr></thead>
+            <tbody>
+              ${eleves.map(e => `<tr><td>${e.prenom}</td><td>${e.date_naissance || '-'}</td><td class="code">${e.code_eleve}</td></tr>`).join('')}
+            </tbody>
+          </table>
+          <br><button onclick="window.print()">Imprimer la liste</button>
+          </body></html>
+        `);
+      } catch(e) {
+        alert("Erreur lors de la récupération des élèves.");
+      }
+    }
+
+    async function supprimerClasse(classeId, nomClasse) {
+      if (!confirm(`Supprimer la classe "${nomClasse}" et tous ses élèves associés ?`)) return;
+      await fetch(`/api/classes?classe_id=${classeId}`, { method: 'DELETE' });
+      chargerClassesProf();
     }
 
     // ==================== AUTHENTIFICATION PROF ====================
@@ -280,7 +582,7 @@
       basculerMode('prof');
     }
 
-    // ==================== DASHBOARD PROF ====================
+    // ==================== PUBLICATION DU QCM (PROF) ====================
     document.getElementById('xmlProfInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -322,8 +624,6 @@
         const enonce = cleanHTML(qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "");
         const image = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
         const points = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
-        
-        // Explication globale de la question (balise generalfeedback de Moodle)
         const generalFeedback = cleanHTML(qNode.getElementsByTagName("generalfeedback")[0]?.getElementsByTagName("text")[0]?.textContent || "");
 
         if (type === "multichoice") {
@@ -332,13 +632,11 @@
           const answers = [];
           for (let j = 0; j < ansNodes.length; j++) {
             const a = ansNodes[j];
-            // Explication spécifique liée à la proposition de réponse
-            const fbText = cleanHTML(a.getElementsByTagName("feedback")[0]?.getElementsByTagName("text")[0]?.textContent || "");
             answers.push({
               text: a.getElementsByTagName("text")[0]?.textContent || "",
               fraction: parseFloat(a.getAttribute("fraction") || "0"),
               image: a.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null,
-              feedback: fbText
+              feedback: cleanHTML(a.getElementsByTagName("feedback")[0]?.getElementsByTagName("text")[0]?.textContent || "")
             });
           }
           questions.push({ type, title: name, enonce, image, single: isSingle, points, generalFeedback, answers });
@@ -362,7 +660,7 @@
       });
 
       if (res.ok) {
-        alert(`QCM enregistré avec succès !\nCode pour les élèves : ${code.toUpperCase()}`);
+        alert(`QCM enregistré avec succès !\nCode distribué aux élèves : ${code.toUpperCase()}`);
         document.getElementById('codeProfInput').value = "";
         document.getElementById('xmlProfInput').value = "";
         xmlContenuProf = null;
@@ -385,22 +683,21 @@
         const r2 = await fetch(`/api/resultats?prof_id=${currentProf.id}`);
         const d = await r2.json();
         document.getElementById('tableNotesBody').innerHTML = d.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie reçue.</td></tr>" :
-          d.notes.map(n => `<tr><td>${new Date(n.date_soumission).toLocaleTimeString()}</td><td>${n.nom} ${n.prenom}</td><td>${n.classe}</td><td>${n.qcm_titre}</td><td><strong>${n.note} / ${n.total}</strong></td></tr>`).join('');
+          d.notes.map(n => `<tr><td>${new Date(n.date_soumission).toLocaleTimeString()}</td><td>${n.prenom || n.nom}</td><td>${n.classe || '-'}</td><td>${n.qcm_titre}</td><td><strong>${n.note} / ${n.total}</strong></td></tr>`).join('');
 
         document.getElementById('tableSortiesBody').innerHTML = d.sorties.length === 0 ? "<tr><td colspan='3'>Aucune alerte.</td></tr>" :
           d.sorties.map(s => `<tr><td>${new Date(s.horodatage).toLocaleTimeString()}</td><td>${s.eleve_id}</td><td style="color:${s.type_evenement === 'page_masquee' ? '#d97706':'#2563eb'}; font-weight:bold;">${s.type_evenement}</td></tr>`).join('');
       } catch(e) {}
     }
 
-    // ==================== CÔTÉ ÉLÈVE : DÉROULEMENT STYLE PRONOTE ====================
+    // ==================== CÔTÉ ÉLÈVE ====================
     async function lancerQcmEleve() {
-      eleveInfo.nom = document.getElementById('eleveNom').value.trim();
       eleveInfo.prenom = document.getElementById('elevePrenom').value.trim();
-      eleveInfo.classe = document.getElementById('eleveClasse').value.trim();
-      currentCode = document.getElementById('eleveCode').value.trim().toUpperCase();
+      eleveInfo.code_perso = document.getElementById('eleveCodePerso').value.trim().toUpperCase();
+      currentCode = document.getElementById('eleveCodeSession').value.trim().toUpperCase();
 
-      if (!eleveInfo.nom || !eleveInfo.prenom || !currentCode) {
-        alert("Veuillez renseigner votre nom, prénom et le code du QCM.");
+      if (!eleveInfo.prenom || !eleveInfo.code_perso || !currentCode) {
+        alert("Veuillez renseigner votre prénom, votre code individuel et le code du QCM.");
         return;
       }
 
@@ -415,7 +712,6 @@
       currentQuestionIndex = 0;
       totalScoreObtenu = 0;
       totalScorePossible = 0;
-
       currentQuestions.forEach(q => { totalScorePossible += q.points; });
 
       document.getElementById('viewEleveLogin').style.display = 'none';
@@ -428,12 +724,10 @@
       const q = currentQuestions[currentQuestionIndex];
       const totalQ = currentQuestions.length;
 
-      // Progression
       document.getElementById('questionProgressionText').innerText = `Question ${currentQuestionIndex + 1} sur ${totalQ}`;
       document.getElementById('questionPointsText').innerText = `${q.points} pt${q.points > 1 ? 's' : ''}`;
       document.getElementById('progressBarFill').style.width = `${((currentQuestionIndex + 1) / totalQ) * 100}%`;
 
-      // Réinitialiser les boutons et le feedback
       document.getElementById('feedbackContainer').style.display = 'none';
       document.getElementById('feedbackContainer').innerHTML = '';
       document.getElementById('btnValiderQuestion').style.display = 'block';
@@ -484,11 +778,10 @@
         const checkedInputs = document.querySelectorAll('input[name="current_q_ans"]:checked');
 
         if (checkedInputs.length === 0) {
-          alert("Veuillez sélectionner au moins une réponse avant de valider.");
+          alert("Veuillez sélectionner au moins une réponse.");
           return;
         }
 
-        // Verrouiller les cases
         inputs.forEach(i => i.disabled = true);
 
         let fracTotale = 0;
@@ -497,26 +790,17 @@
           const ans = q.answers[idx];
           const label = document.getElementById(`label_ans_${idx}`);
 
-          // Indiquer les bonnes réponses en vert
-          if (ans.fraction > 0) {
-            label.classList.add('is-correct');
-          }
+          if (ans.fraction > 0) label.classList.add('is-correct');
 
-          // Si cochée
           if (input.checked) {
             fracTotale += ans.fraction;
-            if (ans.fraction <= 0) {
-              label.classList.add('is-wrong');
-            }
-            if (ans.feedback) {
-              explications.push(`<strong>${ans.text} :</strong> ${ans.feedback}`);
-            }
+            if (ans.fraction <= 0) label.classList.add('is-wrong');
+            if (ans.feedback) explications.push(`<strong>${ans.text} :</strong> ${ans.feedback}`);
           }
         });
 
         scoreQuestion = q.points * (Math.max(0, fracTotale) / 100);
-      } 
-      else if (q.type === "matching") {
+      } else if (q.type === "matching") {
         const selects = document.querySelectorAll('select[name^="matching_sel_"]');
         let complet = true;
         selects.forEach(s => { if (!s.value) complet = false; });
@@ -544,40 +828,25 @@
 
       totalScoreObtenu += scoreQuestion;
 
-      // Affichage du corrigé et des feedbacks
       const fbBox = document.getElementById('feedbackContainer');
       let fbHtml = "";
-
       if (scoreQuestion === q.points) {
         fbHtml += `<div><strong>Bravo !</strong> Réponse correcte (+${scoreQuestion.toFixed(2)} pt).</div>`;
       } else {
         fbHtml += `<div><strong>Correction :</strong> Vous obtenez ${scoreQuestion.toFixed(2)} / ${q.points} pt.</div>`;
       }
 
-      // Ajout de l'explication générale (generalfeedback de Moodle)
-      if (q.generalFeedback) {
-        fbHtml += `<div style="margin-top:8px;">💡 <strong>Explication :</strong> ${q.generalFeedback}</div>`;
-      }
-
-      // Ajout des feedbacks spécifiques aux réponses choisies
-      if (explications.length > 0) {
-        fbHtml += `<div style="margin-top:8px;">${explications.join('<br>')}</div>`;
-      }
+      if (q.generalFeedback) fbHtml += `<div style="margin-top:8px;">💡 <strong>Explication :</strong> ${q.generalFeedback}</div>`;
+      if (explications.length > 0) fbHtml += `<div style="margin-top:8px;">${explications.join('<br>')}</div>`;
 
       fbBox.className = `feedback-box ${scoreQuestion === q.points ? '' : 'has-error'}`;
       fbBox.innerHTML = fbHtml;
       fbBox.style.display = 'block';
 
-      // Basculer sur le bouton suivant
       document.getElementById('btnValiderQuestion').style.display = 'none';
       const btnSuivant = document.getElementById('btnQuestionSuivante');
       btnSuivant.style.display = 'block';
-
-      if (currentQuestionIndex === currentQuestions.length - 1) {
-        btnSuivant.innerText = "Terminer et soumettre l'évaluation";
-      } else {
-        btnSuivant.innerText = "Question suivante →";
-      }
+      btnSuivant.innerText = currentQuestionIndex === currentQuestions.length - 1 ? "Terminer l'évaluation" : "Question suivante →";
     }
 
     async function passerQuestionSuivante() {
@@ -592,14 +861,13 @@
     async function terminerEvaluation() {
       const note20 = ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2);
 
-      // Enregistrement de la note en D1
       await fetch('/api/soumettre', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nom: eleveInfo.nom,
-          prenom: eleveInfo.prenom,
-          classe: eleveInfo.classe,
+          nom: eleveInfo.prenom,
+          prenom: `(Code: ${eleveInfo.code_perso})`,
+          classe: "",
           qcm_titre: currentCode,
           session_code: currentCode,
           note: parseFloat(note20),
@@ -612,7 +880,7 @@
       document.getElementById('noteFinaleText').innerText = `${note20} / 20`;
     }
 
-    // Suivi de visibilité
+    // Traque de visibilité
     async function logSortie(type) {
       if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
       try {
@@ -620,7 +888,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            eleve_id: `${eleveInfo.nom} ${eleveInfo.prenom} (${eleveInfo.classe})`,
+            eleve_id: `${eleveInfo.prenom} [${eleveInfo.code_perso}]`,
             type_evenement: type
           })
         });
