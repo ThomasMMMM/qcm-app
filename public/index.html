@@ -3,62 +3,267 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test QCM</title>
+  <title>QCM Pronote - Passation</title>
   <style>
-    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; background: #f4f6f8; color: #222; }
-    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 480px; margin: 0 auto; }
-    h2 { margin-top: 0; color: #0d47a1; font-size: 1.25rem; }
-    .alerte { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; }
-    .btn { display: block; width: 100%; padding: 12px; background: #0070f3; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-top: 15px; }
-    .log { margin-top: 20px; font-size: 0.85rem; color: #555; background: #eee; padding: 10px; border-radius: 6px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; color: #1a1a1a; }
+    .container { max-width: 650px; margin: 0 auto; }
+    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    h1 { font-size: 1.4rem; color: #0d47a1; margin-top: 0; }
+    .import-zone { border: 2px dashed #0070f3; background: #eef6ff; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+    .alerte { background: #fff3cd; color: #856404; border-left: 4px solid #ffeeba; padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem; }
+    .question-block { border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; }
+    .question-title { font-weight: bold; font-size: 1.05rem; margin-bottom: 10px; color: #111827; }
+    .question-enonce { font-size: 0.95rem; margin-bottom: 15px; }
+    .img-qcm { max-width: 100%; height: auto; border-radius: 6px; margin: 10px 0; border: 1px solid #e5e7eb; display: block; }
+    .reponse-label { display: flex; align-items: center; padding: 10px 12px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s; }
+    .reponse-label:hover { background: #f3f4f6; }
+    .reponse-label input { margin-right: 12px; transform: scale(1.2); }
+    .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .matching-row select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.95rem; }
+    .btn { display: block; width: 100%; padding: 14px; background: #0070f3; color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    .btn:hover { background: #005bb5; }
+    .status-bar { font-size: 0.85rem; color: #6b7280; text-align: center; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>QCM de démonstration</h2>
-    <div class="alerte">
-      ?? <strong>Rappel :</strong> Les passages hors de cette page (changement d'application, verrouillage) sont enregistrés pendant l'épreuve.
+  <div class="container">
+    <div class="card">
+      <div class="import-zone">
+        <strong>?? Importer un QCM Pronote (.xml)</strong><br><br>
+        <input type="file" id="xmlFileInput" accept=".xml">
+      </div>
+
+      <div id="qcmZone" style="display: none;">
+        <h1 id="qcmTitre">Titre du QCM</h1>
+        <div class="alerte">
+          ?? <strong>Consigne :</strong> Toute sortie de la page (verrouillage, changement d'application) est enregistrée.
+        </div>
+
+        <form id="qcmForm">
+          <div id="questionsContainer"></div>
+          <button type="button" class="btn" onclick="corrigerQCM()">Soumettre mes réponses</button>
+        </form>
+
+        <div class="status-bar" id="statusBar">Statut : En cours...</div>
+      </div>
     </div>
-    
-    <p><strong>Question 1 :</strong> Quelle est la capitale de la France ?</p>
-    <label><input type="radio" name="q1" value="A"> Lyon</label><br><br>
-    <label><input type="radio" name="q1" value="B"> Paris</label><br><br>
-    <label><input type="radio" name="q1" value="C"> Marseille</label>
-
-    <button class="btn" onclick="alert('Réponse enregistrée')">Valider</button>
-
-    <div class="log" id="statusLog">État : En cours sur la page...</div>
   </div>
 
   <script>
-    const ELEVE_ID = "eleve_test_01"; // Simulation d'un code élève
+    let questionsData = [];
+    const ELEVE_ID = "eleve_pilote_01";
 
-    async function envoyerSignal(type) {
-      document.getElementById('statusLog').innerText = "Dernier signal : " + type + " (" + new Date().toLocaleTimeString() + ")";
+    // 1. Détection de visibilité (Étape 2 du mémoire)
+    async function logSortie(type) {
+      document.getElementById('statusBar').innerText = "Événement : " + type + " (" + new Date().toLocaleTimeString() + ")";
       try {
         await fetch('/api/evenement', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ eleve_id: ELEVE_ID, type_evenement: type })
         });
-      } catch (e) {
-        console.warn("Échec d'envoi immédiat (hors ligne)");
-      }
+      } catch(e) {}
     }
 
-    // Détection de sortie / changement d'application
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
-        envoyerSignal("page_masquee");
+        logSortie("page_masquee");
       } else if (document.visibilityState === "visible") {
-        envoyerSignal("retour_qcm");
-        alert("Attention : vous avez quitté la page du QCM.");
+        logSortie("retour_qcm");
+        alert("Attention : vous avez quitté le QCM. Ce passage hors test est consigné.");
       }
     });
 
-    // Détection de perte réseau
-    window.addEventListener("offline", () => envoyerSignal("connexion_interrompue"));
-    window.addEventListener("online", () => envoyerSignal("connexion_retablie"));
+    // 2. Parser XML Pronote
+    document.getElementById('xmlFileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        parsePronoteXML(evt.target.result);
+      };
+      reader.readAsText(file);
+    });
+
+    function cleanHTML(html) {
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      return div.innerText || div.textContent || "";
+    }
+
+    function parsePronoteXML(xmlText) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+      const questionNodes = xmlDoc.getElementsByTagName("question");
+
+      questionsData = [];
+      let titreQCM = "Questionnaire Pronote";
+
+      for (let i = 0; i < questionNodes.length; i++) {
+        const qNode = questionNodes[i];
+        const type = qNode.getAttribute("type");
+
+        // Récupération du titre du QCM
+        if (type === "category") {
+          const categoryText = qNode.getElementsByTagName("text")[0]?.textContent || "";
+          const match = categoryText.match(/<name>(.*?)<\/name>/);
+          if (match && match[1]) titreQCM = match[1];
+          continue;
+        }
+
+        const name = qNode.getElementsByTagName("name")[0]?.getElementsByTagName("text")[0]?.textContent || `Question ${i}`;
+        const questionTextRaw = qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "";
+        const enonce = cleanHTML(questionTextRaw);
+        
+        // Image éventuelle de la question
+        const qImgBase64 = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
+        const defaultGrade = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
+
+        if (type === "multichoice") {
+          const isSingle = qNode.getElementsByTagName("single")[0]?.textContent?.trim() === "true";
+          const answers = [];
+          const ansNodes = qNode.getElementsByTagName("answer");
+
+          for (let j = 0; j < ansNodes.length; j++) {
+            const aNode = ansNodes[j];
+            const fraction = parseFloat(aNode.getAttribute("fraction") || "0");
+            const ansText = aNode.getElementsByTagName("text")[0]?.textContent || "";
+            const ansImg = aNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
+            answers.push({ text: ansText, fraction: fraction, image: ansImg });
+          }
+
+          questionsData.push({
+            type: "multichoice",
+            title: name,
+            enonce: enonce,
+            image: qImgBase64,
+            single: isSingle,
+            points: defaultGrade,
+            answers: answers
+          });
+        } 
+        else if (type === "matching") {
+          const subquestions = [];
+          const subNodes = qNode.getElementsByTagName("subquestion");
+
+          for (let j = 0; j < subNodes.length; j++) {
+            const sNode = subNodes[j];
+            const qTxt = sNode.getElementsByTagName("text")[0]?.textContent || "";
+            const aTxt = sNode.getElementsByTagName("answer")[0]?.getElementsByTagName("text")[0]?.textContent || "";
+            if (qTxt.trim() !== "") {
+              subquestions.push({ question: qTxt, answer: aTxt });
+            }
+          }
+
+          questionsData.push({
+            type: "matching",
+            title: name,
+            enonce: enonce,
+            image: qImgBase64,
+            points: defaultGrade,
+            subquestions: subquestions
+          });
+        }
+      }
+
+      afficherQCM(titreQCM);
+    }
+
+    // 3. Affichage dynamique du QCM
+    function afficherQCM(titre) {
+      document.getElementById('qcmTitre').innerText = titre;
+      const container = document.getElementById('questionsContainer');
+      container.innerHTML = "";
+
+      questionsData.forEach((q, qIndex) => {
+        const qBlock = document.createElement("div");
+        qBlock.className = "question-block";
+
+        let html = `<div class="question-title">${q.title} (${q.points} pt)</div>`;
+        html += `<div class="question-enonce">${q.enonce}</div>`;
+
+        if (q.image) {
+          html += `<img class="img-qcm" src="data:image/png;base64,${q.image}" alt="Illustration question">`;
+        }
+
+        if (q.type === "multichoice") {
+          const inputType = q.single ? "radio" : "checkbox";
+          const inputName = `q_${qIndex}`;
+
+          q.answers.forEach((ans, aIndex) => {
+            html += `
+              <label class="reponse-label">
+                <input type="${inputType}" name="${inputName}" value="${aIndex}">
+                <div>
+                  ${ans.text}
+                  ${ans.image ? `<br><img class="img-qcm" style="max-height:120px;" src="data:image/png;base64,${ans.image}">` : ''}
+                </div>
+              </label>
+            `;
+          });
+        } 
+        else if (q.type === "matching") {
+          const allOptions = q.subquestions.map(s => s.answer);
+          // Mélange des propositions du menu déroulant
+          const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
+
+          q.subquestions.forEach((sub, sIndex) => {
+            html += `
+              <div class="matching-row">
+                <span><strong>${sub.question}</strong></span>
+                <select name="matching_${qIndex}_${sIndex}">
+                  <option value="">-- Choisir --</option>
+                  ${shuffledOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                </select>
+              </div>
+            `;
+          });
+        }
+
+        qBlock.innerHTML = html;
+        container.appendChild(qBlock);
+      });
+
+      document.getElementById('qcmZone').style.display = 'block';
+    }
+
+    // 4. Barème et calcul de note
+    function corrigerQCM() {
+      let totalObtenu = 0;
+      let totalPossible = 0;
+
+      questionsData.forEach((q, qIndex) => {
+        totalPossible += q.points;
+
+        if (q.type === "multichoice") {
+          const inputs = document.querySelectorAll(`input[name="q_${qIndex}"]:checked`);
+          let fractionTotale = 0;
+
+          inputs.forEach(input => {
+            const ansIndex = parseInt(input.value);
+            fractionTotale += q.answers[ansIndex].fraction;
+          });
+
+          // Empêche les scores négatifs sur une question
+          fractionTotale = Math.max(0, fractionTotale);
+          totalObtenu += (q.points * (fractionTotale / 100));
+        } 
+        else if (q.type === "matching") {
+          let corrects = 0;
+          q.subquestions.forEach((sub, sIndex) => {
+            const select = document.querySelector(`select[name="matching_${qIndex}_${sIndex}"]`);
+            if (select && select.value === sub.answer) {
+              corrects++;
+            }
+          });
+          totalObtenu += (q.points * (corrects / q.subquestions.length));
+        }
+      });
+
+      const noteSur20 = ((totalObtenu / totalPossible) * 20).toFixed(2);
+      alert(`Correction terminée !\n\nScore : ${totalObtenu.toFixed(2)} / ${totalPossible} points\nSoit : ${noteSur20} / 20`);
+    }
   </script>
 </body>
 </html>
