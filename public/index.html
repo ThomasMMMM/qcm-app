@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+Ôªø<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>…valuation QCM</title>
+  <title>√âvaluation QCM</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; color: #1a1a1a; }
     .container { max-width: 680px; margin: 0 auto; }
@@ -31,13 +31,12 @@
 </head>
 <body>
   <div class="container">
-    <!-- …CRAN 1 : ACCUEIL ET CHARGEMENT DU FICHIER -->
     <div id="stepIdentite" class="card">
-      <h1>Identification de l'ÈlËve</h1>
+      <h1>Identification de l'√©l√®ve</h1>
       <label>Nom :</label>
       <input type="text" id="nomInput" class="input-field" placeholder="Ex : DUPONT">
 
-      <label>PrÈnom :</label>
+      <label>Pr√©nom :</label>
       <input type="text" id="prenomInput" class="input-field" placeholder="Ex : Alice">
 
       <label>Classe / Groupe :</label>
@@ -48,65 +47,62 @@
       <label><strong>Fichier QCM (.xml Pronote) :</strong></label>
       <input type="file" id="xmlFileInput" accept=".xml" class="input-field">
 
-      <button type="button" class="btn" onclick="demarrerEpreuve()">Commencer l'Èvaluation</button>
+      <button type="button" class="btn" onclick="demarrerEpreuve()">Commencer l'√©valuation</button>
       
       <div style="text-align: center; margin-top: 20px;">
-        <button type="button" class="tab-btn" onclick="afficherDashboardProf()">Espace Enseignant (RÈsultats D1)</button>
+        <button type="button" class="tab-btn" onclick="afficherDashboardProf()">Espace Enseignant (R√©sultats D1)</button>
       </div>
     </div>
 
-    <!-- …CRAN 2 : PASSATION DU QCM -->
     <div id="stepQCM" class="card" style="display: none;">
-      <h2 id="qcmTitre">…preuve</h2>
+      <h2 id="qcmTitre">√âpreuve</h2>
       <div class="alerte">
-        ?? <strong>Avertissement :</strong> Vos allers-retours en dehors de cette page sont consignÈs.
+        ‚ö†Ô∏è <strong>Avertissement :</strong> Vos allers-retours en dehors de cette page sont consign√©s.
       </div>
 
       <form id="qcmForm">
         <div id="questionsContainer"></div>
-        <button type="button" class="btn" onclick="terminerEtSoumettre()">Valider et envoyer mes rÈponses</button>
+        <button type="button" class="btn" onclick="terminerEtSoumettre()">Valider et envoyer mes r√©ponses</button>
       </form>
     </div>
 
-    <!-- …CRAN 3 : BILAN …L»VE APR»S RENDU -->
     <div id="stepFin" class="card" style="display: none; text-align: center;">
       <h2>Copie transmise</h2>
-      <p>Merci, vos rÈponses et votre note ont ÈtÈ enregistrÈes avec succËs sur le serveur.</p>
+      <p>Merci, vos r√©ponses et votre note ont √©t√© enregistr√©es avec succ√®s sur le serveur.</p>
       <h3 id="noteFinaleText" style="color: #0d47a1; font-size: 1.5rem;"></h3>
     </div>
 
-    <!-- …CRAN 4 : DASHBOARD ENSEIGNANT -->
     <div id="stepProf" class="card" style="display: none;">
-      <h2>RÈsultats & Alertes (Base D1)</h2>
+      <h2>R√©sultats & Alertes (Base D1)</h2>
       <button class="btn btn-secondary" onclick="chargerDonneesProf()">Actualiser</button>
 
       <h3>Copies soumises</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead>
-            <tr><th>Date</th><th>…lËve</th><th>Classe</th><th>QCM</th><th>Note</th></tr>
+            <tr><th>Date</th><th>√âl√®ve</th><th>Classe</th><th>QCM</th><th>Note</th></tr>
           </thead>
           <tbody id="tableNotesBody"><tr><td colspan="5">Chargement...</td></tr></tbody>
         </table>
       </div>
 
-      <h3 style="margin-top:25px;">Journal des sorties d'Ècran</h3>
+      <h3 style="margin-top:25px;">Journal des sorties d'√©cran</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead>
-            <tr><th>Heure</th><th>Identifiant</th><th>…vÈnement</th></tr>
+            <tr><th>Heure</th><th>Identifiant</th><th>√âv√©nement</th></tr>
           </thead>
           <tbody id="tableSortiesBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
         </table>
       </div>
 
-      <button class="btn btn-secondary" onclick="retourAccueil()">Retour ‡ l'accueil</button>
+      <button class="btn btn-secondary" onclick="retourAccueil()">Retour √† l'accueil</button>
     </div>
   </div>
 
   <script>
     let questionsData = [];
-    let qcmTitreGlobal = "…valuation";
+    let qcmTitreGlobal = "√âvaluation";
     let eleveID = "";
     let eleveNom = "";
     let elevePrenom = "";
@@ -118,7 +114,8 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (evt) => { fichierXmlContenu = evt.target.result; };
-      reader.readAsText(file);
+      // Encodage UTF-8 explicite lors de la lecture du fichier XML
+      reader.readAsText(file, "UTF-8");
     });
 
     function cleanHTML(html) {
@@ -133,17 +130,16 @@
       eleveClasse = document.getElementById('classeInput').value.trim();
 
       if (!eleveNom || !elevePrenom) {
-        alert("Veuillez renseigner votre nom et prÈnom.");
+        alert("Veuillez renseigner votre nom et pr√©nom.");
         return;
       }
       if (!fichierXmlContenu) {
-        alert("Veuillez sÈlectionner le fichier QCM XML.");
+        alert("Veuillez s√©lectionner le fichier QCM XML.");
         return;
       }
 
       eleveID = `${eleveNom}_${elevePrenom}`.toLowerCase().replace(/\s+/g, '_');
 
-      // Parsing du XML Pronote
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(fichierXmlContenu, "application/xml");
       const questionNodes = xmlDoc.getElementsByTagName("question");
@@ -193,7 +189,6 @@
         }
       }
 
-      // Affichage du questionnaire
       document.getElementById('stepIdentite').style.display = 'none';
       document.getElementById('stepQCM').style.display = 'block';
       document.getElementById('qcmTitre').innerText = qcmTitreGlobal;
@@ -239,7 +234,6 @@
       });
     }
 
-    // Traque de visibilitÈ
     async function logSortie(type) {
       if (!eleveID) return;
       try {
@@ -257,12 +251,11 @@
           logSortie("page_masquee");
         } else if (document.visibilityState === "visible") {
           logSortie("retour_qcm");
-          alert("Attention : vous avez quittÈ la page du QCM. Cette sortie est transmise au professeur.");
+          alert("Attention : vous avez quitt√© la page du QCM. Cette sortie est transmise au professeur.");
         }
       }
     });
 
-    // Calcul de note et soumission en base
     async function terminerEtSoumettre() {
       if (!confirm("Voulez-vous vraiment valider et envoyer votre copie ?")) return;
 
@@ -288,7 +281,6 @@
 
       const note20 = ((totalObtenu / totalPossible) * 20).toFixed(2);
 
-      // Envoi de la note dans la base D1
       try {
         await fetch('/api/soumettre', {
           method: 'POST',
@@ -311,7 +303,6 @@
       document.getElementById('noteFinaleText').innerText = `Note obtenue : ${note20} / 20`;
     }
 
-    // Gestion du Dashboard Professeur
     function afficherDashboardProf() {
       document.getElementById('stepIdentite').style.display = 'none';
       document.getElementById('stepProf').style.display = 'block';
@@ -333,7 +324,7 @@
         const res = await fetch('/api/resultats');
         const data = await res.json();
 
-        notesBody.innerHTML = data.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie reÁue.</td></tr>" :
+        notesBody.innerHTML = data.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie re√ßue.</td></tr>" :
           data.notes.map(n => `
             <tr>
               <td>${new Date(n.date_soumission).toLocaleTimeString()}</td>
@@ -344,7 +335,7 @@
             </tr>
           `).join('');
 
-        sortiesBody.innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3'>Aucun incident relevÈ.</td></tr>" :
+        sortiesBody.innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3'>Aucun incident relev√©.</td></tr>" :
           data.sorties.map(s => `
             <tr>
               <td>${new Date(s.horodatage).toLocaleTimeString()}</td>
