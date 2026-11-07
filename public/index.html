@@ -3,84 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QCM Pronote - Passation</title>
+  <title>Évaluation QCM</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #f0f2f5; color: #1a1a1a; }
-    .container { max-width: 650px; margin: 0 auto; }
+    .container { max-width: 680px; margin: 0 auto; }
     .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-    h1 { font-size: 1.4rem; color: #0d47a1; margin-top: 0; }
-    .import-zone { border: 2px dashed #0070f3; background: #eef6ff; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+    h1, h2 { color: #0d47a1; margin-top: 0; }
+    .input-field { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
     .alerte { background: #fff3cd; color: #856404; border-left: 4px solid #ffeeba; padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem; }
+    .btn { display: block; width: 100%; padding: 14px; background: #0070f3; color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+    .btn:hover { background: #005bb5; }
+    .btn-secondary { background: #6b7280; margin-top: 10px; }
+    .btn-secondary:hover { background: #4b5563; }
     .question-block { border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; }
-    .question-title { font-weight: bold; font-size: 1.05rem; margin-bottom: 10px; color: #111827; }
-    .question-enonce { font-size: 0.95rem; margin-bottom: 15px; }
+    .question-title { font-weight: bold; font-size: 1.05rem; margin-bottom: 8px; }
+    .question-enonce { margin-bottom: 12px; }
     .img-qcm { max-width: 100%; height: auto; border-radius: 6px; margin: 10px 0; border: 1px solid #e5e7eb; display: block; }
-    .reponse-label { display: flex; align-items: center; padding: 10px 12px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s; }
-    .reponse-label:hover { background: #f3f4f6; }
+    .reponse-label { display: flex; align-items: center; padding: 10px 12px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
     .reponse-label input { margin-right: 12px; transform: scale(1.2); }
     .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
     .matching-row select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.95rem; }
-    .btn { display: block; width: 100%; padding: 14px; background: #0070f3; color: white; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
-    .btn:hover { background: #005bb5; }
-    .status-bar { font-size: 0.85rem; color: #6b7280; text-align: center; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; }
+    th { background: #f3f4f6; }
+    .tab-btn { background: none; border: none; color: #0070f3; cursor: pointer; text-decoration: underline; padding: 0; font-size: 0.9rem; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card">
-      <div class="import-zone">
-        <strong>?? Importer un QCM Pronote (.xml)</strong><br><br>
-        <input type="file" id="xmlFileInput" accept=".xml">
+    <!-- ÉCRAN 1 : ACCUEIL ET CHARGEMENT DU FICHIER -->
+    <div id="stepIdentite" class="card">
+      <h1>Identification de l'élève</h1>
+      <label>Nom :</label>
+      <input type="text" id="nomInput" class="input-field" placeholder="Ex : DUPONT">
+
+      <label>Prénom :</label>
+      <input type="text" id="prenomInput" class="input-field" placeholder="Ex : Alice">
+
+      <label>Classe / Groupe :</label>
+      <input type="text" id="classeInput" class="input-field" placeholder="Ex : 2nde 4">
+
+      <hr style="border:0; border-top:1px solid #eee; margin: 15px 0;">
+
+      <label><strong>Fichier QCM (.xml Pronote) :</strong></label>
+      <input type="file" id="xmlFileInput" accept=".xml" class="input-field">
+
+      <button type="button" class="btn" onclick="demarrerEpreuve()">Commencer l'évaluation</button>
+      
+      <div style="text-align: center; margin-top: 20px;">
+        <button type="button" class="tab-btn" onclick="afficherDashboardProf()">Espace Enseignant (Résultats D1)</button>
+      </div>
+    </div>
+
+    <!-- ÉCRAN 2 : PASSATION DU QCM -->
+    <div id="stepQCM" class="card" style="display: none;">
+      <h2 id="qcmTitre">Épreuve</h2>
+      <div class="alerte">
+        ?? <strong>Avertissement :</strong> Vos allers-retours en dehors de cette page sont consignés.
       </div>
 
-      <div id="qcmZone" style="display: none;">
-        <h1 id="qcmTitre">Titre du QCM</h1>
-        <div class="alerte">
-          ?? <strong>Consigne :</strong> Toute sortie de la page (verrouillage, changement d'application) est enregistrée.
-        </div>
+      <form id="qcmForm">
+        <div id="questionsContainer"></div>
+        <button type="button" class="btn" onclick="terminerEtSoumettre()">Valider et envoyer mes réponses</button>
+      </form>
+    </div>
 
-        <form id="qcmForm">
-          <div id="questionsContainer"></div>
-          <button type="button" class="btn" onclick="corrigerQCM()">Soumettre mes réponses</button>
-        </form>
+    <!-- ÉCRAN 3 : BILAN ÉLÈVE APRÈS RENDU -->
+    <div id="stepFin" class="card" style="display: none; text-align: center;">
+      <h2>Copie transmise</h2>
+      <p>Merci, vos réponses et votre note ont été enregistrées avec succès sur le serveur.</p>
+      <h3 id="noteFinaleText" style="color: #0d47a1; font-size: 1.5rem;"></h3>
+    </div>
 
-        <div class="status-bar" id="statusBar">Statut : En cours...</div>
+    <!-- ÉCRAN 4 : DASHBOARD ENSEIGNANT -->
+    <div id="stepProf" class="card" style="display: none;">
+      <h2>Résultats & Alertes (Base D1)</h2>
+      <button class="btn btn-secondary" onclick="chargerDonneesProf()">Actualiser</button>
+
+      <h3>Copies soumises</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Élève</th><th>Classe</th><th>QCM</th><th>Note</th></tr>
+          </thead>
+          <tbody id="tableNotesBody"><tr><td colspan="5">Chargement...</td></tr></tbody>
+        </table>
       </div>
+
+      <h3 style="margin-top:25px;">Journal des sorties d'écran</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Heure</th><th>Identifiant</th><th>Événement</th></tr>
+          </thead>
+          <tbody id="tableSortiesBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
+        </table>
+      </div>
+
+      <button class="btn btn-secondary" onclick="retourAccueil()">Retour à l'accueil</button>
     </div>
   </div>
 
   <script>
     let questionsData = [];
-    const ELEVE_ID = "eleve_pilote_01";
-
-    async function logSortie(type) {
-      document.getElementById('statusBar').innerText = "Événement : " + type + " (" + new Date().toLocaleTimeString() + ")";
-      try {
-        await fetch('/api/evenement', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eleve_id: ELEVE_ID, type_evenement: type })
-        });
-      } catch(e) {}
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") {
-        logSortie("page_masquee");
-      } else if (document.visibilityState === "visible") {
-        logSortie("retour_qcm");
-        alert("Attention : vous avez quitté le QCM. Ce passage hors test est consigné.");
-      }
-    });
+    let qcmTitreGlobal = "Évaluation";
+    let eleveID = "";
+    let eleveNom = "";
+    let elevePrenom = "";
+    let eleveClasse = "";
+    let fichierXmlContenu = null;
 
     document.getElementById('xmlFileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
-      reader.onload = function(evt) {
-        parsePronoteXML(evt.target.result);
-      };
+      reader.onload = (evt) => { fichierXmlContenu = evt.target.result; };
       reader.readAsText(file);
     });
 
@@ -90,105 +127,92 @@
       return div.innerText || div.textContent || "";
     }
 
-    function parsePronoteXML(xmlText) {
+    function demarrerEpreuve() {
+      eleveNom = document.getElementById('nomInput').value.trim();
+      elevePrenom = document.getElementById('prenomInput').value.trim();
+      eleveClasse = document.getElementById('classeInput').value.trim();
+
+      if (!eleveNom || !elevePrenom) {
+        alert("Veuillez renseigner votre nom et prénom.");
+        return;
+      }
+      if (!fichierXmlContenu) {
+        alert("Veuillez sélectionner le fichier QCM XML.");
+        return;
+      }
+
+      eleveID = `${eleveNom}_${elevePrenom}`.toLowerCase().replace(/\s+/g, '_');
+
+      // Parsing du XML Pronote
       const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+      const xmlDoc = parser.parseFromString(fichierXmlContenu, "application/xml");
       const questionNodes = xmlDoc.getElementsByTagName("question");
 
       questionsData = [];
-      let titreQCM = "Questionnaire Pronote";
-
       for (let i = 0; i < questionNodes.length; i++) {
         const qNode = questionNodes[i];
         const type = qNode.getAttribute("type");
 
         if (type === "category") {
-          const categoryText = qNode.getElementsByTagName("text")[0]?.textContent || "";
-          const match = categoryText.match(/<name>(.*?)<\/name>/);
-          if (match && match[1]) titreQCM = match[1];
+          const catText = qNode.getElementsByTagName("text")[0]?.textContent || "";
+          const match = catText.match(/<name>(.*?)<\/name>/);
+          if (match && match[1]) qcmTitreGlobal = match[1];
           continue;
         }
 
         const name = qNode.getElementsByTagName("name")[0]?.getElementsByTagName("text")[0]?.textContent || `Question ${i}`;
-        const questionTextRaw = qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "";
-        const enonce = cleanHTML(questionTextRaw);
-        const qImgBase64 = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
-        const defaultGrade = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
+        const enonceRaw = qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "";
+        const enonce = cleanHTML(enonceRaw);
+        const qImg = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
+        const pts = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
 
         if (type === "multichoice") {
           const isSingle = qNode.getElementsByTagName("single")[0]?.textContent?.trim() === "true";
           const answers = [];
           const ansNodes = qNode.getElementsByTagName("answer");
-
           for (let j = 0; j < ansNodes.length; j++) {
             const aNode = ansNodes[j];
-            const fraction = parseFloat(aNode.getAttribute("fraction") || "0");
-            const ansText = aNode.getElementsByTagName("text")[0]?.textContent || "";
-            const ansImg = aNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
-            answers.push({ text: ansText, fraction: fraction, image: ansImg });
+            answers.push({
+              text: aNode.getElementsByTagName("text")[0]?.textContent || "",
+              fraction: parseFloat(aNode.getAttribute("fraction") || "0"),
+              image: aNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null
+            });
           }
-
-          questionsData.push({
-            type: "multichoice",
-            title: name,
-            enonce: enonce,
-            image: qImgBase64,
-            single: isSingle,
-            points: defaultGrade,
-            answers: answers
-          });
+          questionsData.push({ type, title: name, enonce, image: qImg, single: isSingle, points: pts, answers });
         } 
         else if (type === "matching") {
           const subquestions = [];
           const subNodes = qNode.getElementsByTagName("subquestion");
-
           for (let j = 0; j < subNodes.length; j++) {
             const sNode = subNodes[j];
             const qTxt = sNode.getElementsByTagName("text")[0]?.textContent || "";
             const aTxt = sNode.getElementsByTagName("answer")[0]?.getElementsByTagName("text")[0]?.textContent || "";
-            if (qTxt.trim() !== "") {
-              subquestions.push({ question: qTxt, answer: aTxt });
-            }
+            if (qTxt.trim() !== "") subquestions.push({ question: qTxt, answer: aTxt });
           }
-
-          questionsData.push({
-            type: "matching",
-            title: name,
-            enonce: enonce,
-            image: qImgBase64,
-            points: defaultGrade,
-            subquestions: subquestions
-          });
+          questionsData.push({ type, title: name, enonce, image: qImg, points: pts, subquestions });
         }
       }
 
-      afficherQCM(titreQCM);
-    }
+      // Affichage du questionnaire
+      document.getElementById('stepIdentite').style.display = 'none';
+      document.getElementById('stepQCM').style.display = 'block';
+      document.getElementById('qcmTitre').innerText = qcmTitreGlobal;
 
-    function afficherQCM(titre) {
-      document.getElementById('qcmTitre').innerText = titre;
       const container = document.getElementById('questionsContainer');
       container.innerHTML = "";
-
-      questionsData.forEach((q, qIndex) => {
-        const qBlock = document.createElement("div");
-        qBlock.className = "question-block";
-
-        let html = `<div class="question-title">${q.title} (${q.points} pt)</div>`;
-        html += `<div class="question-enonce">${q.enonce}</div>`;
-
-        if (q.image) {
-          html += `<img class="img-qcm" src="data:image/png;base64,${q.image}" alt="Illustration question">`;
-        }
+      questionsData.forEach((q, idx) => {
+        const block = document.createElement("div");
+        block.className = "question-block";
+        let h = `<div class="question-title">${q.title} (${q.points} pt)</div>`;
+        h += `<div class="question-enonce">${q.enonce}</div>`;
+        if (q.image) h += `<img class="img-qcm" src="data:image/png;base64,${q.image}">`;
 
         if (q.type === "multichoice") {
           const inputType = q.single ? "radio" : "checkbox";
-          const inputName = `q_${qIndex}`;
-
-          q.answers.forEach((ans, aIndex) => {
-            html += `
+          q.answers.forEach((ans, aIdx) => {
+            h += `
               <label class="reponse-label">
-                <input type="${inputType}" name="${inputName}" value="${aIndex}">
+                <input type="${inputType}" name="q_${idx}" value="${aIdx}">
                 <div>
                   ${ans.text}
                   ${ans.image ? `<br><img class="img-qcm" style="max-height:120px;" src="data:image/png;base64,${ans.image}">` : ''}
@@ -196,64 +220,142 @@
               </label>
             `;
           });
-        } 
-        else if (q.type === "matching") {
-          const allOptions = q.subquestions.map(s => s.answer);
-          const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
-
-          q.subquestions.forEach((sub, sIndex) => {
-            html += `
+        } else if (q.type === "matching") {
+          const opts = [...q.subquestions.map(s => s.answer)].sort(() => Math.random() - 0.5);
+          q.subquestions.forEach((sub, sIdx) => {
+            h += `
               <div class="matching-row">
                 <span><strong>${sub.question}</strong></span>
-                <select name="matching_${qIndex}_${sIndex}">
+                <select name="matching_${idx}_${sIdx}">
                   <option value="">-- Choisir --</option>
-                  ${shuffledOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                  ${opts.map(o => `<option value="${o}">${o}</option>`).join('')}
                 </select>
               </div>
             `;
           });
         }
-
-        qBlock.innerHTML = html;
-        container.appendChild(qBlock);
+        block.innerHTML = h;
+        container.appendChild(block);
       });
-
-      document.getElementById('qcmZone').style.display = 'block';
     }
 
-    function corrigerQCM() {
+    // Traque de visibilité
+    async function logSortie(type) {
+      if (!eleveID) return;
+      try {
+        await fetch('/api/evenement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eleve_id: `${eleveNom} ${elevePrenom} (${eleveClasse})`, type_evenement: type })
+        });
+      } catch(e) {}
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.getElementById('stepQCM').style.display === 'block') {
+        if (document.visibilityState === "hidden") {
+          logSortie("page_masquee");
+        } else if (document.visibilityState === "visible") {
+          logSortie("retour_qcm");
+          alert("Attention : vous avez quitté la page du QCM. Cette sortie est transmise au professeur.");
+        }
+      }
+    });
+
+    // Calcul de note et soumission en base
+    async function terminerEtSoumettre() {
+      if (!confirm("Voulez-vous vraiment valider et envoyer votre copie ?")) return;
+
       let totalObtenu = 0;
       let totalPossible = 0;
 
-      questionsData.forEach((q, qIndex) => {
+      questionsData.forEach((q, idx) => {
         totalPossible += q.points;
-
         if (q.type === "multichoice") {
-          const inputs = document.querySelectorAll(`input[name="q_${qIndex}"]:checked`);
-          let fractionTotale = 0;
-
-          inputs.forEach(input => {
-            const ansIndex = parseInt(input.value);
-            fractionTotale += q.answers[ansIndex].fraction;
-          });
-
-          fractionTotale = Math.max(0, fractionTotale);
-          totalObtenu += (q.points * (fractionTotale / 100));
-        } 
-        else if (q.type === "matching") {
+          const checked = document.querySelectorAll(`input[name="q_${idx}"]:checked`);
+          let frac = 0;
+          checked.forEach(c => { frac += q.answers[parseInt(c.value)].fraction; });
+          totalObtenu += (q.points * (Math.max(0, frac) / 100));
+        } else if (q.type === "matching") {
           let corrects = 0;
-          q.subquestions.forEach((sub, sIndex) => {
-            const select = document.querySelector(`select[name="matching_${qIndex}_${sIndex}"]`);
-            if (select && select.value === sub.answer) {
-              corrects++;
-            }
+          q.subquestions.forEach((sub, sIdx) => {
+            const val = document.querySelector(`select[name="matching_${idx}_${sIdx}"]`)?.value;
+            if (val === sub.answer) corrects++;
           });
           totalObtenu += (q.points * (corrects / q.subquestions.length));
         }
       });
 
-      const noteSur20 = ((totalObtenu / totalPossible) * 20).toFixed(2);
-      alert(`Correction terminée !\n\nScore : ${totalObtenu.toFixed(2)} / ${totalPossible} points\nSoit : ${noteSur20} / 20`);
+      const note20 = ((totalObtenu / totalPossible) * 20).toFixed(2);
+
+      // Envoi de la note dans la base D1
+      try {
+        await fetch('/api/soumettre', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: eleveNom,
+            prenom: elevePrenom,
+            classe: eleveClasse,
+            qcm_titre: qcmTitreGlobal,
+            note: parseFloat(note20),
+            total: 20
+          })
+        });
+      } catch(e) {
+        console.error("Erreur enregistrement note:", e);
+      }
+
+      document.getElementById('stepQCM').style.display = 'none';
+      document.getElementById('stepFin').style.display = 'block';
+      document.getElementById('noteFinaleText').innerText = `Note obtenue : ${note20} / 20`;
+    }
+
+    // Gestion du Dashboard Professeur
+    function afficherDashboardProf() {
+      document.getElementById('stepIdentite').style.display = 'none';
+      document.getElementById('stepProf').style.display = 'block';
+      chargerDonneesProf();
+    }
+
+    function retourAccueil() {
+      document.getElementById('stepProf').style.display = 'none';
+      document.getElementById('stepIdentite').style.display = 'block';
+    }
+
+    async function chargerDonneesProf() {
+      const notesBody = document.getElementById('tableNotesBody');
+      const sortiesBody = document.getElementById('tableSortiesBody');
+      notesBody.innerHTML = "<tr><td colspan='5'>Chargement...</td></tr>";
+      sortiesBody.innerHTML = "<tr><td colspan='3'>Chargement...</td></tr>";
+
+      try {
+        const res = await fetch('/api/resultats');
+        const data = await res.json();
+
+        notesBody.innerHTML = data.notes.length === 0 ? "<tr><td colspan='5'>Aucune copie reçue.</td></tr>" :
+          data.notes.map(n => `
+            <tr>
+              <td>${new Date(n.date_soumission).toLocaleTimeString()}</td>
+              <td><strong>${n.nom}</strong> ${n.prenom}</td>
+              <td>${n.classe || '-'}</td>
+              <td>${n.qcm_titre}</td>
+              <td><strong>${n.note} / ${n.total}</strong></td>
+            </tr>
+          `).join('');
+
+        sortiesBody.innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3'>Aucun incident relevé.</td></tr>" :
+          data.sorties.map(s => `
+            <tr>
+              <td>${new Date(s.horodatage).toLocaleTimeString()}</td>
+              <td>${s.eleve_id}</td>
+              <td style="color:${s.type_evenement === 'page_masquee' ? '#d97706' : '#2563eb'}; font-weight:bold;">${s.type_evenement}</td>
+            </tr>
+          `).join('');
+      } catch(e) {
+        notesBody.innerHTML = "<tr><td colspan='5'>Erreur de chargement.</td></tr>";
+        sortiesBody.innerHTML = "<tr><td colspan='3'>Erreur de chargement.</td></tr>";
+      }
     }
   </script>
 </body>
