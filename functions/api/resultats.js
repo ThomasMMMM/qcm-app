@@ -5,11 +5,61 @@
     const prof_id = url.searchParams.get("prof_id");
     const seance_id = url.searchParams.get("seance_id");
     const classe_id = url.searchParams.get("classe_id");
+    const export_pronote = url.searchParams.get("export_pronote");
 
     if (!prof_id) {
       return new Response(JSON.stringify({ notes: [], sorties: [] }), { headers: { "Content-Type": "application/json" } });
     }
 
+    // CAS EXPORT PRONOTE : Rapprochement de tous les élèves de la classe avec les notes
+    if (export_pronote && seance_id) {
+      const seance = await env.DB.prepare(`
+        SELECT s.id, s.code_session, s.classe_id, c.nom AS classe_nom, q.titre AS qcm_titre
+        FROM seances s
+        INNER JOIN classes c ON s.classe_id = c.id
+        INNER JOIN qcm_banque q ON s.qcm_id = q.id
+        WHERE s.id = ? AND s.prof_id = ?
+      `).bind(seance_id, prof_id).first();
+
+      if (!seance) {
+        return new Response(JSON.stringify({ error: "Séance introuvable" }), { status: 404 });
+      }
+
+      // Liste ordonnée de tous les élèves de la classe
+      const { results: eleves } = await env.DB.prepare(
+        "SELECT id, prenom, date_naissance, code_eleve FROM eleves WHERE classe_id = ? ORDER BY id ASC"
+      ).bind(seance.classe_id).all();
+
+      // Résultats enregistrés pour cette séance
+      const { results: copies } = await env.DB.prepare(
+        "SELECT nom, prenom, note, total, nb_sorties, date_soumission FROM resultats_qcm WHERE seance_id = ?"
+      ).bind(seance_id).all();
+
+      // Rapprochement par code élève
+      const grillePronote = eleves.map(e => {
+        // Dans prenom, la copie contient "[Code: XXXX]"
+        const copie = copies.find(c => (c.prenom && c.prenom.includes(e.code_eleve)) || c.nom === e.prenom);
+        return {
+          id: e.id,
+          prenom: e.prenom,
+          date_naissance: e.date_naissance,
+          code_eleve: e.code_eleve,
+          note: copie ? copie.note : null,
+          total: copie ? copie.total : 20,
+          nb_sorties: copie ? copie.nb_sorties : 0,
+          statut: copie ? "Présent" : "Absent"
+        };
+      });
+
+      return new Response(JSON.stringify({
+        seance_code: seance.code_session,
+        classe_nom: seance.classe_nom,
+        qcm_titre: seance.qcm_titre,
+        eleves: grillePronote
+      }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // LISTING CLASSIQUE DES COPIES
     let queryNotes = `
       SELECT r.id, r.nom, r.prenom, r.classe, r.qcm_titre, r.note, r.total, r.session_code, r.seance_id, r.date_soumission, r.nb_sorties,
              s.code_session, c.nom AS classe_nom, q.titre AS qcm_nom
