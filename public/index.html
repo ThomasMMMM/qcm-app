@@ -274,7 +274,7 @@
       document.getElementById('viewEleveFin').style.display = 'none';
 
       if (mode === 'prof') {
-        if (currentProf) {
+        if (currentProf && currentProf.id) {
           document.getElementById('viewProfAuth').style.display = 'none';
           document.getElementById('viewProfDashboard').style.display = 'block';
           document.getElementById('profNomConnecte').innerText = currentProf.nom || currentProf.email;
@@ -410,6 +410,12 @@
     }
 
     async function enregistrerClasseValidee() {
+      if (!currentProf || !currentProf.id) {
+        alert("Session expirée. Veuillez vous reconnecter.");
+        basculerMode('prof');
+        return;
+      }
+
       const nomClasse = document.getElementById('nomClasseInput').value.trim();
       if (!nomClasse) { alert("Veuillez renseigner un nom pour cette classe (ex: 2nde 4)."); return; }
       if (!parsedElevesPreview || parsedElevesPreview.length === 0) { alert("Aucun élève à enregistrer."); return; }
@@ -438,7 +444,7 @@
     }
 
     async function chargerClassesProf() {
-      if (!currentProf) return;
+      if (!currentProf || !currentProf.id) return;
       const cont = document.getElementById('listeClassesContainer');
       try {
         const res = await fetch(`/api/classes?prof_id=${currentProf.id}`);
@@ -487,7 +493,7 @@
         const doc = new jsPDF();
 
         // 1. En-tête
-        doc.setFillColor(11, 92, 171); // Bleu Pronote
+        doc.setFillColor(11, 92, 171);
         doc.rect(0, 0, 210, 22, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(14);
@@ -681,7 +687,7 @@
     }
 
     async function enregistrerQcmProf() {
-      if (!currentProf) { alert("Session expirée."); basculerMode('prof'); return; }
+      if (!currentProf || !currentProf.id) { alert("Session expirée."); basculerMode('prof'); return; }
       const code = document.getElementById('codeProfInput').value.trim();
       if (!code) { alert("Veuillez définir un code de session."); return; }
       if (!xmlContenuProf) { alert("Veuillez sélectionner un fichier XML Pronote."); return; }
@@ -754,7 +760,7 @@
     }
 
     async function chargerDonneesProf() {
-      if (!currentProf) return;
+      if (!currentProf || !currentProf.id) return;
       try {
         const r1 = await fetch(`/api/prof_quiz?prof_id=${currentProf.id}`);
         const sessions = await r1.json();
