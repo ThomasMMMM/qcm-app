@@ -11,7 +11,7 @@
     }
 
     let queryNotes = `
-      SELECT r.id, r.nom, r.prenom, r.classe, r.qcm_titre, r.note, r.total, r.session_code, r.seance_id, r.date_soumission,
+      SELECT r.id, r.nom, r.prenom, r.classe, r.qcm_titre, r.note, r.total, r.session_code, r.seance_id, r.date_soumission, r.nb_sorties,
              s.code_session, c.nom AS classe_nom, q.titre AS qcm_nom
       FROM resultats_qcm r
       LEFT JOIN seances s ON r.seance_id = s.id

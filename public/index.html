@@ -287,7 +287,7 @@
         <div style="overflow-x:auto;">
           <table>
             <thead>
-              <tr><th>Heure</th><th>Élève</th><th>Classe</th><th>Séance</th><th>Note / 20</th></tr>
+              <tr><th>Heure</th><th>Élève</th><th>Classe</th><th>Séance</th><th>Note / 20</th><th>Écran / Sorties</th></tr>
             </thead>
             <tbody id="tableNotesBody"><tr><td colspan="5">Chargement...</td></tr></tbody>
           </table>
@@ -316,7 +316,9 @@
     let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
 
     let isModeSimulation = false;
+    let compteurSortiesEleve = 0;
     let currentQuestionIndex = 0;
+      compteurSortiesEleve = 0;
     let totalScoreObtenu = 0;
     let totalScorePossible = 0;
 
@@ -834,6 +836,12 @@
             <td><span class="badge">${n.classe_nom || n.classe || '-'}</span></td>
             <td><span class="badge-session">${n.code_session || n.session_code || '-'}</span></td>
             <td><strong style="color:var(--pronote-blue); font-size:1rem;">${n.note} / ${n.total}</strong></td>
+            <td>
+              ${(n.nb_sorties && n.nb_sorties > 0)
+                ? `<span class="badge" style="background:#fee2e2; color:#b91c1c;">⚠️ ${n.nb_sorties} sortie${n.nb_sorties > 1 ? 's' : ''}</span>`
+                : `<span class="badge" style="background:#dcfce7; color:#15803d;">🟢 Aucune</span>`
+              }
+            </td>
           </tr>
         `).join('');
     }
@@ -1025,6 +1033,7 @@
             prenom: `[Code: ${eleveInfo.code_perso}]`,
             session_code: currentCode,
             seance_id: currentSeanceId,
+            nb_sorties: compteurSortiesEleve,
             note: parseFloat(note20),
             total: 20
           })
@@ -1063,6 +1072,7 @@
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "viewEleveQcm" || document.getElementById('viewEleveQcm').style.display === 'block') {
         if (document.visibilityState === "hidden") {
+          compteurSortiesEleve++;
           logSortie("page_masquee");
         } else if (document.visibilityState === "visible") {
           logSortie("retour_qcm");
