@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Évaluation QCM</title>
-  <!-- Bibliothèques pour la génération PDF instantanée -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
@@ -22,7 +21,7 @@
     }
 
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 15px; background: var(--pronote-bg); color: #1e293b; }
-    .container { max-width: 760px; margin: 0 auto; }
+    .container { max-width: 780px; margin: 0 auto; }
     .card { background: var(--pronote-card); border-radius: 8px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid #e2e8f0; }
     h1, h2, h3 { color: var(--pronote-blue); margin-top: 0; }
     
@@ -62,6 +61,7 @@
     th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
     th { background: #f8fafc; color: #475569; }
     .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
+    .badge-share { font-family: monospace; font-size: 0.85rem; background: #ede9fe; color: #6d28d9; padding: 3px 6px; border-radius: 4px; cursor: pointer; border: 1px solid #ddd6fe; }
     .badge-code { font-family: monospace; font-size: 0.95rem; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; }
     .badge-duplicate { background: #fee2e2; color: #b91c1c; font-size: 0.75rem; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
 
@@ -69,7 +69,8 @@
     .link-mode a { color: var(--pronote-blue); cursor: pointer; text-decoration: underline; }
     .auth-toggle { font-size: 0.9rem; margin-top: 10px; text-align: center; color: #475569; }
     .auth-toggle a { color: var(--pronote-blue); cursor: pointer; font-weight: bold; }
-    .section-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .section-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+    .share-box { background: #fdf4ff; border: 1px dashed #d8b4fe; padding: 12px; border-radius: 6px; margin-top: 15px; display: flex; gap: 10px; align-items: flex-end; }
   </style>
 </head>
 <body>
@@ -163,47 +164,55 @@
 
       <!-- MODULE 1 : GESTION DES CLASSES & IMPORT PRONOTE -->
       <div class="section-box">
-        <h3>👥 Module Classes & Élèves (Import Pronote)</h3>
+        <h3>👥 Module Classes & Élèves</h3>
         
-        <label>Nom de la classe à importer :</label>
-        <input type="text" id="nomClasseInput" class="input-field" placeholder="Ex : 2nde 4">
+        <!-- Création / Import d'une classe -->
+        <div style="background:white; padding:14px; border-radius:6px; border:1px solid #e2e8f0; margin-bottom:15px;">
+          <h4 style="margin:0 0 10px 0; color:#0b5cab;">Importer une nouvelle classe (CSV Pronote)</h4>
+          <label>Nom de la classe :</label>
+          <input type="text" id="nomClasseInput" class="input-field" placeholder="Ex : 2nde 4">
 
-        <div style="display:flex; gap:10px;">
-          <div style="flex:2;">
-            <label>Fichier CSV exporté de Pronote :</label>
-            <input type="file" id="csvElevesInput" accept=".csv,.txt" class="input-field">
-          </div>
-          <div style="flex:1;">
-            <label>Séparateur :</label>
-            <select id="csvSeparateurSelect" class="input-field">
-              <option value="auto">Auto (; , \t)</option>
-              <option value=";">Point-virgule (;)</option>
-              <option value=",">Virgule (,)</option>
-              <option value="tab">Tabulation (\t)</option>
-            </select>
+          <div style="display:flex; gap:10px;">
+            <div style="flex:2;">
+              <label>Fichier CSV exporté de Pronote :</label>
+              <input type="file" id="csvElevesInput" accept=".csv,.txt" class="input-field">
+            </div>
+            <div style="flex:1;">
+              <label>Séparateur :</label>
+              <select id="csvSeparateurSelect" class="input-field">
+                <option value="auto">Auto (; , \t)</option>
+                <option value=";">Point-virgule (;)</option>
+                <option value=",">Virgule (,)</option>
+                <option value="tab">Tabulation (\t)</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <!-- ZONE DE PRÉVISUALISATION DU CSV -->
         <div id="previewZone" style="display:none; margin-top:15px; background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1;">
           <h4 style="margin:0 0 10px 0; color:#0d47a1;">Aperçu de l'import (<span id="previewCount">0</span> élèves)</h4>
-          <p style="font-size:0.8rem; color:#64748b; margin-top:0;">Vérifiez les prénoms extraits et les codes générés avant validation.</p>
-          <div style="max-height:220px; overflow-y:auto;">
+          <div style="max-height:200px; overflow-y:auto;">
             <table>
-              <thead>
-                <tr>
-                  <th>Prénom (affiché)</th>
-                  <th>Né(e) le</th>
-                  <th>Code individuel</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Prénom</th><th>Né(e) le</th><th>Code individuel</th></tr></thead>
               <tbody id="previewTableBody"></tbody>
             </table>
           </div>
-          <button type="button" class="btn btn-success" style="margin-top:15px;" onclick="enregistrerClasseValidee()">Valider et enregistrer cette classe</button>
+          <button type="button" class="btn btn-success" style="margin-top:12px;" onclick="enregistrerClasseValidee()">Valider et enregistrer cette classe</button>
         </div>
 
-        <h4 style="margin-top:20px; margin-bottom:8px;">Classes enregistrées</h4>
+        <!-- ZONE DE REJOINDRE UNE CLASSE PARTAGÉE -->
+        <div class="share-box">
+          <div style="flex:2;">
+            <label style="font-weight:bold; color:#7e22ce; font-size:0.9rem;">🔗 Rejoindre une classe partagée par un collègue :</label>
+            <input type="text" id="codeClassePartageInput" class="input-field" style="margin-bottom:0; text-transform:uppercase; font-family:monospace; font-weight:bold;" placeholder="Ex: CLS-7K3M">
+          </div>
+          <div style="flex:1;">
+            <button type="button" class="btn" style="background:#7e22ce; margin-top:0; padding:11px;" onclick="rejoindreClassePartagee()">Ajouter la classe</button>
+          </div>
+        </div>
+
+        <h4 style="margin-top:20px; margin-bottom:8px;">Mes classes actives</h4>
         <div id="listeClassesContainer">Chargement des classes...</div>
       </div>
 
@@ -313,9 +322,7 @@
     function genererCodeCourt() {
       const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
       let code = "";
-      for (let i = 0; i < 4; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
+      for (let i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
       return code;
     }
 
@@ -369,9 +376,7 @@
       parsedElevesPreview = elevesBruts.map(e => {
         const estDoublon = comptePrenoms[e.prenomBrut.toLowerCase()] > 1;
         let prenomAffiche = e.prenomBrut;
-        if (estDoublon && e.nomInitiale) {
-          prenomAffiche = `${e.prenomBrut} ${e.nomInitiale}`;
-        }
+        if (estDoublon && e.nomInitiale) prenomAffiche = `${e.prenomBrut} ${e.nomInitiale}`;
 
         let code = genererCodeCourt();
         while (codesGeneres.has(code)) { code = genererCodeCourt(); }
@@ -398,7 +403,7 @@
         tr.innerHTML = `
           <td>
             <input type="text" class="input-field" style="margin:0; padding:6px; font-size:0.9rem;" value="${el.prenom}" onchange="parsedElevesPreview[${idx}].prenom = this.value.trim()">
-            ${el.estDoublon ? '<span class="badge-duplicate">Homonyme résolu</span>' : ''}
+            ${el.estDoublon ? '<span class="badge-duplicate">Homonyme</span>' : ''}
           </td>
           <td>${el.date_naissance || '-'}</td>
           <td><span class="badge-code">${el.code_eleve}</span></td>
@@ -410,14 +415,10 @@
     }
 
     async function enregistrerClasseValidee() {
-      if (!currentProf || !currentProf.id) {
-        alert("Session expirée. Veuillez vous reconnecter.");
-        basculerMode('prof');
-        return;
-      }
+      if (!currentProf || !currentProf.id) { alert("Session expirée."); basculerMode('prof'); return; }
 
       const nomClasse = document.getElementById('nomClasseInput').value.trim();
-      if (!nomClasse) { alert("Veuillez renseigner un nom pour cette classe (ex: 2nde 4)."); return; }
+      if (!nomClasse) { alert("Veuillez renseigner un nom pour cette classe."); return; }
       if (!parsedElevesPreview || parsedElevesPreview.length === 0) { alert("Aucun élève à enregistrer."); return; }
 
       const res = await fetch('/api/classes', {
@@ -432,7 +433,7 @@
 
       const data = await res.json();
       if (res.ok) {
-        alert(`Classe "${nomClasse}" enregistrée avec succès (${data.total} élèves) !`);
+        alert(`Classe "${nomClasse}" enregistrée (${data.total} élèves) !\nCode de partage collègue : ${data.code_partage}`);
         document.getElementById('previewZone').style.display = 'none';
         document.getElementById('nomClasseInput').value = "";
         document.getElementById('csvElevesInput').value = "";
@@ -441,6 +442,38 @@
       } else {
         alert("Erreur lors de l'enregistrement : " + (data.error || "erreur serveur"));
       }
+    }
+
+    async function rejoindreClassePartagee() {
+      if (!currentProf || !currentProf.id) { alert("Session expirée."); basculerMode('prof'); return; }
+
+      const codePartage = document.getElementById('codeClassePartageInput').value.trim().toUpperCase();
+      if (!codePartage) { alert("Veuillez saisir un code de classe (ex: CLS-XXXXX)."); return; }
+
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: "rejoindre",
+          prof_id: currentProf.id,
+          code_partage: codePartage
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Accès accordé ! Vous avez rejoint la classe "${data.nom}".`);
+        document.getElementById('codeClassePartageInput').value = "";
+        chargerClassesProf();
+      } else {
+        alert("Erreur : " + (data.error || "code invalide"));
+      }
+    }
+
+    function copierTexte(texte) {
+      navigator.clipboard.writeText(texte).then(() => {
+        alert(`Code classe "${texte}" copié dans le presse-papier ! Vous pouvez le transmettre à un collègue.`);
+      });
     }
 
     async function chargerClassesProf() {
@@ -458,18 +491,22 @@
         cont.innerHTML = `
           <table>
             <thead>
-              <tr><th>Classe</th><th>Effectif</th><th>Création</th><th>Actions</th></tr>
+              <tr><th>Classe</th><th>Code Partage Collègue</th><th>Effectif</th><th>Actions</th></tr>
             </thead>
             <tbody>
               ${classes.map(c => `
                 <tr>
                   <td><strong>${c.nom}</strong></td>
+                  <td>
+                    <span class="badge-share" title="Cliquer pour copier" onclick="copierTexte('${c.code_partage || ''}')">
+                      📋 ${c.code_partage || 'N/A'}
+                    </span>
+                  </td>
                   <td>${c.effectif} élèves</td>
-                  <td>${new Date(c.date_creation).toLocaleDateString()}</td>
                   <td style="display:flex; gap:5px; align-items:center;">
-                    <button class="btn-pdf" onclick="genererPdfClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">📄 Télécharger PDF</button>
-                    <button class="btn btn-secondary" style="padding:5px 8px; font-size:0.8rem; margin:0; width:auto;" onclick="voirElevesClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">Aperçu</button>
-                    <button class="btn-danger" onclick="supprimerClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">Suppr</button>
+                    <button class="btn-pdf" onclick="genererPdfClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}', '${c.code_partage || ''}')">📄 Télécharger PDF</button>
+                    <button class="btn btn-secondary" style="padding:5px 8px; font-size:0.8rem; margin:0; width:auto;" onclick="voirElevesClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}', '${c.code_partage || ''}')">Aperçu</button>
+                    <button class="btn-danger" onclick="supprimerClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">${c.createur_id == currentProf.id ? 'Suppr' : 'Retirer'}</button>
                   </td>
                 </tr>
               `).join('')}
@@ -482,7 +519,7 @@
     }
 
     // ==================== GÉNÉRATEUR PDF (JSPDF) ====================
-    async function genererPdfClasse(classeId, nomClasse) {
+    async function genererPdfClasse(classeId, nomClasse, codePartage) {
       try {
         const res = await fetch(`/api/classes?classe_id=${classeId}`);
         const eleves = await res.json();
@@ -502,9 +539,9 @@
 
         // Sous-titre
         doc.setTextColor(71, 85, 105);
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
-        doc.text(`Enseignant : ${currentProf.nom || currentProf.email}  |  Généré le : ${new Date().toLocaleDateString()}`, 14, 30);
+        doc.text(`Enseignant : ${currentProf.nom || currentProf.email}  |  Code partage collègues : ${codePartage || 'N/A'}  |  Date : ${new Date().toLocaleDateString()}`, 14, 30);
         doc.text(`Document confidentiel contenant les identifiants d'accès individuels des élèves.`, 14, 35);
 
         // 2. Tableau structuré
@@ -530,7 +567,7 @@
           styles: { fontSize: 10, cellPadding: 4 }
         });
 
-        // 3. Cartons individuels prédécoupables sur une nouvelle page
+        // 3. Cartons individuels prédécoupables
         doc.addPage();
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
@@ -597,7 +634,7 @@
       }
     }
 
-    async function voirElevesClasse(classeId, nomClasse) {
+    async function voirElevesClasse(classeId, nomClasse, codePartage) {
       try {
         const res = await fetch(`/api/classes?classe_id=${classeId}`);
         const eleves = await res.json();
@@ -608,6 +645,7 @@
           <style>body { font-family:sans-serif; padding:20px; } table { border-collapse:collapse; width:100%; } th, td { border:1px solid #ccc; padding:8px; text-align:left; } th { background:#eee; } .code { font-family:monospace; font-weight:bold; font-size:1.1rem; color:#b45309; }</style>
           </head><body>
           <h2>Liste des identifiants élèves — ${nomClasse}</h2>
+          <p><strong>Code partage collègues :</strong> ${codePartage || 'N/A'}</p>
           <table>
             <thead><tr><th>N°</th><th>Prénom</th><th>Date de naissance</th><th>Code personnel</th></tr></thead>
             <tbody>
@@ -621,8 +659,8 @@
     }
 
     async function supprimerClasse(classeId, nomClasse) {
-      if (!confirm(`Supprimer la classe "${nomClasse}" et tous ses élèves associés ?`)) return;
-      await fetch(`/api/classes?classe_id=${classeId}`, { method: 'DELETE' });
+      if (!confirm(`Retirer ou supprimer la classe "${nomClasse}" ?`)) return;
+      await fetch(`/api/classes?classe_id=${classeId}&prof_id=${currentProf.id}`, { method: 'DELETE' });
       chargerClassesProf();
     }
 
