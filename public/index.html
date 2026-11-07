@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Évaluation QCM</title>
+  <!-- Bibliothèques pour la génération PDF instantanée -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
       --pronote-blue: #0b5cab;
@@ -19,7 +22,7 @@
     }
 
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 15px; background: var(--pronote-bg); color: #1e293b; }
-    .container { max-width: 720px; margin: 0 auto; }
+    .container { max-width: 760px; margin: 0 auto; }
     .card { background: var(--pronote-card); border-radius: 8px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid #e2e8f0; }
     h1, h2, h3 { color: var(--pronote-blue); margin-top: 0; }
     
@@ -32,7 +35,9 @@
     .btn-secondary:hover { background: #475569; }
     .btn-success { background: #16a34a; }
     .btn-success:hover { background: #15803d; }
-    .btn-danger { background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    .btn-pdf { background: #0284c7; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-pdf:hover { background: #0369a1; }
+    .btn-danger { background: #dc2626; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; }
 
     .progress-bar-container { background: #e2e8f0; border-radius: 999px; height: 8px; width: 100%; overflow: hidden; margin: 12px 0 20px 0; }
     .progress-bar-fill { background: var(--pronote-blue); height: 100%; width: 0%; transition: width 0.3s ease; }
@@ -73,10 +78,10 @@
     <!-- 1. VUE ÉLÈVE : ACCUEIL -->
     <div id="viewEleveLogin" class="card">
       <h1>Connexion à l'évaluation</h1>
-      <label>Votre Prénom (ex: Alice ou Alice D.) :</label>
-      <input type="text" id="elevePrenom" class="input-field" placeholder="Votre prénom tel qu'enregistré">
+      <label>Votre Prénom :</label>
+      <input type="text" id="elevePrenom" class="input-field" placeholder="Ex: Alice">
 
-      <label>Votre Code individuel (fourni par le professeur) :</label>
+      <label>Votre Code individuel élève :</label>
       <input type="text" id="eleveCodePerso" class="input-field" style="text-transform:uppercase; font-family:monospace; font-weight:bold; letter-spacing:1px;" placeholder="Ex: 7B2K">
 
       <label>Code de l'épreuve (au tableau) :</label>
@@ -181,8 +186,8 @@
 
         <!-- ZONE DE PRÉVISUALISATION DU CSV -->
         <div id="previewZone" style="display:none; margin-top:15px; background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1;">
-          <h4 style="margin:0 0 10px 0; color:#0d47a1;">Aperçu de l'import (<span id="previewCount">0</span> élèves détectés)</h4>
-          <p style="font-size:0.8rem; color:#64748b; margin-top:0;">Vérifiez les prénoms extraits et les codes générés. Vous pouvez ajuster un prénom manuellement si souhaité.</p>
+          <h4 style="margin:0 0 10px 0; color:#0d47a1;">Aperçu de l'import (<span id="previewCount">0</span> élèves)</h4>
+          <p style="font-size:0.8rem; color:#64748b; margin-top:0;">Vérifiez les prénoms extraits et les codes générés avant validation.</p>
           <div style="max-height:220px; overflow-y:auto;">
             <table>
               <thead>
@@ -252,12 +257,10 @@
     let authMode = "login";
     let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
 
-    // Déroulement élève
     let currentQuestionIndex = 0;
     let totalScoreObtenu = 0;
     let totalScorePossible = 0;
 
-    // Cache pour la prévisualisation de la classe
     let parsedElevesPreview = [];
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -287,31 +290,27 @@
       }
     }
 
-    // ==================== PARSER CSV PRONOTE & DÉTECTION DOUBLONS ====================
+    // ==================== CSV PRONOTE & PREVIEW ====================
     document.getElementById('csvElevesInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
-      reader.onload = function(evt) {
-        analyserFichierCsvPronote(evt.target.result);
-      };
+      reader.onload = (evt) => { analyserFichierCsvPronote(evt.target.result); };
       reader.readAsText(file, "UTF-8");
     });
 
     function detecterSeparateur(texte, choix) {
       if (choix !== 'auto') return choix === 'tab' ? '\t' : choix;
       const premiereLigne = texte.split(/\r\n|\n/)[0];
-      const nbPointVirgule = (premiereLigne.match(/;/g) || []).length;
+      const nbPtVirgule = (premiereLigne.match(/;/g) || []).length;
       const nbVirgule = (premiereLigne.match(/,/g) || []).length;
       const nbTab = (premiereLigne.match(/\t/g) || []).length;
-      if (nbTab > nbPointVirgule && nbTab > nbVirgule) return '\t';
-      if (nbVirgule > nbPointVirgule) return ',';
+      if (nbTab > nbPtVirgule && nbTab > nbVirgule) return '\t';
+      if (nbVirgule > nbPtVirgule) return ',';
       return ';';
     }
 
     function genererCodeCourt() {
-      // Code de 4 caractères alphanumériques simples (évite 0, O, 1, I pour éviter toute confusion)
       const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
       let code = "";
       for (let i = 0; i < 4; i++) {
@@ -321,36 +320,23 @@
     }
 
     function analyserFichierCsvPronote(contenu) {
-      const separateurChoisi = document.getElementById('csvSeparateurSelect').value;
-      const sep = detecterSeparateur(contenu, separateurChoisi);
+      const sep = detecterSeparateur(contenu, document.getElementById('csvSeparateurSelect').value);
       const lignes = contenu.split(/\r\n|\n/).filter(l => l.trim() !== "");
-      if (lignes.length < 2) {
-        alert("Fichier CSV vide ou incomplet.");
-        return;
-      }
+      if (lignes.length < 2) { alert("Fichier CSV vide ou incomplet."); return; }
 
-      // Nettoyer les guillemets et séparer les colonnes
       const headers = lignes[0].split(sep).map(h => h.replace(/^["'\s\uFEFF]+|["'\s]+$/g, ''));
-      
-      let colEleveIdx = headers.findIndex(h => /Élèves|Eleves|Nom/i.test(h));
-      let colDateIdx = headers.findIndex(h => /Né\(e\)\s*le|Date.*naiss/i.test(h));
+      const colEleveIdx = headers.findIndex(h => /Élèves|Eleves|Nom/i.test(h));
+      const colDateIdx = headers.findIndex(h => /Né\(e\)\s*le|Date.*naiss/i.test(h));
 
-      if (colEleveIdx === -1) {
-        alert("Colonne 'Élèves' introuvable dans le CSV.");
-        return;
-      }
+      if (colEleveIdx === -1) { alert("Colonne 'Élèves' introuvable dans le CSV."); return; }
 
       const elevesBruts = [];
-
       for (let i = 1; i < lignes.length; i++) {
         const row = lignes[i].split(sep).map(c => c.replace(/^["'\s]+|["'\s]+$/g, ''));
         const celluleEleve = row[colEleveIdx];
         if (!celluleEleve) continue;
 
         const dateNaiss = colDateIdx !== -1 && row[colDateIdx] ? row[colDateIdx] : "";
-
-        // Séparation NOM / Prénom
-        // Règle Pronote : les mots en MAJUSCULES constituent le NOM
         const tokens = celluleEleve.split(/\s+/).filter(t => t.length > 0);
         const nomTokens = tokens.filter(t => t === t.toUpperCase() && /[A-Z]/.test(t));
         const prenomTokens = tokens.filter(t => t !== t.toUpperCase() || !/[A-Z]/.test(t));
@@ -358,7 +344,6 @@
         let prenom = prenomTokens.join(' ');
         let nom = nomTokens.join(' ');
 
-        // Si le découpage n'a pas trouvé (cas de noms tout en minuscules), fallback sur le dernier mot
         if (!prenom && tokens.length > 1) {
           prenom = tokens.slice(1).join(' ');
           nom = tokens[0];
@@ -374,14 +359,12 @@
         });
       }
 
-      // Détection des doublons de prénom
       const comptePrenoms = {};
       elevesBruts.forEach(e => {
         const p = e.prenomBrut.toLowerCase();
         comptePrenoms[p] = (comptePrenoms[p] || 0) + 1;
       });
 
-      // Attribution du prénom affiché et du code unique
       const codesGeneres = new Set();
       parsedElevesPreview = elevesBruts.map(e => {
         const estDoublon = comptePrenoms[e.prenomBrut.toLowerCase()] > 1;
@@ -391,9 +374,7 @@
         }
 
         let code = genererCodeCourt();
-        while (codesGeneres.has(code)) {
-          code = genererCodeCourt();
-        }
+        while (codesGeneres.has(code)) { code = genererCodeCourt(); }
         codesGeneres.add(code);
 
         return {
@@ -416,7 +397,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>
-            <input type="text" class="input-field" style="margin:0; padding:6px; font-size:0.9rem;" value="${el.prenom}" onchange="ajusterPrenomPreview(${idx}, this.value)">
+            <input type="text" class="input-field" style="margin:0; padding:6px; font-size:0.9rem;" value="${el.prenom}" onchange="parsedElevesPreview[${idx}].prenom = this.value.trim()">
             ${el.estDoublon ? '<span class="badge-duplicate">Homonyme résolu</span>' : ''}
           </td>
           <td>${el.date_naissance || '-'}</td>
@@ -428,22 +409,10 @@
       document.getElementById('previewZone').style.display = 'block';
     }
 
-    function ajusterPrenomPreview(index, nouveauPrenom) {
-      if (parsedElevesPreview[index]) {
-        parsedElevesPreview[index].prenom = nouveauPrenom.trim();
-      }
-    }
-
     async function enregistrerClasseValidee() {
       const nomClasse = document.getElementById('nomClasseInput').value.trim();
-      if (!nomClasse) {
-        alert("Veuillez renseigner un nom pour cette classe (ex: 2nde 4).");
-        return;
-      }
-      if (!parsedElevesPreview || parsedElevesPreview.length === 0) {
-        alert("Aucun élève à enregistrer.");
-        return;
-      }
+      if (!nomClasse) { alert("Veuillez renseigner un nom pour cette classe (ex: 2nde 4)."); return; }
+      if (!parsedElevesPreview || parsedElevesPreview.length === 0) { alert("Aucun élève à enregistrer."); return; }
 
       const res = await fetch('/api/classes', {
         method: 'POST',
@@ -491,9 +460,10 @@
                   <td><strong>${c.nom}</strong></td>
                   <td>${c.effectif} élèves</td>
                   <td>${new Date(c.date_creation).toLocaleDateString()}</td>
-                  <td>
-                    <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem; margin:0; display:inline-block; width:auto;" onclick="voirElevesClasse(${c.id}, '${c.nom}')">Voir les codes</button>
-                    <button class="btn-danger" style="margin-left:5px;" onclick="supprimerClasse(${c.id}, '${c.nom}')">Suppr</button>
+                  <td style="display:flex; gap:5px; align-items:center;">
+                    <button class="btn-pdf" onclick="genererPdfClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">📄 Télécharger PDF</button>
+                    <button class="btn btn-secondary" style="padding:5px 8px; font-size:0.8rem; margin:0; width:auto;" onclick="voirElevesClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">Aperçu</button>
+                    <button class="btn-danger" onclick="supprimerClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">Suppr</button>
                   </td>
                 </tr>
               `).join('')}
@@ -505,6 +475,122 @@
       }
     }
 
+    // ==================== GÉNÉRATEUR PDF (JSPDF) ====================
+    async function genererPdfClasse(classeId, nomClasse) {
+      try {
+        const res = await fetch(`/api/classes?classe_id=${classeId}`);
+        const eleves = await res.json();
+
+        if (eleves.length === 0) { alert("Aucun élève dans cette classe."); return; }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // 1. En-tête
+        doc.setFillColor(11, 92, 171); // Bleu Pronote
+        doc.rect(0, 0, 210, 22, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Fiche de Connexion QCM — Classe : ${nomClasse}`, 14, 15);
+
+        // Sous-titre
+        doc.setTextColor(71, 85, 105);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Enseignant : ${currentProf.nom || currentProf.email}  |  Généré le : ${new Date().toLocaleDateString()}`, 14, 30);
+        doc.text(`Document confidentiel contenant les identifiants d'accès individuels des élèves.`, 14, 35);
+
+        // 2. Tableau structuré
+        const tableData = eleves.map((e, index) => [
+          index + 1,
+          e.prenom,
+          e.date_naissance || "-",
+          e.code_eleve
+        ]);
+
+        doc.autoTable({
+          startY: 40,
+          head: [['N°', 'Prénom élève', 'Né(e) le', 'Code individuel']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [11, 92, 171], textColor: [255, 255, 255], fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 15, halign: 'center' },
+            1: { fontStyle: 'bold' },
+            2: { halign: 'center' },
+            3: { fontStyle: 'bold', font: 'courier', halign: 'center', textColor: [146, 64, 14], fillColor: [254, 243, 199] }
+          },
+          styles: { fontSize: 10, cellPadding: 4 }
+        });
+
+        // 3. Cartons individuels prédécoupables sur une nouvelle page
+        doc.addPage();
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(11, 92, 171);
+        doc.text(`Étiquettes individuelles à découper — ${nomClasse}`, 14, 15);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Distribuez une étiquette à chaque élève pour ses évaluations de l'année.`, 14, 21);
+
+        let x = 14;
+        let y = 26;
+        const boxW = 88;
+        const boxH = 34;
+
+        eleves.forEach((e, i) => {
+          doc.setDrawColor(203, 213, 225);
+          doc.setLineDashPattern([2, 2], 0);
+          doc.rect(x, y, boxW, boxH);
+
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(15, 23, 42);
+          doc.text(`Élève : ${e.prenom}`, x + 5, y + 8);
+
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 116, 139);
+          doc.text(`Classe : ${nomClasse}  |  Né(e) le : ${e.date_naissance || '-'}`, x + 5, y + 14);
+
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(11, 92, 171);
+          doc.text(`Code personnel :`, x + 5, y + 23);
+
+          doc.setFontSize(12);
+          doc.setFont("courier", "bold");
+          doc.setTextColor(180, 83, 9);
+          doc.text(`${e.code_eleve}`, x + 40, y + 23);
+
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(148, 163, 184);
+          doc.text(`Site QCM : ${window.location.origin}`, x + 5, y + 30);
+
+          if (i % 2 === 0) {
+            x += boxW + 6;
+          } else {
+            x = 14;
+            y += boxH + 6;
+          }
+
+          if (y + boxH > 280 && i < eleves.length - 1) {
+            doc.addPage();
+            x = 14;
+            y = 15;
+          }
+        });
+
+        doc.save(`Codes_Eleves_${nomClasse.replace(/\s+/g, '_')}.pdf`);
+      } catch(err) {
+        console.error("Erreur PDF:", err);
+        alert("Impossible de générer le PDF : " + err.message);
+      }
+    }
+
     async function voirElevesClasse(classeId, nomClasse) {
       try {
         const res = await fetch(`/api/classes?classe_id=${classeId}`);
@@ -513,22 +599,19 @@
         const win = window.open("", "_blank");
         win.document.write(`
           <html><head><title>Liste élèves - ${nomClasse}</title>
-          <style>body { font-family:sans-serif; padding:20px; } table { border-collapse:collapse; width:100%; } th, td { border:1px solid #ccc; padding:8px; text-align:left; } th { background:#eee; } .code { font-family:monospace; font-weight:bold; font-size:1.1rem; }</style>
+          <style>body { font-family:sans-serif; padding:20px; } table { border-collapse:collapse; width:100%; } th, td { border:1px solid #ccc; padding:8px; text-align:left; } th { background:#eee; } .code { font-family:monospace; font-weight:bold; font-size:1.1rem; color:#b45309; }</style>
           </head><body>
-          <h2>Codes de connexion - Classe ${nomClasse}</h2>
-          <p>Distribuez chaque code individuel à son élève correspondant.</p>
+          <h2>Liste des identifiants élèves — ${nomClasse}</h2>
           <table>
-            <thead><tr><th>Prénom</th><th>Date de naissance</th><th>Code personnel élève</th></tr></thead>
+            <thead><tr><th>N°</th><th>Prénom</th><th>Date de naissance</th><th>Code personnel</th></tr></thead>
             <tbody>
-              ${eleves.map(e => `<tr><td>${e.prenom}</td><td>${e.date_naissance || '-'}</td><td class="code">${e.code_eleve}</td></tr>`).join('')}
+              ${eleves.map((e, i) => `<tr><td>${i+1}</td><td><strong>${e.prenom}</strong></td><td>${e.date_naissance || '-'}</td><td class="code">${e.code_eleve}</td></tr>`).join('')}
             </tbody>
           </table>
-          <br><button onclick="window.print()">Imprimer la liste</button>
+          <br><button onclick="window.print()">Imprimer cette page</button>
           </body></html>
         `);
-      } catch(e) {
-        alert("Erreur lors de la récupération des élèves.");
-      }
+      } catch(e) { alert("Erreur lors de la récupération des élèves."); }
     }
 
     async function supprimerClasse(classeId, nomClasse) {
@@ -582,7 +665,7 @@
       basculerMode('prof');
     }
 
-    // ==================== PUBLICATION DU QCM (PROF) ====================
+    // ==================== QCM XML PROF ====================
     document.getElementById('xmlProfInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -697,7 +780,7 @@
       currentCode = document.getElementById('eleveCodeSession').value.trim().toUpperCase();
 
       if (!eleveInfo.prenom || !eleveInfo.code_perso || !currentCode) {
-        alert("Veuillez renseigner votre prénom, votre code individuel et le code du QCM.");
+        alert("Veuillez renseigner votre prénom, votre code individuel et le code de l'épreuve.");
         return;
       }
 
