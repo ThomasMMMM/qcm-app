@@ -436,7 +436,7 @@
           fileInput.value = "";
           chargerBanqueQcm();
         } else {
-          alert("Erreur lors de l'enregistrement dans la banque.");
+          const errData = await res.json().catch(() => ({})); alert("Erreur : " + (errData.error || res.statusText));
         }
       };
       reader.readAsText(file, "UTF-8");
