@@ -28,13 +28,20 @@
     .input-field { width: 100%; padding: 10px; margin: 6px 0 14px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
     .alerte { background: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 0.88rem; }
     
+    /* Bandeau Simulateur Enseignant */
+    .simu-banner { background: #ea580c; color: white; padding: 10px 16px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: bold; }
+    .simu-btn-exit { background: white; color: #ea580c; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+    .simu-btn-exit:hover { background: #ffedd5; }
+
     .btn { display: block; width: 100%; padding: 12px; background: var(--pronote-blue); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background 0.15s; }
     .btn:hover { background: #08437d; }
     .btn-secondary { background: #64748b; margin-top: 10px; }
     .btn-secondary:hover { background: #475569; }
     .btn-success { background: #16a34a; }
     .btn-success:hover { background: #15803d; }
-    .btn-pdf { background: #0284c7; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-simu { background: #ea580c; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .btn-simu:hover { background: #c2410c; }
+    .btn-pdf { background: #0284c7; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
     .btn-pdf:hover { background: #0369a1; }
     .btn-danger { background: #dc2626; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; }
 
@@ -94,8 +101,14 @@
       </div>
     </div>
 
-    <!-- 2. VUE ÉLÈVE : QUESTION PAR QUESTION -->
+    <!-- 2. VUE ÉLÈVE & SIMULATEUR : QUESTION PAR QUESTION -->
     <div id="viewEleveQcm" class="card" style="display: none;">
+      <!-- Bandeau Simulation -->
+      <div id="simuBannerBox" class="simu-banner" style="display: none;">
+        <span>🔍 MODE SIMULATION ENSEIGNANT (Aucun résultat ne sera enregistré)</span>
+        <button type="button" class="simu-btn-exit" onclick="quitterSimulation()">Quitter la simulation</button>
+      </div>
+
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <span class="q-counter" id="questionProgressionText">Question 1 sur 5</span>
         <span style="font-size: 0.85rem; font-weight: bold; color: var(--pronote-blue);" id="questionPointsText">1 pt</span>
@@ -105,7 +118,7 @@
         <div class="progress-bar-fill" id="progressBarFill"></div>
       </div>
 
-      <div class="alerte">
+      <div class="alerte" id="alerteSortieEleve">
         ⚠️ Attention : Les changements d'application ou d'onglet sont consignés.
       </div>
 
@@ -116,14 +129,23 @@
       <button type="button" class="btn" id="btnQuestionSuivante" style="display: none;" onclick="passerQuestionSuivante()">Question suivante &rarr;</button>
     </div>
 
-    <!-- 3. VUE ÉLÈVE : BILAN FINAL -->
+    <!-- 3. VUE ÉLÈVE & SIMULATEUR : BILAN FINAL -->
     <div id="viewEleveFin" class="card" style="display: none; text-align: center;">
-      <h2>Évaluation terminée !</h2>
-      <p>Votre copie a été transmise avec succès au professeur.</p>
+      <!-- Bandeau Fin Simulation -->
+      <div id="simuBannerFin" class="simu-banner" style="display: none;">
+        <span>🔍 FIN DE LA SIMULATION ENSEIGNANT (Résultat fictif)</span>
+        <button type="button" class="simu-btn-exit" onclick="quitterSimulation()">Retour au tableau de bord</button>
+      </div>
+
+      <h2 id="finTitleText">Évaluation terminée !</h2>
+      <p id="finDescText">Votre copie a été transmise avec succès au professeur.</p>
+      
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <span style="font-size: 0.9rem; color: #64748b;">Note obtenue</span>
         <h3 id="noteFinaleText" style="color: var(--pronote-blue); font-size: 2rem; margin: 5px 0 0 0;"></h3>
       </div>
+
+      <button id="btnRetourApresSimu" type="button" class="btn btn-secondary" style="display:none;" onclick="quitterSimulation()">Retour au tableau de bord enseignant</button>
     </div>
 
     <!-- 4. VUE ENSEIGNANT : AUTHENTIFICATION -->
@@ -162,7 +184,7 @@
       <!-- MODULE 1 : BANQUE DE QCM -->
       <div class="section-box">
         <h3>📚 Banque de QCM (Questionnaires réutilisables)</h3>
-        <p style="font-size:0.85rem; color:#64748b; margin-top:0;">Importez ici vos questionnaires XML Pronote pour les conserver dans votre bibliothèque.</p>
+        <p style="font-size:0.85rem; color:#64748b; margin-top:0;">Importez vos XML Pronote pour constituer votre bibliothèque et testez-les directement.</p>
         
         <div style="display:flex; gap:10px; align-items:flex-end;">
           <div style="flex:2;">
@@ -174,9 +196,9 @@
           </div>
         </div>
 
-        <div style="max-height:160px; overflow-y:auto; margin-top:12px;">
+        <div style="max-height:180px; overflow-y:auto; margin-top:12px;">
           <table>
-            <thead><tr><th>Titre du QCM</th><th>Date</th><th>Action</th></tr></thead>
+            <thead><tr><th>Titre du QCM</th><th>Date</th><th>Simulateur & Actions</th></tr></thead>
             <tbody id="tableBanqueBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
           </table>
         </div>
@@ -213,7 +235,7 @@
       <!-- MODULE 3 : LANCER UNE NOUVELLE SÉANCE D'ÉVALUATION -->
       <div class="section-box" style="background:#f0f9ff; border-color:#bae6fd;">
         <h3 style="color:#0369a1;">🚀 Lancer une Séance d'évaluation</h3>
-        <p style="font-size:0.85rem; color:#0369a1; margin-top:0;">Associez un QCM de votre banque à une classe et attribuez un code court aux élèves.</p>
+        <p style="font-size:0.85rem; color:#0369a1; margin-top:0;">Associez un QCM à une classe, attribuez un code d'épreuve et testez en simulation avant ouverture.</p>
         
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <div style="flex:1; min-width:200px;">
@@ -234,7 +256,7 @@
         <h4 style="margin-top:20px; margin-bottom:8px;">Séances programmées</h4>
         <div style="overflow-x:auto;">
           <table>
-            <thead><tr><th>Code Séance</th><th>QCM</th><th>Classe</th><th>Statut</th><th>Copies</th><th>Action</th></tr></thead>
+            <thead><tr><th>Code</th><th>QCM</th><th>Classe</th><th>Statut</th><th>Copies</th><th>Simulateur & Action</th></tr></thead>
             <tbody id="tableSeancesBody"><tr><td colspan="6">Chargement...</td></tr></tbody>
           </table>
         </div>
@@ -244,7 +266,6 @@
       <div class="section-box">
         <h3>📋 Copies Reçues & Résultats</h3>
         
-        <!-- Barre de filtres dynamiques -->
         <div class="filter-bar">
           <div>
             <label style="font-size:0.8rem; font-weight:bold; color:#475569;">Filtrer par Classe :</label>
@@ -294,16 +315,16 @@
     let authMode = "login";
     let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
 
-    // Déroulement élève
+    let isModeSimulation = false;
     let currentQuestionIndex = 0;
     let totalScoreObtenu = 0;
     let totalScorePossible = 0;
 
-    // Cache des données Professeur
     let listeClassesMemoire = [];
     let listeQcmMemoire = [];
     let listeSeancesMemoire = [];
     let parsedElevesPreview = [];
+    let memoireToutesLesNotes = [];
 
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -427,18 +448,19 @@
         const res = await fetch(`/api/banque?prof_id=${currentProf.id}`);
         listeQcmMemoire = await res.json();
 
-        // Remplir tableau banque
         const tbody = document.getElementById('tableBanqueBody');
         tbody.innerHTML = listeQcmMemoire.length === 0 ? "<tr><td colspan='3'>Aucun QCM enregistré.</td></tr>" :
           listeQcmMemoire.map(q => `
             <tr>
               <td><strong>${q.titre}</strong></td>
               <td>${new Date(q.date_creation).toLocaleDateString()}</td>
-              <td><button class="btn-danger" onclick="supprimerQcmBanque(${q.id}, '${q.titre.replace(/'/g, "\\'")}')">Supprimer</button></td>
+              <td style="display:flex; gap:6px;">
+                <button class="btn-simu" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
+                <button class="btn-danger" onclick="supprimerQcmBanque(${q.id}, '${q.titre.replace(/'/g, "\\'")}')">Suppr</button>
+              </td>
             </tr>
           `).join('');
 
-        // Remplir sélecteur de séance
         const sel = document.getElementById('selectSeanceQcm');
         sel.innerHTML = '<option value="">-- Choisir un QCM --</option>' +
           listeQcmMemoire.map(q => `<option value="${q.id}">${q.titre}</option>`).join('');
@@ -562,7 +584,6 @@
         const res = await fetch(`/api/classes?prof_id=${currentProf.id}`);
         listeClassesMemoire = await res.json();
 
-        // Remplir sélecteurs de classe
         const selSeance = document.getElementById('selectSeanceClasse');
         const selFiltre = document.getElementById('filtreClasseSelect');
         selSeance.innerHTML = '<option value="">-- Choisir une classe --</option>' +
@@ -673,7 +694,6 @@
         const res = await fetch(`/api/seances?prof_id=${currentProf.id}`);
         listeSeancesMemoire = await res.json();
 
-        // Remplir le filtre des séances
         const selFiltre = document.getElementById('filtreSeanceSelect');
         selFiltre.innerHTML = '<option value="">Toutes les séances</option>' +
           listeSeancesMemoire.map(s => `<option value="${s.id}">${s.code_session} (${s.classe_nom})</option>`).join('');
@@ -689,20 +709,71 @@
                 <span class="${s.actif ? 'badge-active' : 'badge-closed'}">${s.actif ? 'Active' : 'Clôturée'}</span>
               </td>
               <td>${s.nb_copies} copie(s)</td>
-              <td>
+              <td style="display:flex; gap:4px; align-items:center;">
+                <button class="btn-simu" onclick="lancerSimulationSeance(${s.id})">🔍 Tester</button>
                 <button class="btn-pdf" style="background:${s.actif ? '#eab308' : '#16a34a'};" onclick="toggleEtatSeance(${s.id}, ${s.actif})">
-                  ${s.actif ? 'Clôturer' : 'Rouvrir'}
+                  ${s.actif ? 'Fermer' : 'Rouvrir'}
                 </button>
-                <button class="btn-danger" style="margin-left:4px;" onclick="supprimerSeance(${s.id}, '${s.code_session}')">Suppr</button>
+                <button class="btn-danger" onclick="supprimerSeance(${s.id}, '${s.code_session}')">Suppr</button>
               </td>
             </tr>
           `).join('');
       } catch(e) {}
     }
 
-    // ==================== 4. RÉSULTATS & COPIES ====================
-    let memoireToutesLesNotes = [];
+    // ==================== 4. SIMULATEUR PROFESSEUR ====================
+    async function lancerSimulationBanque(qcmId) {
+      try {
+        const resDetail = await fetch(`/api/eleve_quiz?simulateur_qcm_id=${qcmId}`);
+        const data = await resDetail.json();
+        demarrerSimulation(data.questions, `[Simulation] ${data.titre}`);
+      } catch(e) {
+        alert("Erreur au chargement du simulateur : " + e.message);
+      }
+    }
 
+    async function lancerSimulationSeance(seanceId) {
+      try {
+        const seance = listeSeancesMemoire.find(s => s.id === seanceId);
+        if (!seance) return;
+        
+        const res = await fetch(`/api/eleve_quiz?simulateur_seance_id=${seanceId}`);
+        const data = await res.json();
+
+        demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`);
+      } catch(e) {
+        alert("Erreur au chargement du simulateur : " + e.message);
+      }
+    }
+
+    function demarrerSimulation(questions, titre) {
+      isModeSimulation = true;
+      currentQuestions = questions;
+      currentQuestionIndex = 0;
+      totalScoreObtenu = 0;
+      totalScorePossible = 0;
+      currentQuestions.forEach(q => { totalScorePossible += q.points; });
+
+      document.getElementById('viewProfDashboard').style.display = 'none';
+      document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveQcm').style.display = 'block';
+
+      document.getElementById('simuBannerBox').style.display = 'flex';
+      document.getElementById('alerteSortieEleve').innerHTML = "ℹ️ <strong>Mode Test Professeur :</strong> Les avertissements s'affichent normalement mais aucun événement n'est transmis au serveur.";
+
+      afficherQuestionCourante();
+    }
+
+    function quitterSimulation() {
+      isModeSimulation = false;
+      document.getElementById('simuBannerBox').style.display = 'none';
+      document.getElementById('simuBannerFin').style.display = 'none';
+      document.getElementById('btnRetourApresSimu').style.display = 'none';
+      document.getElementById('alerteSortieEleve').innerHTML = "⚠️ Attention : Les changements d'application ou d'onglet sont consignés.";
+      basculerMode('prof');
+    }
+
+    // ==================== 5. RÉSULTATS & COPIES ====================
     async function chargerResultatsProf() {
       if (!currentProf) return;
       try {
@@ -733,14 +804,12 @@
         filtrees = filtrees.filter(n => n.seance_id == seanceFiltreId);
       }
       if (classeFiltreId) {
-        // Retrouver le nom de la classe
         const cl = listeClassesMemoire.find(c => c.id == classeFiltreId);
         if (cl) {
           filtrees = filtrees.filter(n => (n.classe_nom === cl.nom) || (n.classe === cl.nom));
         }
       }
 
-      // Calcul moyenne
       let moyenne = 0;
       if (filtrees.length > 0) {
         const total = filtrees.reduce((acc, n) => acc + n.note, 0);
@@ -762,8 +831,13 @@
         `).join('');
     }
 
-    // ==================== CÔTÉ ÉLÈVE ====================
+    // ==================== 6. PASSATION ÉLÈVE & SIMULATEUR ====================
     async function lancerQcmEleve() {
+      isModeSimulation = false;
+      document.getElementById('simuBannerBox').style.display = 'none';
+      document.getElementById('simuBannerFin').style.display = 'none';
+      document.getElementById('btnRetourApresSimu').style.display = 'none';
+
       eleveInfo.prenom = document.getElementById('elevePrenom').value.trim();
       eleveInfo.code_perso = document.getElementById('eleveCodePerso').value.trim().toUpperCase();
       currentCode = document.getElementById('eleveCodeSession').value.trim().toUpperCase();
@@ -920,7 +994,7 @@
       document.getElementById('btnValiderQuestion').style.display = 'none';
       const btnSuivant = document.getElementById('btnQuestionSuivante');
       btnSuivant.style.display = 'block';
-      btnSuivant.innerText = currentQuestionIndex === currentQuestions.length - 1 ? "Terminer l'évaluation" : "Question suivante →";
+      btnSuivant.innerText = currentQuestionIndex === currentQuestions.length - 1 ? (isModeSimulation ? "Terminer la simulation" : "Terminer l'évaluation") : "Question suivante →";
     }
 
     async function passerQuestionSuivante() {
@@ -935,18 +1009,29 @@
     async function terminerEvaluation() {
       const note20 = ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2);
 
-      await fetch('/api/soumettre', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nom: eleveInfo.prenom,
-          prenom: `[Code: ${eleveInfo.code_perso}]`,
-          session_code: currentCode,
-          seance_id: currentSeanceId,
-          note: parseFloat(note20),
-          total: 20
-        })
-      });
+      if (!isModeSimulation) {
+        await fetch('/api/soumettre', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: eleveInfo.prenom,
+            prenom: `[Code: ${eleveInfo.code_perso}]`,
+            session_code: currentCode,
+            seance_id: currentSeanceId,
+            note: parseFloat(note20),
+            total: 20
+          })
+        });
+        document.getElementById('simuBannerFin').style.display = 'none';
+        document.getElementById('btnRetourApresSimu').style.display = 'none';
+        document.getElementById('finTitleText').innerText = "Évaluation terminée !";
+        document.getElementById('finDescText').innerText = "Votre copie a été transmise avec succès au professeur.";
+      } else {
+        document.getElementById('simuBannerFin').style.display = 'flex';
+        document.getElementById('btnRetourApresSimu').style.display = 'block';
+        document.getElementById('finTitleText').innerText = "Fin de la simulation";
+        document.getElementById('finDescText').innerText = "Vous avez testé le QCM en conditions réelles. Aucun résultat n'a été enregistré dans la base de données.";
+      }
 
       document.getElementById('viewEleveQcm').style.display = 'none';
       document.getElementById('viewEleveFin').style.display = 'block';
@@ -954,6 +1039,7 @@
     }
 
     async function logSortie(type) {
+      if (isModeSimulation) return;
       if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
       try {
         await fetch('/api/evenement', {
@@ -968,11 +1054,13 @@
     }
 
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") {
-        logSortie("page_masquee");
-      } else if (document.visibilityState === "visible") {
-        logSortie("retour_qcm");
-        alert("Attention : vous avez quitté la page du QCM. Cette sortie est signalée au professeur.");
+      if (document.visibilityState === "viewEleveQcm" || document.getElementById('viewEleveQcm').style.display === 'block') {
+        if (document.visibilityState === "hidden") {
+          logSortie("page_masquee");
+        } else if (document.visibilityState === "visible") {
+          logSortie("retour_qcm");
+          alert(isModeSimulation ? "Simulation : Vous avez quitté la page (cet événement serait signalé au professeur)." : "Attention : vous avez quitté la page du QCM. Cette sortie est signalée au professeur.");
+        }
       }
     });
 

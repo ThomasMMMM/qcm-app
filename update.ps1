@@ -1,0 +1,1219 @@
+﻿Write-Host ">>> Mise à jour de public/index.html avec le Simulateur Enseignant..." -ForegroundColor Cyan
+
+Set-Content -Path public/index.html -Encoding UTF8 -Value @''
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Évaluation QCM</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root {
+      --pronote-blue: #0b5cab;
+      --pronote-bg: #eef2f6;
+      --pronote-card: #ffffff;
+      --border-color: #d1d5db;
+      --correct-bg: #dcfce7;
+      --correct-border: #22c55e;
+      --correct-text: #15803d;
+      --incorrect-bg: #fee2e2;
+      --incorrect-border: #ef4444;
+      --incorrect-text: #b91c1c;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 15px; background: var(--pronote-bg); color: #1e293b; }
+    .container { max-width: 820px; margin: 0 auto; }
+    .card { background: var(--pronote-card); border-radius: 8px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    h1, h2, h3 { color: var(--pronote-blue); margin-top: 0; }
+    
+    .input-field { width: 100%; padding: 10px; margin: 6px 0 14px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+    .alerte { background: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 0.88rem; }
+    
+    /* Bandeau Simulateur Enseignant */
+    .simu-banner { background: #ea580c; color: white; padding: 10px 16px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: bold; }
+    .simu-btn-exit { background: white; color: #ea580c; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+    .simu-btn-exit:hover { background: #ffedd5; }
+
+    .btn { display: block; width: 100%; padding: 12px; background: var(--pronote-blue); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background 0.15s; }
+    .btn:hover { background: #08437d; }
+    .btn-secondary { background: #64748b; margin-top: 10px; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-success { background: #16a34a; }
+    .btn-success:hover { background: #15803d; }
+    .btn-simu { background: #ea580c; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .btn-simu:hover { background: #c2410c; }
+    .btn-pdf { background: #0284c7; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .btn-pdf:hover { background: #0369a1; }
+    .btn-danger { background: #dc2626; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; }
+
+    .progress-bar-container { background: #e2e8f0; border-radius: 999px; height: 8px; width: 100%; overflow: hidden; margin: 12px 0 20px 0; }
+    .progress-bar-fill { background: var(--pronote-blue); height: 100%; width: 0%; transition: width 0.3s ease; }
+    .q-counter { font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .question-enonce { font-size: 1.05rem; font-weight: 500; margin: 12px 0 16px 0; line-height: 1.45; }
+    .img-qcm { max-width: 100%; height: auto; border-radius: 6px; margin: 12px 0; border: 1px solid #e2e8f0; display: block; }
+    
+    .reponse-label { display: flex; align-items: flex-start; padding: 12px 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+    .reponse-label:hover { background: #f1f5f9; }
+    .reponse-label input { margin-top: 3px; margin-right: 12px; transform: scale(1.2); }
+    
+    .reponse-label.is-correct { background: var(--correct-bg) !important; border-color: var(--correct-border) !important; color: var(--correct-text) !important; font-weight: 500; }
+    .reponse-label.is-wrong { background: var(--incorrect-bg) !important; border-color: var(--incorrect-border) !important; color: var(--incorrect-text) !important; }
+    .feedback-box { background: #f0fdf4; border-left: 4px solid var(--correct-border); padding: 12px; border-radius: 4px; margin-top: 15px; font-size: 0.95rem; color: #166534; }
+    .feedback-box.has-error { background: #fef2f2; border-left-color: var(--incorrect-border); color: #991b1b; }
+    
+    .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #cbd5e1; }
+    .matching-row select { padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.95rem; background: white; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+    th { background: #f8fafc; color: #475569; }
+    .badge { display: inline-block; padding: 3px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
+    .badge-session { font-family: monospace; font-size: 0.9rem; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .badge-share { font-family: monospace; font-size: 0.8rem; background: #ede9fe; color: #6d28d9; padding: 3px 6px; border-radius: 4px; cursor: pointer; border: 1px solid #ddd6fe; }
+    .badge-active { background: #dcfce7; color: #15803d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+    .badge-closed { background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+
+    .link-mode { text-align: center; margin-top: 20px; font-size: 0.9rem; }
+    .link-mode a { color: var(--pronote-blue); cursor: pointer; text-decoration: underline; }
+    .section-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+    .filter-bar { display: flex; gap: 10px; align-items: center; background: white; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 12px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- 1. VUE ÉLÈVE : ACCUEIL -->
+    <div id="viewEleveLogin" class="card">
+      <h1>Connexion à l'évaluation</h1>
+      <label>Votre Prénom :</label>
+      <input type="text" id="elevePrenom" class="input-field" placeholder="Ex: Alice">
+
+      <label>Votre Code individuel élève (ex: sur votre étiquette) :</label>
+      <input type="text" id="eleveCodePerso" class="input-field" style="text-transform:uppercase; font-family:monospace; font-weight:bold; letter-spacing:1px;" placeholder="Ex: 7B2K">
+
+      <label>Code de l'épreuve (au tableau) :</label>
+      <input type="text" id="eleveCodeSession" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex: DS1">
+
+      <button type="button" class="btn" onclick="lancerQcmEleve()">Commencer l'évaluation</button>
+      
+      <div class="link-mode">
+        <a onclick="basculerMode('prof')">Espace Enseignant</a>
+      </div>
+    </div>
+
+    <!-- 2. VUE ÉLÈVE & SIMULATEUR : QUESTION PAR QUESTION -->
+    <div id="viewEleveQcm" class="card" style="display: none;">
+      <!-- Bandeau Simulation -->
+      <div id="simuBannerBox" class="simu-banner" style="display: none;">
+        <span>🔍 MODE SIMULATION ENSEIGNANT (Aucun résultat ne sera enregistré)</span>
+        <button type="button" class="simu-btn-exit" onclick="quitterSimulation()">Quitter la simulation</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <span class="q-counter" id="questionProgressionText">Question 1 sur 5</span>
+        <span style="font-size: 0.85rem; font-weight: bold; color: var(--pronote-blue);" id="questionPointsText">1 pt</span>
+      </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+
+      <div class="alerte" id="alerteSortieEleve">
+        ⚠️ Attention : Les changements d'application ou d'onglet sont consignés.
+      </div>
+
+      <div id="singleQuestionContainer"></div>
+      <div id="feedbackContainer" style="display: none;"></div>
+
+      <button type="button" class="btn" id="btnValiderQuestion" onclick="validerQuestionCourante()">Valider la réponse</button>
+      <button type="button" class="btn" id="btnQuestionSuivante" style="display: none;" onclick="passerQuestionSuivante()">Question suivante &rarr;</button>
+    </div>
+
+    <!-- 3. VUE ÉLÈVE & SIMULATEUR : BILAN FINAL -->
+    <div id="viewEleveFin" class="card" style="display: none; text-align: center;">
+      <!-- Bandeau Fin Simulation -->
+      <div id="simuBannerFin" class="simu-banner" style="display: none;">
+        <span>🔍 FIN DE LA SIMULATION ENSEIGNANT (Résultat fictif)</span>
+        <button type="button" class="simu-btn-exit" onclick="quitterSimulation()">Retour au tableau de bord</button>
+      </div>
+
+      <h2 id="finTitleText">Évaluation terminée !</h2>
+      <p id="finDescText">Votre copie a été transmise avec succès au professeur.</p>
+      
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <span style="font-size: 0.9rem; color: #64748b;">Note obtenue</span>
+        <h3 id="noteFinaleText" style="color: var(--pronote-blue); font-size: 2rem; margin: 5px 0 0 0;"></h3>
+      </div>
+
+      <button id="btnRetourApresSimu" type="button" class="btn btn-secondary" style="display:none;" onclick="quitterSimulation()">Retour au tableau de bord enseignant</button>
+    </div>
+
+    <!-- 4. VUE ENSEIGNANT : AUTHENTIFICATION -->
+    <div id="viewProfAuth" class="card" style="display: none;">
+      <h1 id="authTitle">Connexion Enseignant</h1>
+      
+      <div id="nomRegisterGroup" style="display: none;">
+        <label>Nom / Titre :</label>
+        <input type="text" id="profNom" class="input-field" placeholder="Ex : M. Martin">
+      </div>
+
+      <label>Email :</label>
+      <input type="email" id="profEmail" class="input-field" placeholder="enseignant@etablissement.fr">
+
+      <label>Mot de passe :</label>
+      <input type="password" id="profPassword" class="input-field" placeholder="••••••••">
+
+      <button type="button" class="btn" id="btnAuthSubmit" onclick="traiterAuthProf()">Se connecter</button>
+
+      <div style="font-size:0.9rem; margin-top:10px; text-align:center;">
+        <span id="authToggleText">Pas encore de compte ?</span>
+        <a id="authToggleLink" style="color:var(--pronote-blue); font-weight:bold; cursor:pointer;" onclick="toggleAuthMode()">Créer un compte</a>
+      </div>
+
+      <div class="link-mode"><a onclick="basculerMode('eleve')">Retour à l'écran élève</a></div>
+    </div>
+
+    <!-- 5. VUE ENSEIGNANT : DASHBOARD COMPLET -->
+    <div id="viewProfDashboard" class="card" style="display: none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0;">Tableau de bord Enseignant</h2>
+        <button onclick="deconnecterProf()" style="color:#dc2626; border:none; background:none; cursor:pointer; text-decoration:underline;">Se déconnecter</button>
+      </div>
+      <p style="margin-top:0; color:#64748b;">Connecté : <strong id="profNomConnecte"></strong></p>
+
+      <!-- MODULE 1 : BANQUE DE QCM -->
+      <div class="section-box">
+        <h3>📚 Banque de QCM (Questionnaires réutilisables)</h3>
+        <p style="font-size:0.85rem; color:#64748b; margin-top:0;">Importez vos XML Pronote pour constituer votre bibliothèque et testez-les directement.</p>
+        
+        <div style="display:flex; gap:10px; align-items:flex-end;">
+          <div style="flex:2;">
+            <label>Fichier XML Pronote :</label>
+            <input type="file" id="xmlBanqueInput" accept=".xml" class="input-field" style="margin-bottom:0;">
+          </div>
+          <div style="flex:1;">
+            <button type="button" class="btn" style="margin-top:0; padding:10px;" onclick="importerDansBanque()">Ajouter à ma banque</button>
+          </div>
+        </div>
+
+        <div style="max-height:180px; overflow-y:auto; margin-top:12px;">
+          <table>
+            <thead><tr><th>Titre du QCM</th><th>Date</th><th>Simulateur & Actions</th></tr></thead>
+            <tbody id="tableBanqueBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MODULE 2 : CLASSES & ÉLÈVES -->
+      <div class="section-box">
+        <h3>👥 Mes Classes & Codes Élèves</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:260px;">
+            <label>Nom de classe (ex: 2nde 4) :</label>
+            <input type="text" id="nomClasseInput" class="input-field" placeholder="Ex: 2nde 4">
+            <label>CSV Pronote :</label>
+            <input type="file" id="csvElevesInput" accept=".csv,.txt" class="input-field">
+          </div>
+          <div style="flex:1; min-width:260px; background:#fdf4ff; border:1px dashed #d8b4fe; padding:10px; border-radius:6px;">
+            <label style="color:#7e22ce; font-weight:bold;">🔗 Rejoindre via Code Partage :</label>
+            <input type="text" id="codeClassePartageInput" class="input-field" style="text-transform:uppercase; font-family:monospace;" placeholder="Ex: CLS-7K3M">
+            <button type="button" class="btn" style="background:#7e22ce; margin-top:5px; padding:8px;" onclick="rejoindreClassePartagee()">Rejoindre la classe</button>
+          </div>
+        </div>
+
+        <div id="previewZone" style="display:none; margin-top:12px; background:white; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+          <h4 style="margin:0 0 8px 0; color:#0d47a1;">Aperçu (<span id="previewCount">0</span> élèves)</h4>
+          <div style="max-height:140px; overflow-y:auto;">
+            <table><thead><tr><th>Prénom</th><th>Né(e) le</th><th>Code individuel</th></tr></thead><tbody id="previewTableBody"></tbody></table>
+          </div>
+          <button type="button" class="btn btn-success" style="margin-top:10px; padding:8px;" onclick="enregistrerClasseValidee()">Valider cette classe</button>
+        </div>
+
+        <div id="listeClassesContainer" style="margin-top:12px;">Chargement des classes...</div>
+      </div>
+
+      <!-- MODULE 3 : LANCER UNE NOUVELLE SÉANCE D'ÉVALUATION -->
+      <div class="section-box" style="background:#f0f9ff; border-color:#bae6fd;">
+        <h3 style="color:#0369a1;">🚀 Lancer une Séance d'évaluation</h3>
+        <p style="font-size:0.85rem; color:#0369a1; margin-top:0;">Associez un QCM à une classe, attribuez un code d'épreuve et testez en simulation avant ouverture.</p>
+        
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:200px;">
+            <label>Choisir le QCM :</label>
+            <select id="selectSeanceQcm" class="input-field"><option value="">-- Sélectionner un QCM --</option></select>
+          </div>
+          <div style="flex:1; min-width:200px;">
+            <label>Choisir la Classe :</label>
+            <select id="selectSeanceClasse" class="input-field"><option value="">-- Sélectionner une classe --</option></select>
+          </div>
+          <div style="flex:1; min-width:160px;">
+            <label>Code de l'épreuve :</label>
+            <input type="text" id="codeSeanceInput" class="input-field" style="text-transform:uppercase; font-weight:bold;" placeholder="Ex: DS1">
+          </div>
+        </div>
+        <button type="button" class="btn" onclick="creerNouvelleSeance()">Créer et activer la séance</button>
+
+        <h4 style="margin-top:20px; margin-bottom:8px;">Séances programmées</h4>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Code</th><th>QCM</th><th>Classe</th><th>Statut</th><th>Copies</th><th>Simulateur & Action</th></tr></thead>
+            <tbody id="tableSeancesBody"><tr><td colspan="6">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MODULE 4 : COPIES REÇUES CLASSÉES PAR CLASSE ET SÉANCE -->
+      <div class="section-box">
+        <h3>📋 Copies Reçues & Résultats</h3>
+        
+        <div class="filter-bar">
+          <div>
+            <label style="font-size:0.8rem; font-weight:bold; color:#475569;">Filtrer par Classe :</label>
+            <select id="filtreClasseSelect" class="input-field" style="margin:0; padding:6px; font-size:0.85rem;" onchange="filtrerResultats()">
+              <option value="">Toutes les classes</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem; font-weight:bold; color:#475569;">Filtrer par Séance :</label>
+            <select id="filtreSeanceSelect" class="input-field" style="margin:0; padding:6px; font-size:0.85rem;" onchange="filtrerResultats()">
+              <option value="">Toutes les séances</option>
+            </select>
+          </div>
+          <div style="margin-left:auto; font-size:0.9rem; font-weight:bold; color:var(--pronote-blue);" id="statCopiesText">
+            0 copie(s)
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>Heure</th><th>Élève</th><th>Classe</th><th>Séance</th><th>Note / 20</th></tr>
+            </thead>
+            <tbody id="tableNotesBody"><tr><td colspan="5">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+
+        <h4 style="margin-top:25px; margin-bottom:8px;">Journal des alertes de sorties d'écran</h4>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Heure</th><th>Élève</th><th>Événement</th></tr></thead>
+            <tbody id="tableSortiesBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="basculerMode('eleve')">Accéder à l'écran élève</button>
+    </div>
+
+  </div>
+
+  <script>
+    let currentQuestions = [];
+    let currentCode = "";
+    let currentSeanceId = null;
+    let eleveInfo = { prenom: "", code_perso: "" };
+    let authMode = "login";
+    let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
+
+    // Déroulement élève & simulation
+    let isModeSimulation = false;
+    let currentQuestionIndex = 0;
+    let totalScoreObtenu = 0;
+    let totalScorePossible = 0;
+
+    let listeClassesMemoire = [];
+    let listeQcmMemoire = [];
+    let listeSeancesMemoire = [];
+    let parsedElevesPreview = [];
+    let memoireToutesLesNotes = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') === 'prof') basculerMode('prof');
+    });
+
+    function basculerMode(mode) {
+      document.getElementById('viewEleveLogin').style.display = mode === 'eleve' ? 'block' : 'none';
+      document.getElementById('viewEleveQcm').style.display = 'none';
+      document.getElementById('viewEleveFin').style.display = 'none';
+
+      if (mode === 'prof') {
+        if (currentProf && currentProf.id) {
+          document.getElementById('viewProfAuth').style.display = 'none';
+          document.getElementById('viewProfDashboard').style.display = 'block';
+          document.getElementById('profNomConnecte').innerText = currentProf.nom || currentProf.email;
+          chargerToutEspaceProf();
+        } else {
+          document.getElementById('viewProfAuth').style.display = 'block';
+          document.getElementById('viewProfDashboard').style.display = 'none';
+        }
+      } else {
+        document.getElementById('viewProfAuth').style.display = 'none';
+        document.getElementById('viewProfDashboard').style.display = 'none';
+      }
+    }
+
+    function chargerToutEspaceProf() {
+      chargerBanqueQcm();
+      chargerClassesProf();
+      chargerSeancesProf();
+      chargerResultatsProf();
+    }
+
+    // ==================== 1. BANQUE DE QCM ====================
+    function cleanHTML(html) {
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      return div.innerText || div.textContent || "";
+    }
+
+    async function importerDansBanque() {
+      if (!currentProf) return;
+      const fileInput = document.getElementById('xmlBanqueInput');
+      const file = fileInput.files[0];
+      if (!file) { alert("Veuillez sélectionner un fichier XML Pronote."); return; }
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const contenu = evt.target.result;
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(contenu, "application/xml");
+        const qNodes = xmlDoc.getElementsByTagName("question");
+
+        let titreQcm = "QCM Pronote";
+        const questions = [];
+
+        for (let i = 0; i < qNodes.length; i++) {
+          const qNode = qNodes[i];
+          const type = qNode.getAttribute("type");
+
+          if (type === "category") {
+            const match = (qNode.getElementsByTagName("text")[0]?.textContent || "").match(/<name>(.*?)<\/name>/);
+            if (match && match[1]) titreQcm = match[1];
+            continue;
+          }
+
+          const name = qNode.getElementsByTagName("name")[0]?.getElementsByTagName("text")[0]?.textContent || `Question ${i}`;
+          const enonce = cleanHTML(qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "");
+          const image = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
+          const points = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
+          const generalFeedback = cleanHTML(qNode.getElementsByTagName("generalfeedback")[0]?.getElementsByTagName("text")[0]?.textContent || "");
+
+          if (type === "multichoice") {
+            const isSingle = qNode.getElementsByTagName("single")[0]?.textContent?.trim() === "true";
+            const ansNodes = qNode.getElementsByTagName("answer");
+            const answers = [];
+            for (let j = 0; j < ansNodes.length; j++) {
+              const a = ansNodes[j];
+              answers.push({
+                text: a.getElementsByTagName("text")[0]?.textContent || "",
+                fraction: parseFloat(a.getAttribute("fraction") || "0"),
+                image: a.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null,
+                feedback: cleanHTML(a.getElementsByTagName("feedback")[0]?.getElementsByTagName("text")[0]?.textContent || "")
+              });
+            }
+            questions.push({ type, title: name, enonce, image, single: isSingle, points, generalFeedback, answers });
+          } else if (type === "matching") {
+            const subNodes = qNode.getElementsByTagName("subquestion");
+            const subquestions = [];
+            for (let j = 0; j < subNodes.length; j++) {
+              const s = subNodes[j];
+              const q = s.getElementsByTagName("text")[0]?.textContent || "";
+              const a = s.getElementsByTagName("answer")[0]?.getElementsByTagName("text")[0]?.textContent || "";
+              if (q.trim()) subquestions.push({ question: q, answer: a });
+            }
+            questions.push({ type, title: name, enonce, image, points, generalFeedback, subquestions });
+          }
+        }
+
+        const res = await fetch('/api/banque', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ titre: titreQcm, questions, prof_id: currentProf.id })
+        });
+
+        if (res.ok) {
+          alert(`Questionnaire "${titreQcm}" ajouté à votre banque !`);
+          fileInput.value = "";
+          chargerBanqueQcm();
+        } else {
+          alert("Erreur lors de l'enregistrement dans la banque.");
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    async function chargerBanqueQcm() {
+      if (!currentProf) return;
+      try {
+        const res = await fetch(`/api/banque?prof_id=${currentProf.id}`);
+        listeQcmMemoire = await res.json();
+
+        const tbody = document.getElementById('tableBanqueBody');
+        tbody.innerHTML = listeQcmMemoire.length === 0 ? "<tr><td colspan='3'>Aucun QCM enregistré.</td></tr>" :
+          listeQcmMemoire.map(q => `
+            <tr>
+              <td><strong>${q.titre}</strong></td>
+              <td>${new Date(q.date_creation).toLocaleDateString()}</td>
+              <td style="display:flex; gap:6px;">
+                <button class="btn-simu" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
+                <button class="btn-danger" onclick="supprimerQcmBanque(${q.id}, '${q.titre.replace(/'/g, "\\'")}')">Suppr</button>
+              </td>
+            </tr>
+          `).join('');
+
+        const sel = document.getElementById('selectSeanceQcm');
+        sel.innerHTML = '<option value="">-- Choisir un QCM --</option>' +
+          listeQcmMemoire.map(q => `<option value="${q.id}">${q.titre}</option>`).join('');
+
+      } catch(e) {}
+    }
+
+    async function supprimerQcmBanque(qcmId, titre) {
+      if (!confirm(`Supprimer le questionnaire "${titre}" de votre banque ?`)) return;
+      await fetch(`/api/banque?qcm_id=${qcmId}&prof_id=${currentProf.id}`, { method: 'DELETE' });
+      chargerBanqueQcm();
+    }
+
+    // ==================== 2. CLASSES & ÉLÈVES ====================
+    document.getElementById('csvElevesInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => { analyserCsvPronote(evt.target.result); };
+      reader.readAsText(file, "UTF-8");
+    });
+
+    function genererCodeCourt() {
+      const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+      let code = "";
+      for (let i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+      return code;
+    }
+
+    function analyserCsvPronote(contenu) {
+      const lignes = contenu.split(/\r\n|\n/).filter(l => l.trim() !== "");
+      if (lignes.length < 2) return;
+      const sep = lignes[0].includes(';') ? ';' : (lignes[0].includes(',') ? ',' : '\t');
+      const headers = lignes[0].split(sep).map(h => h.replace(/^["'\s\uFEFF]+|["'\s]+$/g, ''));
+      const colEleve = headers.findIndex(h => /Élèves|Eleves|Nom/i.test(h));
+      const colDate = headers.findIndex(h => /Né\(e\)\s*le/i.test(h));
+
+      const elevesBruts = [];
+      for (let i = 1; i < lignes.length; i++) {
+        const row = lignes[i].split(sep).map(c => c.replace(/^["'\s]+|["'\s]+$/g, ''));
+        const cell = row[colEleve];
+        if (!cell) continue;
+
+        const dateN = colDate !== -1 && row[colDate] ? row[colDate] : "";
+        const tokens = cell.split(/\s+/).filter(t => t.length > 0);
+        const nomParts = tokens.filter(t => t === t.toUpperCase() && /[A-Z]/.test(t));
+        const prenomParts = tokens.filter(t => t !== t.toUpperCase() || !/[A-Z]/.test(t));
+
+        let prenom = prenomParts.join(' ');
+        let nom = nomParts.join(' ');
+        if (!prenom && tokens.length > 1) { prenom = tokens.slice(1).join(' '); nom = tokens[0]; }
+        else if (!prenom) { prenom = tokens[0]; }
+
+        elevesBruts.push({ nom, prenomBrut: prenom, dateNaissance: dateN, init: nom ? nom[0].toUpperCase() + '.' : '' });
+      }
+
+      const counts = {};
+      elevesBruts.forEach(e => { counts[e.prenomBrut.toLowerCase()] = (counts[e.prenomBrut.toLowerCase()] || 0) + 1; });
+      parsedElevesPreview = elevesBruts.map(e => {
+        const estDbl = counts[e.prenomBrut.toLowerCase()] > 1;
+        return {
+          prenom: estDbl && e.init ? `${e.prenomBrut} ${e.init}` : e.prenomBrut,
+          date_naissance: e.dateNaissance,
+          code_eleve: genererCodeCourt()
+        };
+      });
+
+      document.getElementById('previewCount').innerText = parsedElevesPreview.length;
+      document.getElementById('previewTableBody').innerHTML = parsedElevesPreview.map((el, idx) => `
+        <tr>
+          <td><input type="text" value="${el.prenom}" class="input-field" style="margin:0; padding:4px;" onchange="parsedElevesPreview[${idx}].prenom=this.value.trim()"></td>
+          <td>${el.date_naissance || '-'}</td>
+          <td><span class="badge-session">${el.code_eleve}</span></td>
+        </tr>
+      `).join('');
+      document.getElementById('previewZone').style.display = 'block';
+    }
+
+    async function enregistrerClasseValidee() {
+      const nomClasse = document.getElementById('nomClasseInput').value.trim();
+      if (!nomClasse) { alert("Veuillez saisir un nom pour la classe."); return; }
+
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom_classe: nomClasse, prof_id: currentProf.id, eleves: parsedElevesPreview })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Classe "${nomClasse}" enregistrée !`);
+        document.getElementById('previewZone').style.display = 'none';
+        document.getElementById('nomClasseInput').value = "";
+        document.getElementById('csvElevesInput').value = "";
+        chargerClassesProf();
+      } else {
+        alert("Erreur: " + data.error);
+      }
+    }
+
+    async function rejoindreClassePartagee() {
+      const code = document.getElementById('codeClassePartageInput').value.trim().toUpperCase();
+      if (!code) return;
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: "rejoindre", prof_id: currentProf.id, code_partage: code })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Vous avez rejoint la classe "${data.nom}" !`);
+        document.getElementById('codeClassePartageInput').value = "";
+        chargerClassesProf();
+      } else {
+        alert("Erreur: " + data.error);
+      }
+    }
+
+    async function chargerClassesProf() {
+      if (!currentProf) return;
+      try {
+        const res = await fetch(`/api/classes?prof_id=${currentProf.id}`);
+        listeClassesMemoire = await res.json();
+
+        const selSeance = document.getElementById('selectSeanceClasse');
+        const selFiltre = document.getElementById('filtreClasseSelect');
+        selSeance.innerHTML = '<option value="">-- Choisir une classe --</option>' +
+          listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+
+        selFiltre.innerHTML = '<option value="">Toutes les classes</option>' +
+          listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+
+        const cont = document.getElementById('listeClassesContainer');
+        cont.innerHTML = listeClassesMemoire.length === 0 ? "<p style='font-size:0.85rem; color:#64748b;'>Aucune classe enregistrée.</p>" : `
+          <table>
+            <thead><tr><th>Classe</th><th>Code Partage</th><th>Effectif</th><th>Actions</th></tr></thead>
+            <tbody>
+              ${listeClassesMemoire.map(c => `
+                <tr>
+                  <td><strong>${c.nom}</strong></td>
+                  <td><span class="badge-share" onclick="navigator.clipboard.writeText('${c.code_partage}'); alert('Code copié !');">📋 ${c.code_partage || 'N/A'}</span></td>
+                  <td>${c.effectif} élèves</td>
+                  <td style="display:flex; gap:5px;">
+                    <button class="btn-pdf" onclick="genererPdfClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}', '${c.code_partage || ''}')">PDF</button>
+                    <button class="btn-danger" onclick="supprimerClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">${c.createur_id == currentProf.id ? 'Suppr' : 'Retirer'}</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch(e) {}
+    }
+
+    async function supprimerClasse(classeId, nom) {
+      if (!confirm(`Supprimer ou retirer la classe "${nom}" ?`)) return;
+      await fetch(`/api/classes?classe_id=${classeId}&prof_id=${currentProf.id}`, { method: 'DELETE' });
+      chargerClassesProf();
+    }
+
+    async function genererPdfClasse(classeId, nomClasse, codePartage) {
+      const res = await fetch(`/api/classes?classe_id=${classeId}`);
+      const eleves = await res.json();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFillColor(11, 92, 171);
+      doc.rect(0, 0, 210, 20, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Identifiants QCM — Classe : ${nomClasse}`, 14, 14);
+
+      doc.autoTable({
+        startY: 30,
+        head: [['N°', 'Prénom élève', 'Né(e) le', 'Code individuel élève']],
+        body: eleves.map((e, idx) => [idx + 1, e.prenom, e.date_naissance || "-", e.code_eleve]),
+        theme: 'grid',
+        headStyles: { fillColor: [11, 92, 171] },
+        columnStyles: { 3: { fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], fillColor: [254, 243, 199] } }
+      });
+
+      doc.save(`Codes_${nomClasse}.pdf`);
+    }
+
+    // ==================== 3. SÉANCES D'ÉVALUATION ====================
+    async function creerNouvelleSeance() {
+      const qcmId = document.getElementById('selectSeanceQcm').value;
+      const classeId = document.getElementById('selectSeanceClasse').value;
+      const codeSession = document.getElementById('codeSeanceInput').value.trim().toUpperCase();
+
+      if (!qcmId || !classeId || !codeSession) {
+        alert("Veuillez sélectionner un QCM, une classe et choisir un code d'épreuve.");
+        return;
+      }
+
+      const res = await fetch('/api/seances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prof_id: currentProf.id, qcm_id: qcmId, classe_id: classeId, code_session: codeSession })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Séance activée avec succès !\nLes élèves se connecteront avec le code d'épreuve : ${codeSession}`);
+        document.getElementById('codeSeanceInput').value = "";
+        chargerSeancesProf();
+      } else {
+        alert("Erreur: " + data.error);
+      }
+    }
+
+    async function toggleEtatSeance(seanceId, etatActuel) {
+      await fetch('/api/seances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: "toggle_actif", seance_id: seanceId, actif: !etatActuel })
+      });
+      chargerSeancesProf();
+    }
+
+    async function supprimerSeance(seanceId, code) {
+      if (!confirm(`Supprimer la séance "${code}" ?`)) return;
+      await fetch(`/api/seances?seance_id=${seanceId}`, { method: 'DELETE' });
+      chargerSeancesProf();
+      chargerResultatsProf();
+    }
+
+    async function chargerSeancesProf() {
+      if (!currentProf) return;
+      try {
+        const res = await fetch(`/api/seances?prof_id=${currentProf.id}`);
+        listeSeancesMemoire = await res.json();
+
+        const selFiltre = document.getElementById('filtreSeanceSelect');
+        selFiltre.innerHTML = '<option value="">Toutes les séances</option>' +
+          listeSeancesMemoire.map(s => `<option value="${s.id}">${s.code_session} (${s.classe_nom})</option>`).join('');
+
+        const tbody = document.getElementById('tableSeancesBody');
+        tbody.innerHTML = listeSeancesMemoire.length === 0 ? "<tr><td colspan='6'>Aucune séance active.</td></tr>" :
+          listeSeancesMemoire.map(s => `
+            <tr>
+              <td><span class="badge-session">${s.code_session}</span></td>
+              <td>${s.qcm_titre}</td>
+              <td><strong>${s.classe_nom}</strong></td>
+              <td>
+                <span class="${s.actif ? 'badge-active' : 'badge-closed'}">${s.actif ? 'Active' : 'Clôturée'}</span>
+              </td>
+              <td>${s.nb_copies} copie(s)</td>
+              <td style="display:flex; gap:4px; align-items:center;">
+                <button class="btn-simu" onclick="lancerSimulationSeance(${s.id})">🔍 Tester</button>
+                <button class="btn-pdf" style="background:${s.actif ? '#eab308' : '#16a34a'};" onclick="toggleEtatSeance(${s.id}, ${s.actif})">
+                  ${s.actif ? 'Fermer' : 'Rouvrir'}
+                </button>
+                <button class="btn-danger" onclick="supprimerSeance(${s.id}, '${s.code_session}')">Suppr</button>
+              </td>
+            </tr>
+          `).join('');
+      } catch(e) {}
+    }
+
+    // ==================== 4. SIMULATEUR PROFESSEUR ====================
+    async function lancerSimulationBanque(qcmId) {
+      try {
+        const res = await fetch(`/api/banque?prof_id=${currentProf.id}`);
+        const liste = await res.json();
+        
+        // Trouver le QCM dans D1
+        const resDetail = await fetch(`/api/eleve_quiz?simulateur_qcm_id=${qcmId}`);
+        const data = await resDetail.json();
+
+        demarrerSimulation(data.questions, `[Simulation] ${data.titre}`);
+      } catch(e) {
+        alert("Erreur au chargement du simulateur : " + e.message);
+      }
+    }
+
+    async function lancerSimulationSeance(seanceId) {
+      try {
+        const seance = listeSeancesMemoire.find(s => s.id === seanceId);
+        if (!seance) return;
+        
+        const res = await fetch(`/api/eleve_quiz?simulateur_seance_id=${seanceId}`);
+        const data = await res.json();
+
+        demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`);
+      } catch(e) {
+        alert("Erreur au chargement du simulateur : " + e.message);
+      }
+    }
+
+    function demarrerSimulation(questions, titre) {
+      isModeSimulation = true;
+      currentQuestions = questions;
+      currentQuestionIndex = 0;
+      totalScoreObtenu = 0;
+      totalScorePossible = 0;
+      currentQuestions.forEach(q => { totalScorePossible += q.points; });
+
+      document.getElementById('viewProfDashboard').style.display = 'none';
+      document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveQcm').style.display = 'block';
+
+      // Affichage du bandeau de simulation
+      document.getElementById('simuBannerBox').style.display = 'flex';
+      document.getElementById('alerteSortieEleve').innerHTML = "ℹ️ <strong>Mode Test Professeur :</strong> Les avertissements s'affichent normalement mais aucun événement n'est transmis au serveur.";
+
+      afficherQuestionCourante();
+    }
+
+    function quitterSimulation() {
+      isModeSimulation = false;
+      document.getElementById('simuBannerBox').style.display = 'none';
+      document.getElementById('simuBannerFin').style.display = 'none';
+      document.getElementById('btnRetourApresSimu').style.display = 'none';
+      document.getElementById('alerteSortieEleve').innerHTML = "⚠️ Attention : Les changements d'application ou d'onglet sont consignés.";
+      basculerMode('prof');
+    }
+
+    // ==================== 5. RÉSULTATS & COPIES ====================
+    async function chargerResultatsProf() {
+      if (!currentProf) return;
+      try {
+        const res = await fetch(`/api/resultats?prof_id=${currentProf.id}`);
+        const data = await res.json();
+        memoireToutesLesNotes = data.notes;
+
+        filtrerResultats();
+
+        document.getElementById('tableSortiesBody').innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3'>Aucun incident.</td></tr>" :
+          data.sorties.map(s => `
+            <tr>
+              <td>${new Date(s.horodatage).toLocaleTimeString()}</td>
+              <td>${s.eleve_id}</td>
+              <td style="color:${s.type_evenement === 'page_masquee' ? '#d97706':'#2563eb'}; font-weight:bold;">${s.type_evenement}</td>
+            </tr>
+          `).join('');
+      } catch(e) {}
+    }
+
+    function filtrerResultats() {
+      const classeFiltreId = document.getElementById('filtreClasseSelect').value;
+      const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
+
+      let filtrees = memoireToutesLesNotes;
+
+      if (seanceFiltreId) {
+        filtrees = filtrees.filter(n => n.seance_id == seanceFiltreId);
+      }
+      if (classeFiltreId) {
+        const cl = listeClassesMemoire.find(c => c.id == classeFiltreId);
+        if (cl) {
+          filtrees = filtrees.filter(n => (n.classe_nom === cl.nom) || (n.classe === cl.nom));
+        }
+      }
+
+      let moyenne = 0;
+      if (filtrees.length > 0) {
+        const total = filtrees.reduce((acc, n) => acc + n.note, 0);
+        moyenne = (total / filtrees.length).toFixed(2);
+      }
+
+      document.getElementById('statCopiesText').innerText = `${filtrees.length} copie(s) ${filtrees.length > 0 ? `(Moyenne : ${moyenne}/20)` : ''}`;
+
+      const tbody = document.getElementById('tableNotesBody');
+      tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='5'>Aucune copie pour cette sélection.</td></tr>" :
+        filtrees.map(n => `
+          <tr>
+            <td>${new Date(n.date_soumission).toLocaleTimeString()}</td>
+            <td><strong>${n.nom}</strong> ${n.prenom}</td>
+            <td><span class="badge">${n.classe_nom || n.classe || '-'}</span></td>
+            <td><span class="badge-session">${n.code_session || n.session_code || '-'}</span></td>
+            <td><strong style="color:var(--pronote-blue); font-size:1rem;">${n.note} / ${n.total}</strong></td>
+          </tr>
+        `).join('');
+    }
+
+    // ==================== 6. PASSATION ÉLÈVE & SIMULATEUR ====================
+    async function lancerQcmEleve() {
+      isModeSimulation = false;
+      document.getElementById('simuBannerBox').style.display = 'none';
+      document.getElementById('simuBannerFin').style.display = 'none';
+      document.getElementById('btnRetourApresSimu').style.display = 'none';
+
+      eleveInfo.prenom = document.getElementById('elevePrenom').value.trim();
+      eleveInfo.code_perso = document.getElementById('eleveCodePerso').value.trim().toUpperCase();
+      currentCode = document.getElementById('eleveCodeSession').value.trim().toUpperCase();
+
+      if (!eleveInfo.prenom || !eleveInfo.code_perso || !currentCode) {
+        alert("Veuillez renseigner votre prénom, votre code personnel et le code de l'épreuve.");
+        return;
+      }
+
+      const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(currentCode)}&code_eleve=${encodeURIComponent(eleveInfo.code_perso)}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Épreuve inaccessible.");
+        return;
+      }
+
+      currentQuestions = data.questions;
+      currentSeanceId = data.seance_id;
+      currentQuestionIndex = 0;
+      totalScoreObtenu = 0;
+      totalScorePossible = 0;
+      currentQuestions.forEach(q => { totalScorePossible += q.points; });
+
+      document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveQcm').style.display = 'block';
+
+      afficherQuestionCourante();
+    }
+
+    function afficherQuestionCourante() {
+      const q = currentQuestions[currentQuestionIndex];
+      const totalQ = currentQuestions.length;
+
+      document.getElementById('questionProgressionText').innerText = `Question ${currentQuestionIndex + 1} sur ${totalQ}`;
+      document.getElementById('questionPointsText').innerText = `${q.points} pt${q.points > 1 ? 's' : ''}`;
+      document.getElementById('progressBarFill').style.width = `${((currentQuestionIndex + 1) / totalQ) * 100}%`;
+
+      document.getElementById('feedbackContainer').style.display = 'none';
+      document.getElementById('feedbackContainer').innerHTML = '';
+      document.getElementById('btnValiderQuestion').style.display = 'block';
+      document.getElementById('btnQuestionSuivante').style.display = 'none';
+
+      const container = document.getElementById('singleQuestionContainer');
+      let h = `<div class="question-enonce">${q.enonce}</div>`;
+      if (q.image) h += `<img class="img-qcm" src="data:image/png;base64,${q.image}">`;
+
+      if (q.type === "multichoice") {
+        const inputType = q.single ? "radio" : "checkbox";
+        q.answers.forEach((ans, aIdx) => {
+          h += `
+            <label class="reponse-label" id="label_ans_${aIdx}">
+              <input type="${inputType}" name="current_q_ans" value="${aIdx}">
+              <div>
+                ${ans.text}
+                ${ans.image ? `<br><img class="img-qcm" style="max-height:120px;" src="data:image/png;base64,${ans.image}">` : ''}
+              </div>
+            </label>
+          `;
+        });
+      } else if (q.type === "matching") {
+        const opts = [...q.subquestions.map(s => s.answer)].sort(() => Math.random() - 0.5);
+        q.subquestions.forEach((sub, sIdx) => {
+          h += `
+            <div class="matching-row" id="matching_row_${sIdx}">
+              <span><strong>${sub.question}</strong></span>
+              <select name="matching_sel_${sIdx}">
+                <option value="">-- Choisir --</option>
+                ${opts.map(o => `<option value="${o}">${o}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        });
+      }
+
+      container.innerHTML = h;
+    }
+
+    function validerQuestionCourante() {
+      const q = currentQuestions[currentQuestionIndex];
+      let scoreQuestion = 0;
+      let explications = [];
+
+      if (q.type === "multichoice") {
+        const inputs = document.querySelectorAll('input[name="current_q_ans"]');
+        const checkedInputs = document.querySelectorAll('input[name="current_q_ans"]:checked');
+
+        if (checkedInputs.length === 0) {
+          alert("Veuillez sélectionner au moins une réponse.");
+          return;
+        }
+
+        inputs.forEach(i => i.disabled = true);
+
+        let fracTotale = 0;
+        inputs.forEach(input => {
+          const idx = parseInt(input.value);
+          const ans = q.answers[idx];
+          const label = document.getElementById(`label_ans_${idx}`);
+
+          if (ans.fraction > 0) label.classList.add('is-correct');
+
+          if (input.checked) {
+            fracTotale += ans.fraction;
+            if (ans.fraction <= 0) label.classList.add('is-wrong');
+            if (ans.feedback) explications.push(`<strong>${ans.text} :</strong> ${ans.feedback}`);
+          }
+        });
+
+        scoreQuestion = q.points * (Math.max(0, fracTotale) / 100);
+      } else if (q.type === "matching") {
+        const selects = document.querySelectorAll('select[name^="matching_sel_"]');
+        let complet = true;
+        selects.forEach(s => { if (!s.value) complet = false; });
+        if (!complet) {
+          alert("Veuillez associer toutes les propositions avant de valider.");
+          return;
+        }
+
+        let corrects = 0;
+        q.subquestions.forEach((sub, sIdx) => {
+          const sel = document.querySelector(`select[name="matching_sel_${sIdx}"]`);
+          sel.disabled = true;
+          const row = document.getElementById(`matching_row_${sIdx}`);
+          if (sel.value === sub.answer) {
+            corrects++;
+            row.style.background = "var(--correct-bg)";
+            row.style.borderColor = "var(--correct-border)";
+          } else {
+            row.style.background = "var(--incorrect-bg)";
+            row.style.borderColor = "var(--incorrect-border)";
+          }
+        });
+        scoreQuestion = q.points * (corrects / q.subquestions.length);
+      }
+
+      totalScoreObtenu += scoreQuestion;
+
+      const fbBox = document.getElementById('feedbackContainer');
+      let fbHtml = "";
+      if (scoreQuestion === q.points) {
+        fbHtml += `<div><strong>Bravo !</strong> Réponse correcte (+${scoreQuestion.toFixed(2)} pt).</div>`;
+      } else {
+        fbHtml += `<div><strong>Correction :</strong> Vous obtenez ${scoreQuestion.toFixed(2)} / ${q.points} pt.</div>`;
+      }
+
+      if (q.generalFeedback) fbHtml += `<div style="margin-top:8px;">💡 <strong>Explication :</strong> ${q.generalFeedback}</div>`;
+      if (explications.length > 0) fbHtml += `<div style="margin-top:8px;">${explications.join('<br>')}</div>`;
+
+      fbBox.className = `feedback-box ${scoreQuestion === q.points ? '' : 'has-error'}`;
+      fbBox.innerHTML = fbHtml;
+      fbBox.style.display = 'block';
+
+      document.getElementById('btnValiderQuestion').style.display = 'none';
+      const btnSuivant = document.getElementById('btnQuestionSuivante');
+      btnSuivant.style.display = 'block';
+      btnSuivant.innerText = currentQuestionIndex === currentQuestions.length - 1 ? (isModeSimulation ? "Terminer la simulation" : "Terminer l'évaluation") : "Question suivante →";
+    }
+
+    async function passerQuestionSuivante() {
+      if (currentQuestionIndex < currentQuestions.length - 1) {
+        currentQuestionIndex++;
+        afficherQuestionCourante();
+      } else {
+        await terminerEvaluation();
+      }
+    }
+
+    async function terminerEvaluation() {
+      const note20 = ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2);
+
+      // Si mode simulation : AUCUN enregistrement en base D1
+      if (!isModeSimulation) {
+        await fetch('/api/soumettre', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: eleveInfo.prenom,
+            prenom: `[Code: ${eleveInfo.code_perso}]`,
+            session_code: currentCode,
+            seance_id: currentSeanceId,
+            note: parseFloat(note20),
+            total: 20
+          })
+        });
+        document.getElementById('simuBannerFin').style.display = 'none';
+        document.getElementById('btnRetourApresSimu').style.display = 'none';
+        document.getElementById('finTitleText').innerText = "Évaluation terminée !";
+        document.getElementById('finDescText').innerText = "Votre copie a été transmise avec succès au professeur.";
+      } else {
+        document.getElementById('simuBannerFin').style.display = 'flex';
+        document.getElementById('btnRetourApresSimu').style.display = 'block';
+        document.getElementById('finTitleText').innerText = "Fin de la simulation";
+        document.getElementById('finDescText').innerText = "Vous avez testé le QCM en conditions réelles. Aucun résultat n'a été enregistré dans la base de données.";
+      }
+
+      document.getElementById('viewEleveQcm').style.display = 'none';
+      document.getElementById('viewEleveFin').style.display = 'block';
+      document.getElementById('noteFinaleText').innerText = `${note20} / 20`;
+    }
+
+    async function logSortie(type) {
+      if (isModeSimulation) return; // Pas de log en simulation
+      if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
+      try {
+        await fetch('/api/evenement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eleve_id: `${eleveInfo.prenom} [${eleveInfo.code_perso}]`,
+            type_evenement: type
+          })
+        });
+      } catch(e) {}
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.getElementById('viewEleveQcm').style.display === 'block') {
+        if (document.visibilityState === "hidden") {
+          logSortie("page_masquee");
+        } else if (document.visibilityState === "visible") {
+          logSortie("retour_qcm");
+          alert(isModeSimulation ? "Simulation : Vous avez quitté la page (cet événement serait signalé au professeur)." : "Attention : vous avez quitté la page du QCM. Cette sortie est signalée au professeur.");
+        }
+      }
+    });
+
+    // ==================== AUTH PROF ====================
+    function toggleAuthMode() {
+      authMode = authMode === "login" ? "register" : "login";
+      if (authMode === "register") {
+        document.getElementById('authTitle').innerText = "Inscription Enseignant";
+        document.getElementById('nomRegisterGroup').style.display = 'block';
+        document.getElementById('btnAuthSubmit').innerText = "Créer mon compte";
+        document.getElementById('authToggleText').innerText = "Déjà inscrit ?";
+        document.getElementById('authToggleLink').innerText = "Se connecter";
+      } else {
+        document.getElementById('authTitle').innerText = "Connexion Enseignant";
+        document.getElementById('nomRegisterGroup').style.display = 'none';
+        document.getElementById('btnAuthSubmit').innerText = "Se connecter";
+        document.getElementById('authToggleText').innerText = "Pas encore de compte ?";
+        document.getElementById('authToggleLink').innerText = "Créer un compte";
+      }
+    }
+
+    async function traiterAuthProf() {
+      const email = document.getElementById('profEmail').value.trim();
+      const password = document.getElementById('profPassword').value;
+      const nom = document.getElementById('profNom').value.trim();
+
+      if (!email || !password) { alert("Veuillez renseigner un email et un mot de passe."); return; }
+
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: authMode, email, password, nom })
+      });
+
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Erreur d'authentification"); return; }
+
+      currentProf = data.user;
+      localStorage.setItem('qcm_prof_user', JSON.stringify(currentProf));
+      basculerMode('prof');
+    }
+
+    function deconnecterProf() {
+      currentProf = null;
+      localStorage.removeItem('qcm_prof_user');
+      basculerMode('prof');
+    }
+  </script>
+</body>
+</html>
+''@
+
+Write-Host ">>> Mise à jour de functions/api/eleve_quiz.js pour autoriser les requêtes du simulateur..." -ForegroundColor Cyan
+
+Set-Content -Path functions/api/eleve_quiz.js -Encoding UTF8 -Value @''
+export async function onRequestGet(context) {
+  try {
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const code_eleve = url.searchParams.get("code_eleve");
+    
+    // Paramètres dédiés au simulateur prof
+    const simuQcmId = url.searchParams.get("simulateur_qcm_id");
+    const simuSeanceId = url.searchParams.get("simulateur_seance_id");
+
+    // 1. Simulation directe depuis la Banque de QCM
+    if (simuQcmId) {
+      const qcm = await env.DB.prepare("SELECT id, titre, data_json FROM qcm_banque WHERE id = ?").bind(simuQcmId).first();
+      if (!qcm) return new Response(JSON.stringify({ error: "QCM introuvable" }), { status: 404 });
+      return new Response(JSON.stringify({
+        titre: qcm.titre,
+        questions: JSON.parse(qcm.data_json)
+      }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // 2. Simulation depuis une Séance programmée
+    if (simuSeanceId) {
+      const seance = await env.DB.prepare(`
+        SELECT s.id, s.code_session, q.titre, q.data_json
+        FROM seances s
+        INNER JOIN qcm_banque q ON s.qcm_id = q.id
+        WHERE s.id = ?
+      `).bind(simuSeanceId).first();
+      if (!seance) return new Response(JSON.stringify({ error: "Séance introuvable" }), { status: 404 });
+      return new Response(JSON.stringify({
+        titre: seance.titre,
+        code_session: seance.code_session,
+        questions: JSON.parse(seance.data_json)
+      }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // 3. Passation normale par un élève
+    if (!code || !code_eleve) {
+      return new Response(JSON.stringify({ error: "Code d'épreuve et code élève requis" }), { status: 400 });
+    }
+
+    const cleanCode = code.toUpperCase().trim();
+    const cleanCodeEleve = code_eleve.toUpperCase().trim();
+
+    const seance = await env.DB.prepare(`
+      SELECT s.id AS seance_id, s.code_session, s.actif, s.classe_id, q.titre, q.data_json, c.nom AS classe_nom
+      FROM seances s
+      INNER JOIN qcm_banque q ON s.qcm_id = q.id
+      INNER JOIN classes c ON s.classe_id = c.id
+      WHERE s.code_session = ?
+    `).bind(cleanCode).first();
+
+    if (!seance) {
+      return new Response(JSON.stringify({ error: "Séance introuvable. Vérifiez le code." }), { status: 404 });
+    }
+
+    if (!seance.actif) {
+      return new Response(JSON.stringify({ error: "Cette épreuve est actuellement clôturée par le professeur." }), { status: 403 });
+    }
+
+    const eleve = await env.DB.prepare(
+      "SELECT id, prenom FROM eleves WHERE code_eleve = ? AND classe_id = ?"
+    ).bind(cleanCodeEleve, seance.classe_id).first();
+
+    if (!eleve) {
+      return new Response(JSON.stringify({ error: "Code personnel élève inconnu ou n'appartenant pas à la classe de cette épreuve." }), { status: 403 });
+    }
+
+    return new Response(JSON.stringify({
+      seance_id: seance.seance_id,
+      code_session: seance.code_session,
+      titre: seance.titre,
+      classe_nom: seance.classe_nom,
+      eleve_prenom: eleve.prenom,
+      questions: JSON.parse(seance.data_json)
+    }), { headers: { "Content-Type": "application/json" } });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+}
+''@
+
+Write-Host ">>> Déploiement automatique vers GitHub..." -ForegroundColor Cyan
+git add .
+git commit -m "Ajout Simulateur Enseignant avec bandeau d avertissement et isolement D1"
+git push origin main
+
+Write-Host ">>> Terminé avec succès ! Votre site sera à jour dans environ 40 secondes." -ForegroundColor Green
