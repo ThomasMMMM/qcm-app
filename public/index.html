@@ -726,6 +726,10 @@
       try {
         const resDetail = await fetch(`/api/eleve_quiz?simulateur_qcm_id=${qcmId}`);
         const data = await resDetail.json();
+        if (!resDetail.ok || !data.questions) {
+          alert("Erreur simulateur : " + (data.error || "Questions introuvables"));
+          return;
+        }
         demarrerSimulation(data.questions, `[Simulation] ${data.titre}`);
       } catch(e) {
         alert("Erreur au chargement du simulateur : " + e.message);
@@ -739,7 +743,10 @@
         
         const res = await fetch(`/api/eleve_quiz?simulateur_seance_id=${seanceId}`);
         const data = await res.json();
-
+        if (!res.ok || !data.questions) {
+          alert("Erreur simulateur : " + (data.error || "Questions introuvables"));
+          return;
+        }
         demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`);
       } catch(e) {
         alert("Erreur au chargement du simulateur : " + e.message);
