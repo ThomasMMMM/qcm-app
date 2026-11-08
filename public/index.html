@@ -1838,23 +1838,41 @@
     }
 
     async function terminerEvaluation() {
-      const note20 = ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2);
+      const note20 = totalScorePossible > 0 
+        ? ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2) 
+        : "0.00";
 
       if (!isModeSimulation) {
-        const el = sessionEleve.eleve;
-        await fetch('/api/soumettre', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nom: el.prenom,
-            prenom: `[Code: ${el.code_eleve}]`,
-            session_code: currentCode,
-            seance_id: currentSeanceId,
-            nb_sorties: compteurSortiesEleve,
-            note: parseFloat(note20),
-            total: 20
-          })
-        });
+        // Récupération sécurisée des données de l'élève
+        let nomEleve = "Élève";
+        let codeEleve = "";
+
+        if (sessionEleve && sessionEleve.eleve) {
+          nomEleve = sessionEleve.eleve.prenom;
+          codeEleve = sessionEleve.eleve.code_eleve;
+        } else if (typeof eleveInfo !== 'undefined' && eleveInfo) {
+          nomEleve = eleveInfo.prenom || "Élève";
+          codeEleve = eleveInfo.code_perso || "";
+        }
+
+        try {
+          await fetch('/api/soumettre', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nom: nomEleve,
+              prenom: codeEleve ? `[Code: ${codeEleve}]` : "",
+              session_code: currentCode || "",
+              seance_id: currentSeanceId || null,
+              nb_sorties: compteurSortiesEleve || 0,
+              note: parseFloat(note20),
+              total: 20
+            })
+          });
+        } catch (err) {
+          console.error("Erreur de transmission de la copie :", err);
+        }
+
         document.getElementById('simuBannerFin').style.display = 'none';
         document.getElementById('btnRetourApresSimu').style.display = 'none';
         document.getElementById('btnRetourTableauEleve').style.display = 'block';
