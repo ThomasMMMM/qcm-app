@@ -279,6 +279,23 @@
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <div style="flex:1; min-width:260px;">
             <label>Nom de classe (ex: 2nde 4) :</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin: 8px 0 10px 0;">
+              <div>
+                <label style="font-size:0.8rem; font-weight:bold; color:var(--pronote-blue);">📅 Jour habituel :</label>
+                <select id="inlineJourCours" class="input-field" style="margin-top:2px;">
+                  <option value="Lundi">Lundi</option>
+                  <option value="Mardi">Mardi</option>
+                  <option value="Mercredi">Mercredi</option>
+                  <option value="Jeudi">Jeudi</option>
+                  <option value="Vendredi">Vendredi</option>
+                  <option value="Samedi">Samedi</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.8rem; font-weight:bold; color:var(--pronote-blue);">⏰ Horaire habituel :</label>
+                <input type="text" id="inlineHoraireCours" class="input-field" value="10h-11h" placeholder="Ex: 10h-11h" style="margin-top:2px;">
+              </div>
+            </div>
             <input type="text" id="nomClasseInput" class="input-field" placeholder="Ex: 2nde 4">
             <label>CSV Pronote :</label>
             <input type="file" id="csvElevesInput" accept=".csv,.txt" class="input-field">
@@ -1338,6 +1355,83 @@
       localStorage.removeItem('qcm_prof_user');
       basculerMode('prof');
     }
-  </script>
+  
+
+    // Patch securise pour la validation de classe
+    const _nomFonctionValidation = "enregistrerClasseValidee";
+    window["enregistrerClasseValidee"] = async function() {
+      // Recherche tous les inputs de type texte dans la zone classes
+      let nomSaisi = "";
+      const inputs = document.querySelectorAll('input[type="text"]');
+      for (const inp of inputs) {
+        if (inp.placeholder && inp.placeholder.includes("2nde") && inp.value.trim()) {
+          nomSaisi = inp.value.trim();
+          break;
+        }
+      }
+
+      if (!nomSaisi) {
+        const champManuel = document.getElementById('inputNomClasseInline') || document.getElementById('nomClasseInput') || document.getElementById('importClasseNom');
+        if (champManuel && champManuel.value.trim()) {
+          nomSaisi = champManuel.value.trim();
+        }
+      }
+
+      if (!nomSaisi) {
+        alert("Veuillez renseigner un nom de classe.");
+        return;
+      }
+
+      const jour = document.getElementById('inlineJourCours') ? document.getElementById('inlineJourCours').value : "Lundi";
+      const horaire = document.getElementById('inlineHoraireCours') ? document.getElementById('inlineHoraireCours').value.trim() : "10h-11h";
+
+      try {
+        // Enregistrer la classe avec son jour et son heure
+        const res = await fetch('/api/classes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: nomSaisi,
+            classe_nom: nomSaisi,
+            prof_id: currentProf ? currentProf.id : null,
+            jour_cours: jour,
+            horaire_cours: horaire
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert("Erreur: " + (data.error || "Erreur serveur"));
+          return;
+        }
+
+        // Si des élèves étaient chargés dans l'aperçu CSV, les associer à la classe créée
+        if (typeof elevesImportEnAttente !== 'undefined' && elevesImportEnAttente.length > 0) {
+          await fetch('/api/import_pronote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              classe_nom: nomSaisi,
+              prof_id: currentProf ? currentProf.id : null,
+              eleves: elevesImportEnAttente,
+              jour_cours: jour,
+              horaire_cours: horaire
+            })
+          });
+        }
+
+        alert("Classe \"" + nomSaisi + "\" enregistrée avec succès ! (" + jour + " " + horaire + ")");
+        if (typeof chargerClasses === 'function') chargerClasses();
+        
+        // Vider ou masquer la zone d'aperçu
+        const apercu = document.getElementById('apercuEleves') || document.querySelector('[id*="apercu"]');
+        if (apercu) apercu.innerHTML = "";
+
+      } catch(err) {
+        alert("Erreur de communication : " + err.message);
+      }
+    };
+  
+</script>
 </body>
 </html>
