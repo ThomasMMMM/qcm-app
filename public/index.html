@@ -598,7 +598,12 @@
 
       <!-- MODULE 6 : JOURNAL DES ALERTES -->
       <div class="card">
-        <h3><i class="fa-solid fa-shield-halved"></i> Journal des Sorties d'Écran et Incidents</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--pronote-light); padding-bottom:8px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <h3 style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> Journal des Sorties d'Écran et Incidents</h3>
+          <button type="button" class="btn btn-danger" style="padding:6px 14px; font-size:0.8rem;" onclick="purgerJournalAlertes()">
+            <i class="fa-solid fa-trash-can"></i> Purger le journal
+          </button>
+        </div>
         <table>
           <thead>
             <tr>
@@ -1561,7 +1566,24 @@
     }
 
     // ==================== 8. RÉSULTATS & EXPORT PRONOTE ====================
-    async function chargerResultatsProf() {
+    async 
+    async function purgerJournalAlertes() {
+      if (!confirm("Voulez-vous vraiment effacer l'intégralité du journal des alertes et incidents ?")) return;
+      try {
+        const res = await fetch('/api/evenement', { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✓ Le journal des sorties d'écran et incidents a été purgé !");
+          await chargerResultatsProf();
+        } else {
+          alert("Erreur lors de la purge : " + (data.error || "Erreur serveur"));
+        }
+      } catch (e) {
+        alert("Erreur réseau : " + e.message);
+      }
+    }
+
+    function chargerResultatsProf() {
       if (!currentProf) return;
       try {
         const res = await fetch(`/api/resultats?prof_id=${currentProf.id}`);

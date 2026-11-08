@@ -1,19 +1,47 @@
-export async function onRequestPost(context) {
+﻿export async function onRequestPost(context) {
   try {
     const { request, env } = context;
     const body = await request.json();
     const { eleve_id, type_evenement } = body;
 
     if (!eleve_id || !type_evenement) {
-      return new Response(JSON.stringify({ error: "Champs manquants" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Champs requis manquants" }), { status: 400 });
     }
 
-    // Enregistrement direct dans Cloudflare D1
-    await env.DB.prepare(
-      "INSERT INTO sorties_ecran (eleve_id, type_evenement) VALUES (?, ?)"
-    ).bind(eleve_id, type_evenement).run();
+    // Création de la table si nécessaire et insertion
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS evenements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        eleve_id TEXT,
+        type_evenement TEXT,
+        horodatage DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
 
-    return new Response(JSON.stringify({ success: true }), {
+    await env.DB.prepare(`
+      INSERT INTO evenements (eleve_id, type_evenement) VALUES (?, ?)
+    `).bind(eleve_id, type_evenement).run();
+
+    return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+}
+
+export async function onRequestDelete(context) {
+  try {
+    const { env } = context;
+
+    // Purge de l'ensemble des événements / sorties d'écran
+    try {
+      await env.DB.prepare("DELETE FROM evenements").run();
+    } catch (e1) {
+      try {
+        await env.DB.prepare("DELETE FROM sorties").run();
+      } catch (e2) {}
+    }
+
+    return new Response(JSON.stringify({ success: true, message: "Journal des alertes purgé" }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
