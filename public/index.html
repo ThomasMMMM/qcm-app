@@ -3,254 +3,433 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Évaluation QCM</title>
+  <title>Plateforme QCM & Évaluations Pronote</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
       --pronote-blue: #0b5cab;
-      --pronote-bg: #eef2f6;
-      --pronote-card: #ffffff;
-      --border-color: #d1d5db;
+      --pronote-dark: #073e75;
+      --pronote-light: #f0f4f8;
+      --pronote-bg: #e2e8f0;
+      --text-color: #1e293b;
+      --border-color: #cbd5e1;
+      --success-green: #16a34a;
+      --danger-red: #dc2626;
+      --warning-amber: #d97706;
+      --card-bg: #ffffff;
       --correct-bg: #dcfce7;
-      --correct-border: #22c55e;
-      --correct-text: #15803d;
+      --correct-border: #86efac;
       --incorrect-bg: #fee2e2;
-      --incorrect-border: #ef4444;
-      --incorrect-text: #b91c1c;
+      --incorrect-border: #fca5a5;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 15px; background: var(--pronote-bg); color: #1e293b; }
-    .container { max-width: 860px; margin: 0 auto; }
-    .card { background: var(--pronote-card); border-radius: 8px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid #e2e8f0; }
-    h1, h2, h3 { color: var(--pronote-blue); margin-top: 0; }
-    .input-field { width: 100%; padding: 10px; margin: 6px 0 14px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
-    .alerte { background: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 0.88rem; }
-    .simu-banner { background: #ea580c; color: white; padding: 10px 16px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: bold; }
-    .simu-btn-exit { background: white; color: #ea580c; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
-    .btn { display: block; width: 100%; padding: 12px; background: var(--pronote-blue); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background 0.15s; }
-    .btn:hover { background: #08437d; }
-    .btn-secondary { background: #64748b; margin-top: 10px; }
-    .btn-success { background: #16a34a; }
-    .btn-success:hover { background: #15803d; }
-    .btn-simu { background: #ea580c; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
-    .btn-pdf { background: #0284c7; color: white; border: none; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
-    .btn-danger { background: #dc2626; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; }
-    .progress-bar-container { background: #e2e8f0; border-radius: 999px; height: 8px; width: 100%; overflow: hidden; margin: 12px 0 20px 0; }
-    .progress-bar-fill { background: var(--pronote-blue); height: 100%; width: 0%; transition: width 0.3s ease; }
-    .q-counter { font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-    .question-enonce { font-size: 1.05rem; font-weight: 500; margin: 12px 0 16px 0; line-height: 1.45; }
-    .img-qcm { max-width: 100%; height: auto; border-radius: 6px; margin: 12px 0; border: 1px solid #e2e8f0; display: block; }
-    .reponse-label { display: flex; align-items: flex-start; padding: 12px 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
-    .reponse-label:hover { background: #f1f5f9; }
-    .reponse-label input { margin-top: 3px; margin-right: 12px; transform: scale(1.2); }
-    .reponse-label.is-correct { background: var(--correct-bg) !important; border-color: var(--correct-border) !important; color: var(--correct-text) !important; font-weight: 500; }
-    .reponse-label.is-wrong { background: var(--incorrect-bg) !important; border-color: var(--incorrect-border) !important; color: var(--incorrect-text) !important; }
-    .feedback-box { background: #f0fdf4; border-left: 4px solid var(--correct-border); padding: 12px; border-radius: 4px; margin-top: 15px; font-size: 0.95rem; color: #166534; }
-    .feedback-box.has-error { background: #fef2f2; border-left-color: var(--incorrect-border); color: #991b1b; }
-    .matching-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #cbd5e1; }
-    .matching-row select { padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.95rem; background: white; }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
-    th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
-    th { background: #f8fafc; color: #475569; }
-    .badge { display: inline-block; padding: 3px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
-    .badge-session { font-family: monospace; font-size: 0.9rem; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-    .badge-share { font-family: monospace; font-size: 0.8rem; background: #ede9fe; color: #6d28d9; padding: 3px 6px; border-radius: 4px; cursor: pointer; border: 1px solid #ddd6fe; }
-    .badge-active { background: #dcfce7; color: #15803d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
-    .badge-closed { background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
-    .link-mode { text-align: center; margin-top: 20px; font-size: 0.9rem; }
-    .link-mode a { color: var(--pronote-blue); cursor: pointer; text-decoration: underline; }
-    .section-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
-    .filter-bar { display: flex; gap: 10px; align-items: center; background: white; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 12px; flex-wrap: wrap; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--pronote-bg);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--pronote-blue), var(--pronote-dark));
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid var(--border-color);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: var(--pronote-blue);
+      border-bottom: 2px solid var(--pronote-light);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      background-color: var(--pronote-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s;
+    }
+    .btn:hover { background-color: var(--pronote-dark); }
+    .btn-pdf { background-color: #475569; }
+    .btn-pdf:hover { background-color: #334155; }
+    .btn-simu { background-color: #0284c7; }
+    .btn-simu:hover { background-color: #0369a1; }
+    .btn-danger { background-color: var(--danger-red); }
+    .btn-danger:hover { background-color: #b91c1c; }
+    .btn-success { background-color: var(--success-green); }
+    .btn-success:hover { background-color: #15803d; }
+
+    .input-field {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.88rem;
+    }
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background-color: var(--pronote-light);
+      color: var(--pronote-dark);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .badge-session {
+      font-family: monospace;
+      font-weight: bold;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-closed { background: #fee2e2; color: #991b1b; }
+
+    /* Moteur de Quiz Élève */
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background-color: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, var(--pronote-blue));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .question-enonce {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    .reponse-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reponse-label:hover { background: #f1f5f9; border-color: #94a3b8; }
+    .reponse-label.is-correct { background: var(--correct-bg) !important; border-color: var(--correct-border) !important; font-weight: bold; }
+    .reponse-label.is-wrong { background: var(--incorrect-bg) !important; border-color: var(--incorrect-border) !important; text-decoration: line-through; }
+
+    .matching-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+    }
+    .matching-row select {
+      flex: 1;
+      max-width: 50%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .feedback-box {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      background: var(--correct-bg);
+      border: 1px solid var(--correct-border);
+      font-size: 0.9rem;
+    }
+    .feedback-box.has-error {
+      background: var(--incorrect-bg);
+      border-color: var(--incorrect-border);
+    }
+    .img-qcm {
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+      margin: 10px 0;
+      border: 1px solid #cbd5e1;
+    }
   </style>
 </head>
 <body>
 
-  
-  <!-- MODAL GESTION ÉLÈVES & STATUT PAP -->
-  <div id="modalGestionEleves" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;">
-    <div style="background:white; border-radius:8px; max-width:650px; width:100%; max-height:85vh; overflow-y:auto; padding:22px; box-shadow:0 4px 20px rgba(0,0,0,0.2);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h3 style="margin:0; color:var(--pronote-blue);">Élèves & Aménagements PAP — <span id="nomClasseGestionPap"></span></h3>
-        <button onclick="fermerModalGestionEleves()" style="border:none; background:none; font-size:1.4rem; cursor:pointer; color:#64748b;">&times;</button>
-      </div>
-      <p style="font-size:0.85rem; color:#64748b; margin-top:0;">
-        Cochez les élèves bénéficiant d'un PAP : ils recevront automatiquement <strong>un quart de questions en moins</strong> sur chaque QCM, tout en conservant une notation sur 20.
-      </p>
-      <div id="conteneurListeElevesPap" style="max-height:350px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:6px;">
-        Chargement...
-      </div>
-      <div style="display:flex; justify-content:flex-end; margin-top:15px;">
-        <button type="button" class="btn btn-secondary" style="width:auto; margin:0;" onclick="fermerModalGestionEleves()">Fermer</button>
-      </div>
+  <!-- EN-TÊTE -->
+  <header>
+    <div class="header-title">
+      <i class="fa-solid fa-graduation-cap"></i>
+      <span>Plateforme QCM & Pronote</span>
     </div>
-  </div>
-
-  
-  <!-- MODAL DOCUMENT RESSOURCE ÉLÈVE -->
-  <div id="modalDocRessourceEleve" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10000; justify-content:center; align-items:center; padding:10px; box-sizing:border-box;">
-    <div style="background:white; border-radius:8px; max-width:800px; width:100%; height:92vh; display:flex; flex-direction:column; padding:16px; box-sizing:border-box; box-shadow:0 6px 24px rgba(0,0,0,0.3);">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px;">
-        <h3 style="margin:0; color:var(--pronote-blue); font-size:1.15rem;">📖 Document Ressource</h3>
-        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceEleve()">✖ Fermer et revenir au QCM</button>
-      </div>
-      <div id="corpsDocRessourceEleve" style="flex:1; overflow-y:auto; overflow-x:auto; padding:8px; font-size:0.95rem; line-height:1.5;"></div>
-      <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerDocRessourceEleve()">✓ Revenir à la question</button>
+    <div id="authHeaderNav">
+      <button class="btn btn-pdf" style="font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('prof')">
+        <i class="fa-solid fa-user-tie"></i> Espace Enseignant
+      </button>
+      <button class="btn btn-simu" id="btnSwitchEleve" style="display:none; font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('eleve')">
+        <i class="fa-solid fa-user-graduate"></i> Accès Élève
+      </button>
     </div>
-  </div>
-
-  <!-- MODAL EXPORT PRONOTE -->
-  <div id="modalExportPronote" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;">
-    <div style="background:white; border-radius:8px; max-width:650px; width:100%; max-height:90vh; overflow-y:auto; padding:22px; box-shadow:0 4px 20px rgba(0,0,0,0.2);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h3 style="margin:0; color:#0b5cab;">📋 Export des notes vers Pronote</h3>
-        <button onclick="fermerModalExportPronote()" style="border:none; background:none; font-size:1.4rem; cursor:pointer; color:#64748b;">&times;</button>
-      </div>
-      <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:12px; margin-bottom:15px; font-size:0.85rem; color:#166534;">
-        <strong>Mode d'emploi Pronote :</strong><br>
-        1. Cliquez sur <strong>« Copier la colonne pour Pronote »</strong> ci-dessous.<br>
-        2. Sur votre Espace Professeurs Pronote, placez votre curseur sur la case de note du <strong>premier élève</strong>.<br>
-        3. Faites <strong>Ctrl + V</strong> : toutes les notes se collent dans l'ordre de la classe. Les absents restent vides automatiquement.
-      </div>
-      <div style="display:flex; gap:10px; margin-bottom:15px;">
-        <button type="button" class="btn btn-success" style="margin:0; flex:2; padding:11px;" onclick="copierNotesPressePapier()">
-          📋 Copier la colonne pour Pronote
-        </button>
-        <button type="button" class="btn btn-pdf" style="margin:0; flex:1; padding:11px;" onclick="telechargerCsvPronote()">
-          💾 Télécharger .CSV
-        </button>
-      </div>
-      <div id="previewExportContainer" style="max-height:280px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:6px;">
-        Chargement de la classe...
-      </div>
-    </div>
-  </div>
+  </header>
 
   <div class="container">
-    <!-- 1. VUE ÉLÈVE : AUTHENTIFICATION TRIPTYQUE -->
-    <div id="viewEleveLogin" class="card">
-      <h1>Espace Élève</h1>
-      <p style="color:#64748b; font-size:0.9rem; margin-top:0;">Connectez-vous pour consulter vos évaluations à faire et vos résultats.</p>
 
-      <label>Votre Prénom :</label>
-      <input type="text" id="elevePrenom" class="input-field" placeholder="Ex: Alice">
-
-      <label>Date de naissance (JJ/MM/AAAA) :</label>
-      <input type="text" id="eleveDateN" class="input-field" placeholder="Ex: 14/05/2009">
-
-      <label>Votre Code individuel élève (ex: 7B2K) :</label>
-      <input type="text" id="eleveCodePerso" class="input-field" style="text-transform:uppercase; font-family:monospace; font-weight:bold; letter-spacing:1px;" placeholder="Ex: 7B2K">
-
-      <button type="button" class="btn" onclick="connexionPortailEleve()">Accéder à mon espace</button>
+    <!-- ========================================== -->
+    <!-- 1. VUE PORTAIL ÉLÈVE : ACCÈS ÉPREUVE       -->
+    <!-- ========================================== -->
+    <div id="viewEleveLogin" class="card" style="max-width:440px; margin:40px auto; text-align:center;">
+      <h3 style="justify-content:center;"><i class="fa-solid fa-pen-nib"></i> Connexion à l'épreuve</h3>
+      <p style="color:#64748b; font-size:0.9rem; margin-bottom:18px;">
+        Entrez le code communiqué par votre professeur ainsi que votre code personnel.
+      </p>
       
-      <div class="link-mode">
-        <a onclick="basculerMode('prof')">Accès Enseignant</a>
+      <div style="text-align:left; margin-bottom:12px;">
+        <label style="font-weight:bold; font-size:0.85rem;">Code d'épreuve :</label>
+        <input type="text" id="codeSessionEleve" class="input-field" placeholder="Ex: SESS-7890" style="text-transform:uppercase; font-family:monospace; font-weight:bold; font-size:1.1rem; text-align:center;">
       </div>
+
+      <div style="text-align:left; margin-bottom:18px;">
+        <label style="font-weight:bold; font-size:0.85rem;">Code individuel élève :</label>
+        <input type="text" id="codePersonnelEleve" class="input-field" placeholder="Ex: 4A7B" style="text-transform:uppercase; font-family:monospace; font-weight:bold; font-size:1.1rem; text-align:center;">
+      </div>
+
+      <button type="button" class="btn btn-success" style="width:100%; justify-content:center; padding:12px; font-size:1rem;" onclick="rejoindreEpreuve()">
+        Démarrer l'évaluation →
+      </button>
     </div>
 
-    <!-- 1bis. VUE ÉLÈVE : TABLEAU DE BORD PERSONNEL -->
-    <div id="viewEleveDashboard" class="card" style="display: none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h2 style="margin:0; font-size:1.4rem;">Bonjour, <span id="portalElevePrenom" style="color:var(--pronote-blue);"></span> 👋</h2>
-        <button onclick="deconnexionEleve()" style="border:none; background:none; color:#dc2626; cursor:pointer; font-size:0.85rem; text-decoration:underline;">Déconnexion</button>
-      </div>
-      <p style="margin:0 0 16px 0; font-size:0.85rem; color:#64748b;">Classe : <strong id="portalEleveClasse"></strong></p>
-
-      <!-- Évaluations à faire -->
-      <div class="section-box" style="background:#f0fdf4; border-color:#bbf7d0;">
-        <h3 style="color:#166534; margin-bottom:10px;">📝 Évaluations à faire</h3>
-        <div id="listeSeancesAFaire">Chargement...</div>
+    <!-- ========================================== -->
+    <!-- 2. VUE ÉLÈVE : PASSATION DU QCM            -->
+    <!-- ========================================== -->
+    <div id="viewEleveQcm" class="card" style="display:none;">
+      <!-- Bandeau Simulation prof -->
+      <div id="simuBannerBox" style="display:none; background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; justify-content:space-between; align-items:center;">
+        <span><strong>🔍 Mode Test Professeur :</strong> Les réponses ne sont pas enregistrées.</span>
+        <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="quitterSimulation()">Quitter le test</button>
       </div>
 
-      <!-- Historique des évaluations -->
-      <div class="section-box">
-        <h3 style="margin-bottom:10px;">📊 Mes QCM terminés</h3>
-        <div id="listeHistoriqueEleve">Chargement...</div>
-      </div>
-    </div>
-
-    <!-- 2. VUE ÉLÈVE & SIMULATEUR : QUESTION PAR QUESTION -->
-    <div id="viewEleveQcm" class="card" style="display: none;">
-      <div id="simuBannerBox" class="simu-banner" style="display: none;">
-        <span>🔍 MODE SIMULATION ENSEIGNANT (Aucun résultat ne sera enregistré)</span>
-        <button type="button" class="simu-btn-exit" onclick="quitterSimulation()">Quitter la simulation</button>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: baseline;">
-        <span class="q-counter" id="questionProgressionText">Question 1 sur 5</span>
-        <span style="font-size: 0.85rem; font-weight: bold; color: var(--pronote-blue);" id="questionPointsText">1 pt</span>
-      </div>
-      
+      <!-- Bouton Document Ressource -->
       <div id="btnOuvrirDocBox" style="display:none; margin-bottom:12px;">
-        <button type="button" class="btn" style="background:#0284c7; margin:0; padding:10px 14px; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="ouvrirDocRessourceEleve()">
+        <button type="button" class="btn" style="background:#0284c7; width:100%; justify-content:center; padding:10px 14px; font-size:0.95rem;" onclick="ouvrirDocRessourceEleve()">
           📖 Consulter le Document Ressource
         </button>
       </div>
 
+      <!-- Barre de progression -->
       <div class="progress-bar-container">
-        <div class="progress-bar-fill" id="progressBarFill"></div>
+        <div id="progressBarFill" class="progress-bar-fill"></div>
       </div>
-      <div class="alerte" id="alerteSortieEleve">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span id="questionProgressionText" style="font-weight:bold; color:#64748b; font-size:0.9rem;">Question 1 sur 10</span>
+        <span id="questionPointsText" class="badge badge-session">1 pt</span>
+      </div>
+
+      <div id="singleQuestionContainer"></div>
+
+      <div id="feedbackContainer" class="feedback-box" style="display:none;"></div>
+
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button type="button" id="btnValiderQuestion" class="btn btn-success" style="flex:1; justify-content:center; padding:12px;" onclick="validerQuestionCourante()">
+          Valider ma réponse
+        </button>
+        <button type="button" id="btnQuestionSuivante" class="btn" style="flex:1; justify-content:center; padding:12px; display:none;" onclick="passerQuestionSuivante()">
+          Question suivante →
+        </button>
+      </div>
+
+      <div id="alerteSortieEleve" style="margin-top:14px; font-size:0.75rem; color:#dc2626; text-align:center;">
         ⚠️ Attention : Les changements d'application ou d'onglet sont consignés.
       </div>
-      <div id="singleQuestionContainer"></div>
-      <div id="feedbackContainer" style="display: none;"></div>
-      <button type="button" class="btn" id="btnValiderQuestion" onclick="validerQuestionCourante()">Valider la réponse</button>
-      <button type="button" class="btn" id="btnQuestionSuivante" style="display: none;" onclick="passerQuestionSuivante()">Question suivante &rarr;</button>
     </div>
 
-    <!-- 3. VUE ÉLÈVE & SIMULATEUR : BILAN FINAL -->
-    <div id="viewEleveFin" class="card" style="display: none; text-align: center;">
-      <div id="simuBannerFin" class="simu-banner" style="display: none;">
-        <span>🔍 FIN DE LA SIMULATION ENSEIGNANT (Résultat fictif)</span>
-        <button type="button" class="simu-btn-exit" onclick="quitterSimulation()">Retour au tableau de bord</button>
+    <!-- ========================================== -->
+    <!-- 3. VUE ÉLÈVE : FIN DU QCM                  -->
+    <!-- ========================================== -->
+    <div id="viewEleveFin" class="card" style="display:none; max-width:480px; margin:40px auto; text-align:center;">
+      <h3 style="justify-content:center; color:var(--success-green);"><i class="fa-solid fa-circle-check"></i> <span id="finTitleText">Épreuve terminée !</span></h3>
+      <p id="finDescText" style="color:#64748b; font-size:0.95rem;">Votre copie a été enregistrée avec succès.</p>
+      
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin:20px 0;">
+        <div style="font-size:0.85rem; color:#64748b; text-transform:uppercase; font-weight:bold;">Note obtenue</div>
+        <div id="noteFinaleText" style="font-size:2.4rem; font-weight:bold; color:var(--pronote-blue); margin-top:4px;">-- / 20</div>
       </div>
-      <h2 id="finTitleText">Évaluation terminée !</h2>
-      <p id="finDescText">Votre copie a été transmise avec succès au professeur.</p>
-      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <span style="font-size: 0.9rem; color: #64748b;">Note obtenue</span>
-        <h3 id="noteFinaleText" style="color: var(--pronote-blue); font-size: 2rem; margin: 5px 0 0 0;"></h3>
-      </div>
-      <button id="btnRetourPortailEleve" type="button" class="btn" style="display:none;" onclick="retourPortailApresQuiz()">Retourner à mon tableau de bord</button>
-      <button id="btnRetourApresSimu" type="button" class="btn btn-secondary" style="display:none;" onclick="quitterSimulation()">Retour au tableau de bord enseignant</button>
+
+      <button type="button" id="btnRetourPortailEleve" class="btn" style="width:100%; justify-content:center; padding:12px;" onclick="reinitialiserPortailEleve()">
+        Terminer et revenir à l'accueil
+      </button>
+      <button type="button" id="btnRetourApresSimu" class="btn btn-simu" style="display:none; width:100%; justify-content:center; padding:12px;" onclick="quitterSimulation()">
+        Retourner au tableau de bord Enseignant
+      </button>
     </div>
 
-    <!-- 4. VUE ENSEIGNANT : AUTHENTIFICATION -->
-    <div id="viewProfAuth" class="card" style="display: none;">
-      <h1 id="authTitle">Connexion Enseignant</h1>
-      <div id="nomRegisterGroup" style="display: none;">
-        <label>Nom / Titre :</label>
-        <input type="text" id="profNom" class="input-field" placeholder="Ex : M. Martin">
+    <!-- ========================================== -->
+    <!-- 4. VUE ENSEIGNANT : AUTHENTIFICATION       -->
+    <!-- ========================================== -->
+    <div id="viewProfAuth" class="card" style="display:none; max-width:420px; margin:40px auto;">
+      <h3 id="authTitle"><i class="fa-solid fa-lock"></i> Connexion Enseignant</h3>
+      <div id="nomRegisterGroup" style="display:none; margin-bottom:12px;">
+        <label style="font-size:0.85rem; font-weight:bold;">Nom et prénom :</label>
+        <input type="text" id="profNom" class="input-field" placeholder="M. Dupont">
       </div>
-      <label>Email :</label>
-      <input type="email" id="profEmail" class="input-field" placeholder="enseignant@etablissement.fr">
-      <label>Mot de passe :</label>
-      <input type="password" id="profPassword" class="input-field" placeholder="••••••••">
-      <button type="button" class="btn" id="btnAuthSubmit" onclick="traiterAuthProf()">Se connecter</button>
-      <div style="font-size:0.9rem; margin-top:10px; text-align:center;">
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.85rem; font-weight:bold;">Adresse e-mail :</label>
+        <input type="email" id="profEmail" class="input-field" placeholder="prof@etablissement.fr">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:0.85rem; font-weight:bold;">Mot de passe :</label>
+        <input type="password" id="profPassword" class="input-field" placeholder="••••••••">
+      </div>
+      <button type="button" id="btnAuthSubmit" class="btn" style="width:100%; justify-content:center; padding:10px;" onclick="traiterAuthProf()">
+        Se connecter
+      </button>
+      <div style="margin-top:14px; text-align:center; font-size:0.85rem;">
         <span id="authToggleText">Pas encore de compte ?</span>
-        <a id="authToggleLink" style="color:var(--pronote-blue); font-weight:bold; cursor:pointer;" onclick="toggleAuthMode()">Créer un compte</a>
+        <a href="javascript:void(0)" id="authToggleLink" style="color:var(--pronote-blue); font-weight:bold; text-decoration:none;" onclick="toggleAuthMode()">Créer un compte</a>
       </div>
-      <div class="link-mode"><a onclick="basculerMode('eleve')">Retour à l'écran élève</a></div>
     </div>
 
-    <!-- 5. VUE ENSEIGNANT : DASHBOARD COMPLET -->
-    <div id="viewProfDashboard" class="card" style="display: none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h2 style="margin:0;">Tableau de bord Enseignant</h2>
-        <button onclick="deconnecterProf()" style="color:#dc2626; border:none; background:none; cursor:pointer; text-decoration:underline;">Se déconnecter</button>
-      </div>
-      <p style="margin-top:0; color:#64748b;">Connecté : <strong id="profNomConnecte"></strong></p>
+    <!-- ========================================== -->
+    <!-- 5. VUE ENSEIGNANT : TABLEAU DE BORD TOTAL  -->
+    <!-- ========================================== -->
+    <div id="viewProfDashboard" style="display:none;">
 
-      <!-- MODULE 1 : BANQUE DE QCM -->
+      <!-- Barre utilisateur prof -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:white; padding:10px 16px; border-radius:8px; border:1px solid var(--border-color);">
+        <div>
+          <span style="font-size:0.9rem; color:#64748b;">Connecté en tant que :</span>
+          <strong id="labelProfNom" style="color:var(--pronote-blue); margin-left:6px;">Enseignant</strong>
+        </div>
+        <button type="button" class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deconnecterProf()">
+          <i class="fa-solid fa-power-off"></i> Déconnexion
+        </button>
+      </div>
+
+      <!-- MODULE 1 : CAHIER DE TEXTE & PLANNING SEMAINE -->
       <div class="card">
-        <h3>📚 Banque de QCM (Questionnaires réutilisables)</h3>
-        <p style="color:#64748b; font-size:0.9rem; margin-bottom:14px;">
+        <h3><i class="fa-solid fa-calendar-week"></i> Cahier de Texte & Planning de la Semaine</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(-1)">← Semaine précédente</button>
+          <strong id="labelSemainePlanning" style="font-size:0.9rem; color:#334155;">Semaine en cours</strong>
+          <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(1)">Semaine suivante →</button>
+        </div>
+        <div id="grillePlanningSemaine" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px;"></div>
+      </div>
+
+      <!-- MODULE 2 : GESTION DES CLASSES -->
+      <div class="card">
+        <h3><i class="fa-solid fa-users"></i> Gestion des Classes & Aménagements PAP</h3>
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:14px;">
+          <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:6px;">
+            Importer une classe via un export CSV Pronote :
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+            <div style="flex:2; min-width:200px;">
+              <input type="file" id="csvPronoteInput" accept=".csv" class="input-field" style="margin-bottom:0;" onchange="analyserCsvPronote(this)">
+            </div>
+            <div style="flex:1; min-width:140px;">
+              <input type="text" id="nomClasseInput" class="input-field" placeholder="Nom de la classe" style="margin-bottom:0;">
+            </div>
+            <div>
+              <button type="button" class="btn btn-success" style="margin:0; padding:10px;" onclick="enregistrerClasseDepuisCsv()">Enregistrer la classe</button>
+            </div>
+          </div>
+        </div>
+
+        <table style="width:100%;">
+          <thead>
+            <tr>
+              <th>Classe</th>
+              <th style="text-align:center;">Effectif</th>
+              <th style="text-align:center;">Élèves PAP</th>
+              <th style="text-align:center; width:220px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableClassesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- MODULE 3 : BANQUE DE QCM -->
+      <div class="card">
+        <h3><i class="fa-solid fa-box-archive"></i> Banque de QCM (Questionnaires réutilisables)</h3>
+        <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
           Importez vos XML Pronote pour constituer votre bibliothèque et testez-les directement.
         </p>
 
-        <!-- 1. SÉLECTION DU FICHIER XML -->
-        <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
+        <!-- 1. Fichier XML -->
+        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
           <div style="flex:1; min-width:260px;">
-            <label style="font-weight:bold; font-size:0.9rem;">Fichier XML Pronote :</label>
+            <label style="font-weight:bold; font-size:0.85rem;">Fichier XML Pronote :</label>
             <input type="file" id="xmlBanqueInput" accept=".xml" class="input-field" style="margin-bottom:0;">
           </div>
           <div>
@@ -260,7 +439,7 @@
           </div>
         </div>
 
-        <!-- 2. DOCUMENT RESSOURCE ASSOCIÉ EN PLEINE LARGEUR -->
+        <!-- 2. Document Ressource Pleine Largeur -->
         <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:12px; margin-bottom:18px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
             <label style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin:0;">
@@ -277,12 +456,12 @@
               </button>
             </div>
           </div>
-          <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML ou importez directement votre fichier .html..."></textarea>
+          <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML ou importez un fichier .html..."></textarea>
         </div>
 
-        <!-- 3. TABLEAU DES QCM EN-DESSOUS DU CHAMP HTML -->
+        <!-- 3. Tableau des QCM en-dessous -->
         <div style="overflow-x:auto;">
-          <table style="width:100%; border-collapse:collapse;">
+          <table style="width:100%;">
             <thead>
               <tr>
                 <th style="text-align:left;">Titre du QCM</th>
@@ -290,150 +469,225 @@
                 <th style="text-align:center; width:180px;">Actions</th>
               </tr>
             </thead>
-            <tbody id="tableBanqueQcmBody">
-              <!-- Rempli dynamiquement par JS -->
-            </tbody>
+            <tbody id="tableBanqueQcmBody"></tbody>
           </table>
         </div>
       </div>
 
-        <button type="button" class="btn btn-success" style="margin:0; width:100%;" onclick="creerNouvelleSeance()">Créer et activer la séance</button>
-
-        <h4 style="margin-top:20px; margin-bottom:8px;">Séances actives et récentes</h4>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead><tr><th>Code</th><th>QCM</th><th>Classe</th><th>Date & Horaire</th><th>Statut</th><th>Copies</th><th>Actions</th></tr></thead>
-            <tbody id="tableSeancesBody"><tr><td colspan="7">Chargement...</td></tr></tbody>
-          </table>
+      <!-- MODULE 4 : GESTION DES SÉANCES D'ÉVALUATION -->
+      <div class="card">
+        <h3><i class="fa-solid fa-play"></i> Programmer & Activer une Séance d'Évaluation</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Sélectionner le QCM :</label>
+            <select id="selectSeanceQcm" class="input-field"></select>
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Classe concernée :</label>
+            <select id="selectSeanceClasse" class="input-field"></select>
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Code d'épreuve :</label>
+            <input type="text" id="codeSeanceInput" class="input-field" placeholder="Ex: EVAL-01" style="text-transform:uppercase; font-family:monospace; font-weight:bold;">
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Date de l'épreuve :</label>
+            <input type="date" id="seanceDateInput" class="input-field">
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Horaire :</label>
+            <input type="text" id="seanceHoraireInput" class="input-field" placeholder="Ex: 10h-11h">
+          </div>
         </div>
+        <button type="button" class="btn btn-success" style="padding:10px 16px;" onclick="creerNouvelleSeance()">
+          Activer la séance
+        </button>
+
+        <table style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th>Code Épreuve</th>
+              <th>Titre QCM</th>
+              <th>Classe</th>
+              <th>Date / Heure</th>
+              <th style="text-align:center;">Statut</th>
+              <th style="text-align:center;">Copies</th>
+              <th style="text-align:center; width:200px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableSeancesBody"></tbody>
+        </table>
       </div>
 
-      <!-- MODULE 3bis : AGENDA & PLANNING SEMAINE (CAHIER DE TEXTE) -->
-      <div class="section-box" style="background:#ffffff; border-left:4px solid var(--pronote-blue);">
+      <!-- MODULE 5 : COPIES ET RÉSULTATS -->
+      <div class="card">
+        <h3><i class="fa-solid fa-square-poll-vertical"></i> Copies & Résultats des Élèves</h3>
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-          <div>
-            <h3 style="margin:0;">📅 Cahier de texte & Planning des QCM</h3>
-            <p style="margin:2px 0 0 0; font-size:0.82rem; color:#64748b;">Consultez les devoirs programmés semaine par semaine.</p>
-          </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button type="button" class="btn-pdf" style="padding:5px 10px; margin:0;" onclick="changerSemainePlanning(-1)">&larr; Sem. précédente</button>
-            <span id="labelSemainePlanning" style="font-weight:bold; font-size:0.9rem; color:var(--pronote-blue); padding:0 4px;"></span>
-            <button type="button" class="btn-pdf" style="padding:5px 10px; margin:0;" onclick="changerSemainePlanning(1)">Sem. suivante &rarr;</button>
-          </div>
-        </div>
-        <div style="overflow-x:auto; padding-bottom:6px;"><div id="grillePlanningSemaine" style="display:grid; grid-template-columns:repeat(5, minmax(130px, 1fr)); gap:10px; min-width:680px;">
-          <!-- Colonnes Lundi à Vendredi -->
-        </div></div>
-      </div>
-
-      <!-- MODULE 4 : COPIES REÇUES -->
-      <div class="section-box">
-        <h3>📋 Copies Reçues & Résultats</h3>
-        <div class="filter-bar">
-          <div>
-            <label style="font-size:0.8rem; font-weight:bold; color:#475569;">Filtrer par Classe :</label>
-            <select id="filtreClasseSelect" class="input-field" style="margin:0; padding:6px; font-size:0.85rem;" onchange="filtrerResultats()">
+          <div style="display:flex; gap:10px;">
+            <select id="filtreClasseSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
               <option value="">Toutes les classes</option>
             </select>
-          </div>
-          <div>
-            <label style="font-size:0.8rem; font-weight:bold; color:#475569;">Filtrer par Séance :</label>
-            <select id="filtreSeanceSelect" class="input-field" style="margin:0; padding:6px; font-size:0.85rem;" onchange="filtrerResultats()">
+            <select id="filtreSeanceSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
               <option value="">Toutes les séances</option>
             </select>
           </div>
-          <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
-            <span style="font-size:0.9rem; font-weight:bold; color:var(--pronote-blue);" id="statCopiesText">0 copie(s)</span>
-            <button type="button" class="btn-pdf" style="background:#059669; padding:7px 12px; font-size:0.85rem;" onclick="ouvrirModalExportPronote()">
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-pdf" onclick="ouvrirModalExportPronote()">
               📋 Exporter vers Pronote
             </button>
           </div>
         </div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr><th>Heure</th><th>Élève</th><th>Classe</th><th>Séance</th><th>Note / 20</th><th>Écran / Sorties</th></tr>
-            </thead>
-            <tbody id="tableNotesBody"><tr><td colspan="6">Chargement...</td></tr></tbody>
-          </table>
-        </div>
-        <h4 style="margin-top:25px; margin-bottom:8px;">Journal des alertes de sorties d'écran</h4>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead><tr><th>Heure</th><th>Élève</th><th>Événement</th></tr></thead>
-            <tbody id="tableSortiesBody"><tr><td colspan="3">Chargement...</td></tr></tbody>
-          </table>
-        </div>
+
+        <div style="font-size:0.85rem; color:#64748b; margin-bottom:8px;" id="statCopiesText">0 copie</div>
+        <table style="width:100%;">
+          <thead>
+            <tr>
+              <th>Heure</th>
+              <th>Élève</th>
+              <th>Classe</th>
+              <th>Code</th>
+              <th>Note</th>
+              <th>Alertes Sortie</th>
+            </tr>
+          </thead>
+          <tbody id="tableNotesBody"></tbody>
+        </table>
       </div>
 
-      <button class="btn btn-secondary" onclick="basculerMode('eleve')">Accéder à l'écran élève</button>
+      <!-- MODULE 6 : JOURNAL DES ALERTES -->
+      <div class="card">
+        <h3><i class="fa-solid fa-shield-halved"></i> Journal des Sorties d'Écran et Incidents</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Heure</th>
+              <th>Élève</th>
+              <th>Événement consigné</th>
+            </tr>
+          </thead>
+          <tbody id="tableSortiesBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALS                                     -->
+  <!-- ========================================== -->
+
+  <!-- MODAL DOCUMENT RESSOURCE ÉLÈVE -->
+  <div id="modalDocRessourceEleve" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10000; justify-content:center; align-items:center; padding:10px; box-sizing:border-box;">
+    <div style="background:white; border-radius:8px; max-width:850px; width:100%; height:92vh; display:flex; flex-direction:column; padding:16px; box-sizing:border-box; box-shadow:0 6px 24px rgba(0,0,0,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px;">
+        <h3 style="margin:0; color:var(--pronote-blue); font-size:1.15rem;">📖 Document Ressource</h3>
+        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceEleve()">✖ Fermer</button>
+      </div>
+      <div id="corpsDocRessourceEleve" style="flex:1; overflow-y:auto; overflow-x:auto; padding:8px; font-size:0.95rem; line-height:1.5;"></div>
+      <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerDocRessourceEleve()">✓ Revenir à la question</button>
     </div>
   </div>
 
-  <script>
-    let currentQuestions = [];
-    let currentCode = "";
-    let currentSeanceId = null;
-    let eleveInfo = { prenom: "", code_perso: "" };
-    let authMode = "login";
-    let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
-    let currentEleveSession = JSON.parse(sessionStorage.getItem('qcm_eleve_session') || 'null');
+  <!-- MODAL GESTION ÉLÈVES PAP -->
+  <div id="modalGestionEleves" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10000; justify-content:center; align-items:center; padding:10px; box-sizing:border-box;">
+    <div style="background:white; border-radius:8px; max-width:650px; width:100%; max-height:88vh; display:flex; flex-direction:column; padding:16px; box-sizing:border-box;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-bottom:12px;">
+        <h3 style="margin:0; color:var(--pronote-blue); font-size:1.1rem;">Élèves & Aménagements PAP — <span id="nomClasseGestionPap"></span></h3>
+        <button type="button" class="btn btn-danger" style="margin:0; padding:4px 8px;" onclick="fermerModalGestionEleves()">✖</button>
+      </div>
+      <div id="conteneurListeElevesPap" style="flex:1; overflow-y:auto;"></div>
+      <button type="button" class="btn" style="margin-top:12px; justify-content:center;" onclick="fermerModalGestionEleves()">Fermer</button>
+    </div>
+  </div>
 
-    let isModeSimulation = false;
-    let compteurSortiesEleve = 0;
+  <!-- MODAL EXPORT PRONOTE -->
+  <div id="modalExportPronote" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10000; justify-content:center; align-items:center; padding:10px; box-sizing:border-box;">
+    <div style="background:white; border-radius:8px; max-width:600px; width:100%; max-height:90vh; display:flex; flex-direction:column; padding:16px; box-sizing:border-box;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-bottom:12px;">
+        <h3 style="margin:0; color:var(--pronote-blue); font-size:1.1rem;">Export des Notes vers Pronote</h3>
+        <button type="button" class="btn btn-danger" style="margin:0; padding:4px 8px;" onclick="fermerModalExportPronote()">✖</button>
+      </div>
+      <p style="font-size:0.85rem; color:#64748b; margin-top:0;">
+        L'ordre des lignes correspond scrupuleusement à l'ordre d'origine de votre fichier Pronote (tri alphabétique du Nom).
+      </p>
+      <div id="previewExportContainer" style="flex:1; overflow-y:auto; margin-bottom:12px;"></div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn btn-success" style="flex:1; justify-content:center;" onclick="copierNotesPressePapier()">
+          📋 Copier la colonne pour Pronote
+        </button>
+        <button type="button" class="btn btn-pdf" style="flex:1; justify-content:center;" onclick="telechargerCsvPronote()">
+          💾 Télécharger en CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT COMPLET                         -->
+  <!-- ========================================== -->
+  <script>
+    // Variables globales d'état
+    let currentProf = null;
+    let authMode = "login";
+    let offsetSemaine = 0;
+
+    let listeClassesMemoire = [];
+    let listeSeancesMemoire = [];
+    let listeBanqueQcmMemoire = [];
+    let memoireToutesLesNotes = [];
+
+    // Variables Quiz
+    let currentQuestions = [];
     let currentQuestionIndex = 0;
     let totalScoreObtenu = 0;
     let totalScorePossible = 0;
+    let currentDocumentHtml = null;
+    let isModeSimulation = false;
+    let compteurSortiesEleve = 0;
+    let eleveInfo = null;
+    let currentCode = "";
+    let currentSeanceId = null;
 
-    let listeClassesMemoire = [];
-    let listeQcmMemoire = [];
-    let listeSeancesMemoire = [];
-    let parsedElevesPreview = [];
-    let memoireToutesLesNotes = [];
-    let offsetSemaine = 0;
-
+    // Initialisation au chargement
     window.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('mode') === 'prof') {
-        basculerMode('prof');
-      } else {
-        if (currentEleveSession) afficherPortailEleve();
+      const savedProf = localStorage.getItem('qcm_prof_user');
+      if (savedProf) {
+        try { currentProf = JSON.parse(savedProf); } catch(e) {}
       }
+      basculerMode('eleve');
     });
 
+    // Bascule entre mode Élève et mode Enseignant
     function basculerMode(mode) {
-      document.getElementById('viewEleveLogin').style.display = (mode === 'eleve' && !currentEleveSession) ? 'block' : 'none';
-      document.getElementById('viewEleveDashboard').style.display = (mode === 'eleve' && currentEleveSession) ? 'block' : 'none';
+      document.getElementById('viewEleveLogin').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'none';
       document.getElementById('viewEleveFin').style.display = 'none';
+      document.getElementById('viewProfAuth').style.display = 'none';
+      document.getElementById('viewProfDashboard').style.display = 'none';
 
-      if (mode === 'prof') {
-        if (currentProf && currentProf.id) {
-          document.getElementById('viewProfAuth').style.display = 'none';
+      if (mode === 'eleve') {
+        document.getElementById('viewEleveLogin').style.display = 'block';
+        document.getElementById('btnSwitchEleve').style.display = 'none';
+      } else if (mode === 'prof') {
+        document.getElementById('btnSwitchEleve').style.display = 'inline-flex';
+        if (currentProf) {
+          document.getElementById('labelProfNom').innerText = currentProf.nom || currentProf.email;
           document.getElementById('viewProfDashboard').style.display = 'block';
-          document.getElementById('profNomConnecte').innerText = currentProf.nom || currentProf.email;
-          chargerToutEspaceProf();
+          chargerDonneesProf();
         } else {
           document.getElementById('viewProfAuth').style.display = 'block';
-          document.getElementById('viewProfDashboard').style.display = 'none';
         }
-      } else {
-        document.getElementById('viewProfAuth').style.display = 'none';
-        document.getElementById('viewProfDashboard').style.display = 'none';
       }
     }
 
-    function chargerToutEspaceProf() {
-      chargerBanqueQcm();
-      chargerClassesProf();
-      chargerSeancesProf();
-      chargerResultatsProf();
+    function reinitialiserPortailEleve() {
+      document.getElementById('codeSessionEleve').value = "";
+      document.getElementById('codePersonnelEleve').value = "";
+      basculerMode('eleve');
     }
 
-    
-    let currentDocumentHtml = null;
-
-    
+    // ==================== 1. DOCUMENT RESSOURCE ====================
     function importerFichierHtmlDoc(input) {
       const file = input.files[0];
       if (!file) return;
@@ -463,8 +717,7 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         const base64Data = e.target.result;
-        const tagImg = `\n<img src="${base64Data}" alt="Image ressource" style="max-width:100%; height:auto; border-radius:6px; margin:10px 0; border:1px solid #cbd5e1; display:block;">\n`;
-        
+        const tagImg = `\n<img src="${base64Data}" alt="Ressource" style="max-width:100%; height:auto; border-radius:6px; margin:10px 0; border:1px solid #cbd5e1; display:block;">\n`;
         const textarea = document.getElementById('documentHtmlInput');
         if (textarea) {
           const start = textarea.selectionStart;
@@ -487,388 +740,200 @@
       document.getElementById('modalDocRessourceEleve').style.display = 'none';
     }
 
-    // ==================== 1. PORTAIL ÉLÈVE ====================
-    async function connexionPortailEleve() {
-      const prenom = document.getElementById('elevePrenom').value.trim();
-      const dateN = document.getElementById('eleveDateN').value.trim();
-      const code = document.getElementById('eleveCodePerso').value.trim().toUpperCase();
-
-      if (!prenom || !code) {
-        alert("Veuillez renseigner votre prénom et votre code individuel.");
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/eleve_portal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prenom, date_naissance: dateN, code_eleve: code })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          alert(data.error || "Identifiants non reconnus.");
-          return;
-        }
-
-        currentEleveSession = data;
-        sessionStorage.setItem('qcm_eleve_session', JSON.stringify(data));
-        afficherPortailEleve();
-      } catch(e) {
-        alert("Erreur de connexion.");
-      }
-    }
-
-    function afficherPortailEleve() {
-      if (!currentEleveSession) return;
-      document.getElementById('viewEleveLogin').style.display = 'none';
-      document.getElementById('viewEleveDashboard').style.display = 'block';
-      document.getElementById('portalElevePrenom').innerText = currentEleveSession.eleve.prenom;
-      document.getElementById('portalEleveClasse').innerText = currentEleveSession.eleve.classe_nom;
-
-      const contAFaire = document.getElementById('listeSeancesAFaire');
-      if (!currentEleveSession.a_faire || currentEleveSession.a_faire.length === 0) {
-        contAFaire.innerHTML = "<p style='font-size:0.9rem; color:#166534; margin:0;'>🎉 Aucun QCM en attente pour le moment !</p>";
-      } else {
-        contAFaire.innerHTML = currentEleveSession.a_faire.map(s => `
-          <div style="background:white; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <strong style="color:var(--pronote-blue); font-size:1.05rem;">${s.titre}</strong>
-            </div>
-            <button type="button" class="btn btn-success" style="width:auto; margin:0; padding:8px 14px; font-size:0.9rem;" onclick="demarrerSeanceDepuisPortail('${s.code_session}')">
-              Commencer &rarr;
-            </button>
-          </div>
-        `).join('');
-      }
-
-      const contHisto = document.getElementById('listeHistoriqueEleve');
-      if (!currentEleveSession.historique || currentEleveSession.historique.length === 0) {
-        contHisto.innerHTML = "<p style='font-size:0.85rem; color:#64748b; margin:0;'>Vous n'avez pas encore passé d'évaluation.</p>";
-      } else {
-        contHisto.innerHTML = `
-          <table>
-            <thead><tr><th>Date</th><th>Questionnaire</th><th>Note</th></tr></thead>
-            <tbody>
-              ${currentEleveSession.historique.map(h => `
-                <tr>
-                  <td>${new Date(h.date_soumission).toLocaleDateString()}</td>
-                  <td><strong>${h.qcm_titre || 'Évaluation'}</strong></td>
-                  <td><strong style="color:var(--pronote-blue); font-size:1.05rem;">${h.note} / ${h.total}</strong></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      }
-    }
-
-    async function demarrerSeanceDepuisPortail(codeSession) {
-      currentCode = codeSession;
-      eleveInfo.prenom = currentEleveSession.eleve.prenom;
-      eleveInfo.code_perso = currentEleveSession.eleve.code_eleve;
-
-      const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(currentCode)}&code_eleve=${encodeURIComponent(eleveInfo.code_perso)}`);
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Épreuve inaccessible.");
-        return;
-      }
-
-      currentQuestions = data.questions;
-      currentDocumentHtml = data.document_html || null;
-      const boxDoc = document.getElementById('btnOuvrirDocBox');
-      if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
-      currentSeanceId = data.seance_id;
-      currentQuestionIndex = 0;
-      totalScoreObtenu = 0;
-      totalScorePossible = 0;
-      currentQuestions.forEach(q => { totalScorePossible += q.points; });
-
-      document.getElementById('viewEleveDashboard').style.display = 'none';
-      document.getElementById('viewEleveQcm').style.display = 'block';
-      afficherQuestionCourante();
-    }
-
-    function deconnexionEleve() {
-      currentEleveSession = null;
-      sessionStorage.removeItem('qcm_eleve_session');
-      document.getElementById('viewEleveDashboard').style.display = 'none';
-      document.getElementById('viewEleveLogin').style.display = 'block';
-    }
-
-    function retourPortailApresQuiz() {
-      document.getElementById('viewEleveFin').style.display = 'none';
-      if (currentEleveSession && currentEleveSession.eleve) {
-        fetch('/api/eleve_portal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prenom: currentEleveSession.eleve.prenom, code_eleve: currentEleveSession.eleve.code_eleve })
-        }).then(r => r.json()).then(data => {
-          if (data.eleve) {
-            currentEleveSession = data;
-            sessionStorage.setItem('qcm_eleve_session', JSON.stringify(data));
-          }
-          afficherPortailEleve();
-        });
-      }
-    }
-
     // ==================== 2. BANQUE DE QCM ====================
-    function cleanHTML(html) {
-      const div = document.createElement("div");
-      div.innerHTML = html;
-      return div.innerText || div.textContent || "";
-    }
-
-    async function importerDansBanque() {
-      if (!currentProf) return;
-      const fileInput = document.getElementById('xmlBanqueInput');
-      const file = fileInput.files[0];
-      if (!file) { alert("Veuillez sélectionner un fichier XML Pronote."); return; }
-
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-        const contenu = evt.target.result;
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(contenu, "application/xml");
-        const qNodes = xmlDoc.getElementsByTagName("question");
-
-        let titreQcm = "QCM Pronote";
-        const questions = [];
-
-        for (let i = 0; i < qNodes.length; i++) {
-          const qNode = qNodes[i];
-          const type = qNode.getAttribute("type");
-          if (type === "category") {
-            const match = (qNode.getElementsByTagName("text")[0]?.textContent || "").match(/<name>(.*?)<\/name>/);
-            if (match && match[1]) titreQcm = match[1];
-            continue;
-          }
-
-          const name = qNode.getElementsByTagName("name")[0]?.getElementsByTagName("text")[0]?.textContent || `Question ${i}`;
-          const enonce = cleanHTML(qNode.getElementsByTagName("questiontext")[0]?.getElementsByTagName("text")[0]?.textContent || "");
-          const image = qNode.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null;
-          const points = parseFloat(qNode.getElementsByTagName("defaultgrade")[0]?.textContent || "1");
-          const generalFeedback = cleanHTML(qNode.getElementsByTagName("generalfeedback")[0]?.getElementsByTagName("text")[0]?.textContent || "");
-
-          if (type === "multichoice") {
-            const isSingle = qNode.getElementsByTagName("single")[0]?.textContent?.trim() === "true";
-            const ansNodes = qNode.getElementsByTagName("answer");
-            const answers = [];
-            for (let j = 0; j < ansNodes.length; j++) {
-              const a = ansNodes[j];
-              answers.push({
-                text: a.getElementsByTagName("text")[0]?.textContent || "",
-                fraction: parseFloat(a.getAttribute("fraction") || "0"),
-                image: a.getElementsByTagName("image_base64")[0]?.getElementsByTagName("text")[0]?.textContent?.trim() || null,
-                feedback: cleanHTML(a.getElementsByTagName("feedback")[0]?.getElementsByTagName("text")[0]?.textContent || "")
-              });
-            }
-            questions.push({ type, title: name, enonce, image, single: isSingle, points, generalFeedback, answers });
-          } else if (type === "matching") {
-            const subNodes = qNode.getElementsByTagName("subquestion");
-            const subquestions = [];
-            for (let j = 0; j < subNodes.length; j++) {
-              const s = subNodes[j];
-              const q = s.getElementsByTagName("text")[0]?.textContent || "";
-              const a = s.getElementsByTagName("answer")[0]?.getElementsByTagName("text")[0]?.textContent || "";
-              if (q.trim()) subquestions.push({ question: q, answer: a });
-            }
-            questions.push({ type, title: name, enonce, image, points, generalFeedback, subquestions });
-          }
-        }
-
-        const res = await fetch('/api/banque', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            titre: titreQcm,
-            questions,
-            prof_id: currentProf.id,
-            document_html: document.getElementById('documentHtmlInput') ? document.getElementById('documentHtmlInput').value.trim() : null
-          })
-        });
-
-        if (res.ok) {
-          alert(`Questionnaire "${titreQcm}" ajouté à votre banque !`);
-          fileInput.value = ""; if(document.getElementById("documentHtmlInput")) document.getElementById("documentHtmlInput").value = "";
-          chargerBanqueQcm();
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          alert("Erreur : " + (errData.error || res.statusText));
-        }
-      };
-      reader.readAsText(file, "UTF-8");
-    }
-
-    async function chargerBanqueQcm() {
+    async function chargerBanqueProf() {
       if (!currentProf) return;
       try {
         const res = await fetch(`/api/banque?prof_id=${currentProf.id}`);
-        listeQcmMemoire = await res.json();
-
-        const tbody = document.getElementById('tableBanqueBody');
-        tbody.innerHTML = listeQcmMemoire.length === 0 ? "<tr><td colspan='3'>Aucun QCM enregistré.</td></tr>" :
-          listeQcmMemoire.map(q => `
+        listeBanqueQcmMemoire = await res.json();
+        
+        const tbody = document.getElementById('tableBanqueQcmBody');
+        tbody.innerHTML = listeBanqueQcmMemoire.length === 0 
+          ? "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:14px;'>Aucun QCM enregistré.</td></tr>" 
+          : listeBanqueQcmMemoire.map(q => `
             <tr>
-              <td><strong>${q.titre}</strong></td>
-              <td>${new Date(q.date_creation).toLocaleDateString()}</td>
-              <td style="display:flex; gap:6px;">
-                <button class="btn-simu" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
-                <button class="btn-danger" onclick="supprimerQcmBanque(${q.id}, '${q.titre.replace(/'/g, "\\'")}')">Suppr</button>
+              <td><strong>${q.titre}</strong> ${q.document_html ? '<span class="badge" style="background:#e0f2fe; color:#0369a1;">📄 Doc inclus</span>' : ''}</td>
+              <td style="text-align:center;">${new Date(q.date_creation).toLocaleDateString()}</td>
+              <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
+                <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
+                <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerQcmBanque(${q.id})">Suppr</button>
               </td>
             </tr>
           `).join('');
 
-        const sel = document.getElementById('selectSeanceQcm');
-        sel.innerHTML = '<option value="">-- Choisir un QCM --</option>' +
-          listeQcmMemoire.map(q => `<option value="${q.id}">${q.titre}</option>`).join('');
+        const selQcm = document.getElementById('selectSeanceQcm');
+        selQcm.innerHTML = listeBanqueQcmMemoire.map(q => `<option value="${q.id}">${q.titre}</option>`).join('');
       } catch(e) {}
     }
 
-    async function supprimerQcmBanque(qcmId, titre) {
-      if (!confirm(`Supprimer le questionnaire "${titre}" de votre banque ?`)) return;
-      await fetch(`/api/banque?qcm_id=${qcmId}&prof_id=${currentProf.id}`, { method: 'DELETE' });
-      chargerBanqueQcm();
-    }
+    async function importerDansBanque() {
+      const fileInput = document.getElementById('xmlBanqueInput');
+      const file = fileInput.files[0];
+      if (!file) { alert("Veuillez sélectionner un fichier XML Pronote."); return; }
 
-    // ==================== 3. CLASSES & ÉLÈVES ====================
-    document.getElementById('csvElevesInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const text = await file.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(text, "text/xml");
 
-      const nomFichier = file.name.replace(/\.[^/.]+$/, "");
-      const inputNom = document.getElementById('nomClasseInput');
-      if (!inputNom.value.trim()) {
-        inputNom.value = nomFichier.replace(/eleves_|liste_|classe_/gi, "").trim();
-      }
+      let titreQcm = file.name.replace(/\.[^/.]+$/, "");
+      const catNode = xmlDoc.querySelector('question[type="category"] text');
+      if (catNode && catNode.textContent.trim()) titreQcm = catNode.textContent.trim();
 
-      const reader = new FileReader();
-      reader.onload = (evt) => { analyserCsvPronote(evt.target.result); };
-      reader.readAsText(file, "ISO-8859-1");
-    });
+      const questionsNodes = xmlDoc.querySelectorAll('question:not([type="category"])');
+      const questions = [];
 
-    function genererCodeCourt() {
-      const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-      let code = "";
-      for (let i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-      return code;
-    }
+      questionsNodes.forEach(qn => {
+        const type = qn.getAttribute("type");
+        const nameNode = qn.querySelector('name text');
+        const questionTextNode = qn.querySelector('questiontext text');
+        const defaultGradeNode = qn.querySelector('defaultgrade');
+        const generalFeedbackNode = qn.querySelector('generalfeedback text');
 
-    function analyserCsvPronote(contenu) {
-      const lignes = contenu.split(/\r\n|\n/).filter(l => l.trim() !== "");
-      if (lignes.length < 2) return;
-      const sep = lignes[0].includes(';') ? ';' : (lignes[0].includes(',') ? ',' : '\t');
-      const headers = lignes[0].split(sep).map(h => h.replace(/^["'\s\uFEFF]+|["'\s]+$/g, ''));
-      const colEleve = headers.findIndex(h => /Élèves|Eleves|Nom/i.test(h));
-      const colDate = headers.findIndex(h => /Né\(e\)\s*le/i.test(h));
+        const title = nameNode ? nameNode.textContent.trim() : "";
+        const enonce = questionTextNode ? questionTextNode.textContent.trim() : "";
+        const points = defaultGradeNode ? parseFloat(defaultGradeNode.textContent) : 1;
+        const generalFeedback = generalFeedbackNode ? generalFeedbackNode.textContent.trim() : "";
 
-      const elevesBruts = [];
-      for (let i = 1; i < lignes.length; i++) {
-        const row = lignes[i].split(sep).map(c => c.replace(/^["'\s]+|["'\s]+$/g, ''));
-        const cell = row[colEleve];
-        if (!cell) continue;
-
-        const dateN = colDate !== -1 && row[colDate] ? row[colDate] : "";
-        const tokens = cell.split(/\s+/).filter(t => t.length > 0);
-        const nomParts = tokens.filter(t => t === t.toUpperCase() && /[A-Z]/.test(t));
-        const prenomParts = tokens.filter(t => t !== t.toUpperCase() || !/[A-Z]/.test(t));
-
-        let prenom = prenomParts.join(' ');
-        let nom = nomParts.join(' ');
-        if (!prenom && tokens.length > 1) { prenom = tokens.slice(1).join(' '); nom = tokens[0]; }
-        else if (!prenom) { prenom = tokens[0]; }
-
-        elevesBruts.push({ nom, prenomBrut: prenom, dateNaissance: dateN, init: nom ? nom[0].toUpperCase() + '.' : '' });
-      }
-
-      const counts = {};
-      elevesBruts.forEach(e => { counts[e.prenomBrut.toLowerCase()] = (counts[e.prenomBrut.toLowerCase()] || 0) + 1; });
-      parsedElevesPreview = elevesBruts.map((e, idx) => {
-        const estDbl = counts[e.prenomBrut.toLowerCase()] > 1;
-        return {
-          ordre: idx + 1,
-          prenom: estDbl && e.init ? `${e.prenomBrut} ${e.init}` : e.prenomBrut,
-          date_naissance: e.dateNaissance,
-          code_eleve: genererCodeCourt()
-        };
+        if (type === "multichoice") {
+          const single = qn.querySelector('single') ? qn.querySelector('single').textContent.trim() === 'true' : true;
+          const answersNodes = qn.querySelectorAll('answer');
+          const answers = [];
+          answersNodes.forEach(an => {
+            const fraction = parseFloat(an.getAttribute("fraction")) || 0;
+            const textAns = an.querySelector('text') ? an.querySelector('text').textContent.trim() : "";
+            const fbAns = an.querySelector('feedback text') ? an.querySelector('feedback text').textContent.trim() : "";
+            answers.push({ text: textAns, fraction, feedback: fbAns });
+          });
+          questions.push({ type, title, enonce, points, single, generalFeedback, answers });
+        } else if (type === "matching") {
+          const subqNodes = qn.querySelectorAll('subquestion');
+          const subquestions = [];
+          subqNodes.forEach(sq => {
+            const sqText = sq.querySelector('text') ? sq.querySelector('text').textContent.trim() : "";
+            const ansText = sq.querySelector('answer text') ? sq.querySelector('answer text').textContent.trim() : "";
+            if (sqText && ansText) subquestions.push({ question: sqText, answer: ansText });
+          });
+          questions.push({ type, title, enonce, points, generalFeedback, subquestions });
+        }
       });
 
-      document.getElementById('previewCount').innerText = parsedElevesPreview.length;
-      document.getElementById('previewTableBody').innerHTML = parsedElevesPreview.map((el, idx) => `
-        <tr>
-          <td><input type="text" value="${el.prenom}" class="input-field" style="margin:0; padding:4px;" onchange="parsedElevesPreview[${idx}].prenom=this.value.trim()"></td>
-          <td>${el.date_naissance || '-'}</td>
-          <td><span class="badge-session">${el.code_eleve}</span></td>
-        </tr>
-      `).join('');
-      document.getElementById('previewZone').style.display = 'block';
-    }
-
-    async function enregistrerClasseValidee() {
-      const nomClasse = document.getElementById('nomClasseInput').value.trim();
-      if (!nomClasse) {
-        alert("Veuillez saisir un nom pour la classe.");
+      if (questions.length === 0) {
+        alert("Aucune question valide trouvée dans ce fichier XML Pronote.");
         return;
       }
 
-      const jourCours = document.getElementById('classeJourCours') ? document.getElementById('classeJourCours').value : "Lundi";
-      const horaireCours = document.getElementById('classeHoraireCours') ? document.getElementById('classeHoraireCours').value.trim() : "10h-11h";
+      const docHtml = document.getElementById('documentHtmlInput').value.trim() || null;
 
-      const btn = document.querySelector('#previewZone button.btn-success');
-      if (btn) btn.disabled = true;
+      const res = await fetch('/api/banque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titre: titreQcm,
+          questions,
+          prof_id: currentProf.id,
+          document_html: docHtml
+        })
+      });
 
-      try {
-        const res = await fetch('/api/classes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nom: nomClasse,
-            classe_nom: nomClasse,
-            nom_classe: nomClasse,
-            prof_id: currentProf ? currentProf.id : null,
-            jour_cours: jourCours,
-            horaire_cours: horaireCours,
-            eleves: parsedElevesPreview
-          })
-        });
-
-        const data = await res.json();
-        if (btn) btn.disabled = false;
-
-        if (res.ok) {
-          alert("Classe \"" + nomClasse + "\" enregistrée avec succès ! (" + jourCours + " " + horaireCours + ")");
-          document.getElementById('previewZone').style.display = 'none';
-          document.getElementById('nomClasseInput').value = "";
-          document.getElementById('csvElevesInput').value = "";
-          parsedElevesPreview = [];
-          
-          // Réactualisation instantanée de la liste et des listes déroulantes
-          await chargerClassesProf();
-        } else {
-          alert("Erreur: " + data.error);
-        }
-      } catch(e) {
-        if (btn) btn.disabled = false;
-        alert("Erreur de connexion : " + e.message);
+      if (res.ok) {
+        alert(`✓ QCM "${titreQcm}" importé avec succès (${questions.length} questions) !`);
+        fileInput.value = "";
+        document.getElementById('documentHtmlInput').value = "";
+        chargerBanqueProf();
+      } else {
+        alert("Erreur lors de l'enregistrement dans la banque.");
       }
     }
 
-    async function rejoindreClassePartagee() {
-      const code = document.getElementById('codeClassePartageInput').value.trim().toUpperCase();
-      if (!code) return;
+    async function supprimerQcmBanque(qcmId) {
+      if (!confirm("Voulez-vous vraiment supprimer ce QCM de votre banque ?")) return;
+      await fetch(`/api/banque?qcm_id=${qcmId}`, { method: 'DELETE' });
+      chargerBanqueProf();
+    }
+
+    // ==================== 3. GESTION DES CLASSES & PDF ====================
+    let parsedElevesPreview = [];
+
+    function analyserCsvPronote(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lignes = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lignes.length < 2) return;
+
+        const sep = lignes[0].includes(';') ? ';' : ',';
+        const headers = lignes[0].split(sep).map(h => h.trim());
+        const colEleve = headers.findIndex(h => /Élèves|Eleves|Nom/i.test(h));
+        const colDate = headers.findIndex(h => /Né\(e\)|Naissance|Date/i.test(h));
+
+        const counts = {};
+        const elevesBruts = [];
+
+        for (let i = 1; i < lignes.length; i++) {
+          const cols = lignes[i].split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+          const nomComplet = cols[colEleve] || "";
+          const dateNais = colDate !== -1 ? cols[colDate] : "";
+          if (!nomComplet) continue;
+
+          const parts = nomComplet.split(/\s+/);
+          const prenomBrut = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+          const init = parts.length > 1 ? parts[0].charAt(0).toUpperCase() + '.' : '';
+
+          counts[prenomBrut.toLowerCase()] = (counts[prenomBrut.toLowerCase()] || 0) + 1;
+          elevesBruts.push({ prenomBrut, init, dateNaissance: dateNais });
+        }
+
+        function genCode() {
+          const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+          let c = "";
+          for (let k = 0; k < 4; k++) c += chars.charAt(Math.floor(Math.random() * chars.length));
+          return c;
+        }
+
+        parsedElevesPreview = elevesBruts.map((e, idx) => {
+          const estDbl = counts[e.prenomBrut.toLowerCase()] > 1;
+          return {
+            ordre: idx + 1,
+            prenom: estDbl && e.init ? `${e.prenomBrut} ${e.init}` : e.prenomBrut,
+            date_naissance: e.dateNaissance,
+            code_eleve: genCode()
+          };
+        });
+
+        const inputNom = document.getElementById('nomClasseInput');
+        if (!inputNom.value.trim()) {
+          inputNom.value = file.name.replace(/\.[^/.]+$/, "").replace(/Export_?/i, "");
+        }
+      };
+      reader.readAsText(file, "ISO-8859-1");
+    }
+
+    async function enregistrerClasseDepuisCsv() {
+      const nom = document.getElementById('nomClasseInput').value.trim();
+      if (!nom) { alert("Veuillez indiquer un nom pour la classe."); return; }
+      if (parsedElevesPreview.length === 0) { alert("Veuillez sélectionner un fichier CSV Pronote valide."); return; }
+
       const res = await fetch('/api/classes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "rejoindre", prof_id: currentProf.id, code_partage: code })
+        body: JSON.stringify({
+          nom,
+          prof_id: currentProf.id,
+          eleves: parsedElevesPreview
+        })
       });
-      const data = await res.json();
+
       if (res.ok) {
-        alert(`Vous avez rejoint la classe "${data.nom}" !`);
-        document.getElementById('codeClassePartageInput').value = "";
+        alert(`✓ Classe "${nom}" enregistrée avec ${parsedElevesPreview.length} élèves !`);
+        document.getElementById('csvPronoteInput').value = "";
+        document.getElementById('nomClasseInput').value = "";
+        parsedElevesPreview = [];
         chargerClassesProf();
       } else {
-        alert("Erreur: " + data.error);
+        alert("Erreur lors de l'enregistrement de la classe.");
       }
     }
 
@@ -878,89 +943,47 @@
         const res = await fetch(`/api/classes?prof_id=${currentProf.id}`);
         listeClassesMemoire = await res.json();
 
-        const selSeance = document.getElementById('selectSeanceClasse');
+        const tbody = document.getElementById('tableClassesBody');
+        tbody.innerHTML = listeClassesMemoire.length === 0
+          ? "<tr><td colspan='4' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune classe enregistrée.</td></tr>"
+          : listeClassesMemoire.map(c => `
+            <tr>
+              <td><strong>${c.nom}</strong></td>
+              <td style="text-align:center;">${c.effectif || 0}</td>
+              <td style="text-align:center;">
+                <span class="badge" style="background:${c.nb_pap > 0 ? '#fdf4ff' : '#f1f5f9'}; color:${c.nb_pap > 0 ? '#7e22ce' : '#64748b'};">
+                  ${c.nb_pap || 0} PAP
+                </span>
+              </td>
+              <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
+                <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="ouvrirModalGestionEleves(${c.id}, '${c.nom}')">👥 Élèves</button>
+                <button type="button" class="btn btn-pdf" style="background:#0284c7; padding:4px 8px; font-size:0.75rem;" onclick="genererPdfClasse(${c.id}, '${c.nom}', '${c.code_partage}')">📄 PDF</button>
+                <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerClasse(${c.id}, '${c.nom}')">Suppr</button>
+              </td>
+            </tr>
+          `).join('');
+
+        const selClasse = document.getElementById('selectSeanceClasse');
         const selFiltre = document.getElementById('filtreClasseSelect');
-        selSeance.innerHTML = '<option value="">-- Choisir une classe --</option>' +
-          listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
-        selFiltre.innerHTML = '<option value="">Toutes les classes</option>' +
-          listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
-
-        const cont = document.getElementById('listeClassesContainer');
-        cont.innerHTML = listeClassesMemoire.length === 0 ? "<p style='font-size:0.85rem; color:#64748b;'>Aucune classe enregistrée.</p>" : `
-          <table>
-            <thead><tr><th>Classe</th><th>Créneau habituel</th><th>Code Partage</th><th>Effectif</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${listeClassesMemoire.map(c => `
-                <tr>
-                  <td><strong>${c.nom}</strong></td>
-                  <td><span class="badge" style="background:#f1f5f9; color:#334155;">${c.jour_cours || 'Lundi'} ${c.horaire_cours || '10h-11h'}</span></td>
-                  <td><span class="badge-share" onclick="navigator.clipboard.writeText('${c.code_partage}'); alert('Code copié !');">📋 ${c.code_partage || 'N/A'}</span></td>
-                  <td>${c.effectif || 0} élèves</td>
-                  <td style="display:flex; gap:5px;">
-                    
-  <button class="btn-pdf" style="background:#7c3aed;" onclick="ouvrirModalGestionEleves(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">👥 Élèves ${c.nb_pap > 0 ? `(${c.nb_pap} PAP)` : ''}</button>
-  <button class="btn-pdf" onclick="genererPdfClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}', '${c.code_partage || ''}')">PDF</button>
-
-                    <button class="btn-danger" onclick="supprimerClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">${c.createur_id == currentProf.id ? 'Suppr' : 'Retirer'}</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-        ajusterCreneauAutomatique();
+        selClasse.innerHTML = listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+        selFiltre.innerHTML = '<option value="">Toutes les classes</option>' + listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
       } catch(e) {}
     }
 
-    function ajusterCreneauAutomatique() {
-      const sel = document.getElementById('selectSeanceClasse');
-      if (!sel || !sel.value) return;
-      const cl = listeClassesMemoire.find(c => c.id == sel.value);
-      if (!cl) return;
-
-      const inpHoraire = document.getElementById('seanceHoraireInput');
-      if (inpHoraire) inpHoraire.value = cl.horaire_cours || "10h-11h";
-
-      const joursMap = { "Dimanche": 0, "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4, "Vendredi": 5, "Samedi": 6 };
-      const cibleJour = joursMap[cl.jour_cours || "Lundi"];
-      
-      const d = new Date();
-      const jourActuel = d.getDay();
-      let diff = cibleJour - jourActuel;
-      if (diff < 0) diff += 7;
-      d.setDate(d.getDate() + diff);
-
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const inpDate = document.getElementById('seanceDateInput');
-      if (inpDate) inpDate.value = `${yyyy}-${mm}-${dd}`;
-    }
-
     async function supprimerClasse(classeId, nom) {
-      if (!confirm("Voulez-vous vraiment supprimer la classe \"" + nom + "\" ainsi que ses élèves et ses séances associées ?")) return;
-      try {
-        const res = await fetch("/api/classes?classe_id=" + classeId + "&prof_id=" + (currentProf ? currentProf.id : ""), { 
-          method: 'DELETE' 
-        });
-        const data = await res.json();
-        if (res.ok) {
-          await chargerClassesProf();
-          await chargerSeancesProf();
-        } else {
-          alert("Erreur lors de la suppression : " + (data.error || "Erreur serveur"));
-        }
-      } catch(e) {
-        alert("Erreur réseau : " + e.message);
-      }
+      if (!confirm(`Voulez-vous vraiment supprimer la classe "${nom}" ?`)) return;
+      await fetch(`/api/classes?classe_id=${classeId}`, { method: 'DELETE' });
+      chargerClassesProf();
     }
 
+    // FONCTION GÉNÉRATION DU PDF PROPRE ET CENTRÉ
     async function genererPdfClasse(classeId, nomClasse, codePartage) {
       const res = await fetch(`/api/classes?classe_id=${classeId}`);
       const eleves = await res.json();
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
+      // En-tête bleu
       doc.setFillColor(11, 92, 171);
       doc.rect(0, 0, 210, 20, 'F');
       doc.setTextColor(255, 255, 255);
@@ -1015,23 +1038,21 @@
       doc.save(`Codes_${nomClasse}.pdf`);
     }
 
-    
     let classeSelectionneePapId = null;
-
     async function ouvrirModalGestionEleves(classeId, nomClasse) {
       classeSelectionneePapId = classeId;
       document.getElementById('nomClasseGestionPap').innerText = nomClasse;
       document.getElementById('modalGestionEleves').style.display = 'flex';
       
       const cont = document.getElementById('conteneurListeElevesPap');
-      cont.innerHTML = "<p style='padding:12px; color:#64748b; font-size:0.9rem;'>Chargement des élèves...</p>";
+      cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Chargement des élèves...</p>";
 
       try {
         const res = await fetch(`/api/classes?classe_id=${classeId}`);
         const eleves = await res.json();
 
         if (eleves.length === 0) {
-          cont.innerHTML = "<p style='padding:12px; color:#64748b; font-size:0.9rem;'>Aucun élève dans cette classe.</p>";
+          cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Aucun élève dans cette classe.</p>";
           return;
         }
 
@@ -1072,9 +1093,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: "toggle_pap", eleve_id: eleveId, est_pap: estPap })
         });
-      } catch(e) {
-        alert("Erreur de mise à jour du statut PAP.");
-      }
+      } catch(e) {}
     }
 
     // ==================== 4. SÉANCES & PLANNING SEMAINE ====================
@@ -1133,9 +1152,7 @@
         } else {
           alert("Erreur lors de la suppression : " + (data.error || "Erreur serveur"));
         }
-      } catch(e) {
-        alert("Erreur réseau : " + e.message);
-      }
+      } catch(e) {}
     }
 
     async function chargerSeancesProf() {
@@ -1149,23 +1166,23 @@
           listeSeancesMemoire.map(s => `<option value="${s.id}">${s.code_session} (${s.classe_nom})</option>`).join('');
 
         const tbody = document.getElementById('tableSeancesBody');
-        tbody.innerHTML = listeSeancesMemoire.length === 0 ? "<tr><td colspan='7'>Aucune séance active.</td></tr>" :
+        tbody.innerHTML = listeSeancesMemoire.length === 0 ? "<tr><td colspan='7' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune séance active.</td></tr>" :
           listeSeancesMemoire.map(s => `
             <tr>
               <td><span class="badge-session">${s.code_session}</span></td>
               <td>${s.qcm_titre}</td>
               <td><strong>${s.classe_nom}</strong></td>
               <td>${s.date_seance ? `${s.date_seance} (${s.horaire_seance || ''})` : '-'}</td>
-              <td>
+              <td style="text-align:center;">
                 <span class="${s.actif ? 'badge-active' : 'badge-closed'}">${s.actif ? 'Active' : 'Clôturée'}</span>
               </td>
-              <td>${s.nb_copies || 0} copie(s)</td>
-              <td style="display:flex; gap:4px; align-items:center;">
-                <button class="btn-simu" onclick="lancerSimulationSeance(${s.id})">🔍 Tester</button>
-                <button class="btn-pdf" style="background:${s.actif ? '#eab308' : '#16a34a'};" onclick="toggleEtatSeance(${s.id}, ${s.actif})">
+              <td style="text-align:center;">${s.nb_copies || 0}</td>
+              <td style="display:flex; gap:4px; align-items:center; justify-content:center;">
+                <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationSeance(${s.id})">🔍 Tester</button>
+                <button type="button" class="btn btn-pdf" style="background:${s.actif ? '#eab308' : '#16a34a'}; padding:4px 8px; font-size:0.75rem;" onclick="toggleEtatSeance(${s.id}, ${s.actif})">
                   ${s.actif ? 'Fermer' : 'Rouvrir'}
                 </button>
-                <button class="btn-danger" onclick="supprimerSeance(${s.id}, '${s.code_session}')">Suppr</button>
+                <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerSeance(${s.id}, '${s.code_session}')">Suppr</button>
               </td>
             </tr>
           `).join('');
@@ -1212,8 +1229,8 @@
         const strDateIso = `${yyyy}-${mm}-${dd}`;
 
         const seancesDuJour = listeSeancesMemoire.filter(s => s.date_seance === strDateIso);
-
         let cartesHtml = "";
+
         if (seancesDuJour.length === 0) {
           cartesHtml = "<div style='font-size:0.75rem; color:#94a3b8; font-style:italic; padding:10px 0;'>Aucun devoir</div>";
         } else {
@@ -1249,7 +1266,7 @@
         }
         demarrerSimulation(data.questions, `[Simulation] ${data.titre}`, data.document_html);
       } catch(e) {
-        alert("Erreur au chargement du simulateur : " + e.message);
+        alert("Erreur simulateur : " + e.message);
       }
     }
 
@@ -1265,7 +1282,7 @@
         }
         demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`, data.document_html);
       } catch(e) {
-        alert("Erreur au chargement du simulateur : " + e.message);
+        alert("Erreur simulateur : " + e.message);
       }
     }
 
@@ -1273,6 +1290,7 @@
       currentDocumentHtml = docHtml;
       const boxDoc = document.getElementById('btnOuvrirDocBox');
       if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
+
       isModeSimulation = true;
       currentQuestions = questions;
       currentQuestionIndex = 0;
@@ -1282,7 +1300,6 @@
 
       document.getElementById('viewProfDashboard').style.display = 'none';
       document.getElementById('viewEleveLogin').style.display = 'none';
-      document.getElementById('viewEleveDashboard').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'block';
 
       document.getElementById('simuBannerBox').style.display = 'flex';
@@ -1308,7 +1325,7 @@
         memoireToutesLesNotes = data.notes;
         filtrerResultats();
 
-        document.getElementById('tableSortiesBody').innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3'>Aucun incident.</td></tr>" :
+        document.getElementById('tableSortiesBody').innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:10px;'>Aucun incident consigné.</td></tr>" :
           data.sorties.map(s => `
             <tr>
               <td>${new Date(s.horodatage).toLocaleTimeString()}</td>
@@ -1342,7 +1359,7 @@
 
       document.getElementById('statCopiesText').innerText = `${filtrees.length} copie(s) ${filtrees.length > 0 ? `(Moyenne : ${moyenne}/20)` : ''}`;
       const tbody = document.getElementById('tableNotesBody');
-      tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='6'>Aucune copie pour cette sélection.</td></tr>" :
+      tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='6' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
         filtrees.map(n => `
           <tr>
             <td>${new Date(n.date_soumission).toLocaleTimeString()}</td>
@@ -1385,10 +1402,10 @@
       const htmlRows = elevesClassePourExport.map((el, idx) => {
         const noteFound = notesSelection.find(n => n.prenom.includes(el.code_eleve) || n.nom === el.prenom);
         const noteStr = noteFound ? `${noteFound.note} / ${noteFound.total}` : '<span style="color:#94a3b8; font-style:italic;">Absent / Non fait</span>';
-        return `<tr><td>${idx + 1}</td><td><strong>${el.prenom}</strong></td><td>${noteStr}</td></tr>`;
+        return `<tr><td style="text-align:center;">${idx + 1}</td><td><strong>${el.prenom}</strong></td><td style="text-align:center;">${noteStr}</td></tr>`;
       }).join('');
 
-      document.getElementById('previewExportContainer').innerHTML = `<table><thead><tr><th>N°</th><th>Élève</th><th>Note</th></tr></thead><tbody>${htmlRows}</tbody></table>`;
+      document.getElementById('previewExportContainer').innerHTML = `<table><thead><tr><th style="width:40px; text-align:center;">N°</th><th>Élève</th><th style="text-align:center; width:120px;">Note</th></tr></thead><tbody>${htmlRows}</tbody></table>`;
     }
 
     function copierNotesPressePapier() {
@@ -1401,7 +1418,7 @@
       }).join('\r\n');
 
       navigator.clipboard.writeText(colonneTexte).then(() => {
-        alert("✓ Notes copiées dans le presse-papier !\n\nCollez directement dans la colonne de Pronote avec Ctrl + V.");
+        alert("✓ Notes copiées dans le presse-papier !\n\nCollez directement dans la première case de la colonne Pronote avec Ctrl + V.");
       });
     }
 
@@ -1425,7 +1442,54 @@
       document.body.removeChild(link);
     }
 
-    // ==================== 8. MOTEUR DE QUESTION DU QCM ====================
+    // ==================== 8. PORTAIL ÉLÈVE & MOTEUR QCM ====================
+    async function rejoindreEpreuve() {
+      const code = document.getElementById('codeSessionEleve').value.trim().toUpperCase();
+      const codeEleve = document.getElementById('codePersonnelEleve').value.trim().toUpperCase();
+
+      if (!code || !codeEleve) {
+        alert("Veuillez saisir votre code d'épreuve et votre code individuel.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(code)}&code_eleve=${encodeURIComponent(codeEleve)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Impossible d'accéder à l'épreuve.");
+          return;
+        }
+
+        currentCode = code;
+        currentSeanceId = data.seance_id;
+        eleveInfo = {
+          prenom: data.eleve_prenom,
+          code_perso: codeEleve,
+          est_pap: data.est_pap
+        };
+
+        currentQuestions = data.questions;
+        currentQuestionIndex = 0;
+        totalScoreObtenu = 0;
+        totalScorePossible = 0;
+        currentQuestions.forEach(q => { totalScorePossible += q.points; });
+        compteurSortiesEleve = 0;
+
+        currentDocumentHtml = data.document_html || null;
+        const boxDoc = document.getElementById('btnOuvrirDocBox');
+        if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
+
+        document.getElementById('viewEleveLogin').style.display = 'none';
+        document.getElementById('viewEleveQcm').style.display = 'block';
+        document.getElementById('simuBannerBox').style.display = 'none';
+
+        afficherQuestionCourante();
+      } catch(e) {
+        alert("Erreur de connexion au serveur.");
+      }
+    }
+
     function afficherQuestionCourante() {
       const q = currentQuestions[currentQuestionIndex];
       const totalQ = currentQuestions.length;
@@ -1458,7 +1522,7 @@
           `;
         });
       } else if (q.type === "matching") {
-        const opts = [...q.subquestions.map(s => s.answer)].sort(() => Math.random() - 0.5);
+        const opts = [...q.choices || q.subquestions.map(s => s.answer)];
         q.subquestions.forEach((sub, sIdx) => {
           h += `
             <div class="matching-row" id="matching_row_${sIdx}">
@@ -1589,8 +1653,9 @@
       } else {
         document.getElementById('simuBannerFin').style.display = 'flex';
         document.getElementById('btnRetourApresSimu').style.display = 'block';
-        document.getElementById('finTitleText').innerText = "Fin de la simulation";
-        document.getElementById('finDescText').innerText = "Vous avez testé le QCM en conditions réelles. Aucun résultat n'a été enregistré dans la base de données.";
+        document.getElementById('btnRetourPortailEleve').style.display = 'none';
+        document.getElementById('finTitleText').innerText = "Fin du test professeur";
+        document.getElementById('finDescText').innerText = "Simulation réalisée sans enregistrement de note.";
       }
 
       document.getElementById('viewEleveQcm').style.display = 'none';
@@ -1614,18 +1679,18 @@
     }
 
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "viewEleveQcm" || document.getElementById('viewEleveQcm').style.display === 'block') {
+      if (document.getElementById('viewEleveQcm').style.display === 'block') {
         if (document.visibilityState === "hidden") {
           compteurSortiesEleve++;
           logSortie("page_masquee");
         } else if (document.visibilityState === "visible") {
           logSortie("retour_qcm");
-          alert(isModeSimulation ? "Simulation : Vous avez quitté la page (cet événement serait signalé au professeur)." : "Attention : vous avez quitté la page du QCM. Cette sortie est signalée au professeur.");
+          alert(isModeSimulation ? "Test Prof : Sortie d'écran détectée." : "Attention : Vous avez quitté la page du QCM. Cette sortie est signalée à l'enseignant.");
         }
       }
     });
 
-    // ==================== 9. AUTH PROF ====================
+    // ==================== 9. AUTHENTIFICATION PROF ====================
     function toggleAuthMode() {
       authMode = authMode === "login" ? "register" : "login";
       if (authMode === "register") {
@@ -1665,7 +1730,14 @@
     function deconnecterProf() {
       currentProf = null;
       localStorage.removeItem('qcm_prof_user');
-      basculerMode('prof');
+      basculerMode('eleve');
+    }
+
+    function chargerDonneesProf() {
+      chargerBanqueProf();
+      chargerClassesProf();
+      chargerSeancesProf();
+      chargerResultatsProf();
     }
   </script>
 </body>
