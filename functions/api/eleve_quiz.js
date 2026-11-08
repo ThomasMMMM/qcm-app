@@ -1,8 +1,25 @@
-﻿function preparerQuestions(questions) {
+﻿function melangerTableau(arr) {
+  const copie = [...arr];
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copie[i], copie[j]] = [copie[j], copie[i]];
+  }
+  return copie;
+}
+
+function preparerQuestions(questions) {
   return questions.map(q => {
     const points = Number(q.points) > 0 ? Number(q.points) : 1;
     
     if (q.type === "multichoice") {
+      const reponsesFormatees = (q.answers || []).map((a, idx) => ({
+        id: idx,
+        text: a.text || "",
+        image: a.image || null,
+        fraction: (typeof a.fraction === "number" && !isNaN(a.fraction)) ? a.fraction : (parseFloat(a.fraction) || 0),
+        feedback: a.feedback || ""
+      }));
+
       return {
         type: q.type,
         title: q.title || "",
@@ -11,17 +28,14 @@
         points: points,
         single: q.single,
         generalFeedback: q.generalFeedback || "",
-        answers: (q.answers || []).map((a, idx) => ({
-          id: idx,
-          text: a.text || "",
-          image: a.image || null,
-          fraction: (typeof a.fraction === "number" && !isNaN(a.fraction)) ? a.fraction : (parseFloat(a.fraction) || 0),
-          feedback: a.feedback || ""
-        }))
+        // Mélange aléatoire des réponses pour chaque élève
+        answers: melangerTableau(reponsesFormatees)
       };
+
     } else if (q.type === "matching") {
       const subqs = q.subquestions || [];
-      const tousLesChoix = subqs.map(s => s.answer).sort(() => Math.random() - 0.5);
+      const tousLesChoix = melangerTableau(subqs.map(s => s.answer));
+
       return {
         type: q.type,
         title: q.title || "",

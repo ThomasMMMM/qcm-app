@@ -1276,10 +1276,11 @@
 
       if (q.type === "multichoice") {
         const inputType = q.single ? "radio" : "checkbox";
-        q.answers.forEach((ans, aIdx) => {
+        q.answers.forEach((ans) => {
+          const repId = ans.id !== undefined ? ans.id : 0;
           h += `
-            <label class="reponse-label" id="label_ans_${aIdx}">
-              <input type="${inputType}" name="current_q_ans" value="${aIdx}">
+            <label class="reponse-label" id="label_ans_${repId}">
+              <input type="${inputType}" name="current_q_ans" value="${repId}">
               <div>
                 ${ans.text}
                 ${ans.image ? `<br><img class="img-qcm" style="max-height:120px;" src="data:image/png;base64,${ans.image}">` : ''}
@@ -1322,7 +1323,7 @@
         let fracTotale = 0;
         inputs.forEach(input => {
           const idx = parseInt(input.value);
-          const ans = q.answers[idx];
+          const ans = q.answers.find(a => (a.id !== undefined ? a.id : 0) === idx) || q.answers[idx];
           const frac = (typeof ans.fraction === 'number') ? ans.fraction : (parseFloat(ans.fraction) || 0);
           const label = document.getElementById(`label_ans_${idx}`);
 
