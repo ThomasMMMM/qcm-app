@@ -489,6 +489,29 @@
     
     let currentDocumentHtml = null;
 
+    
+    function importerFichierHtmlDoc(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const fullContent = e.target.result;
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(fullContent, 'text/html');
+          const bodyHtml = (doc.body && doc.body.innerHTML.trim().length > 0) ? doc.body.innerHTML.trim() : fullContent.trim();
+          document.getElementById('documentHtmlInput').value = bodyHtml;
+          alert(`✓ Fichier "${file.name}" importé avec succès dans le document ressource !`);
+        } catch(err) {
+          document.getElementById('documentHtmlInput').value = fullContent.trim();
+          alert(`✓ Fichier "${file.name}" importé !`);
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+      input.value = "";
+    }
+
     function convertirImageEtInsererHtml(input) {
       const file = input.files[0];
       if (!file) return;
