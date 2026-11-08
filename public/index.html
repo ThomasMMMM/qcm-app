@@ -233,10 +233,10 @@
       <span>Plateforme QCM & Pronote</span>
     </div>
     <div id="authHeaderNav">
-      <button class="btn btn-pdf" style="font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('prof')">
+      <button type="button" class="btn btn-pdf" style="font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('prof')">
         <i class="fa-solid fa-user-tie"></i> Espace Enseignant
       </button>
-      <button class="btn btn-simu" id="btnSwitchEleve" style="display:none; font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('eleve')">
+      <button type="button" class="btn btn-simu" id="btnSwitchEleve" style="display:none; font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('eleve')">
         <i class="fa-solid fa-user-graduate"></i> Accès Élève
       </button>
     </div>
@@ -245,7 +245,7 @@
   <div class="container">
 
     <!-- ======================================================== -->
-    <!-- 1. VUE PORTAIL ÉLÈVE : CONNEXION (Prénom, Date, Code)    -->
+    <!-- 1. VUE PORTAIL ÉLÈVE : CONNEXION                         -->
     <!-- ======================================================== -->
     <div id="viewEleveLogin" class="card" style="max-width:440px; margin:40px auto;">
       <h3 style="justify-content:center;"><i class="fa-solid fa-id-card"></i> Connexion Élève</h3>
@@ -295,17 +295,13 @@
       <!-- QCM À FAIRE -->
       <div class="card">
         <h3><i class="fa-solid fa-list-check"></i> Évaluations en cours (QCM à faire)</h3>
-        <div id="conteneurQcmAFaire">
-          <!-- Rempli en JS -->
-        </div>
+        <div id="conteneurQcmAFaire"></div>
       </div>
 
       <!-- QCM PASSÉS (HISTORIQUE) -->
       <div class="card">
         <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
-        <div id="conteneurQcmPasses">
-          <!-- Rempli en JS -->
-        </div>
+        <div id="conteneurQcmPasses"></div>
       </div>
 
     </div>
@@ -314,20 +310,17 @@
     <!-- 3. VUE ÉLÈVE : PASSATION D'UNE ÉPREUVE (QUIZ ACTIF)      -->
     <!-- ======================================================== -->
     <div id="viewEleveQcm" class="card" style="display:none;">
-      <!-- Bandeau Simulation prof -->
       <div id="simuBannerBox" style="display:none; background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; justify-content:space-between; align-items:center;">
         <span><strong>🔍 Mode Test Professeur :</strong> Les réponses ne sont pas enregistrées.</span>
         <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="quitterSimulation()">Quitter le test</button>
       </div>
 
-      <!-- Bouton Document Ressource -->
       <div id="btnOuvrirDocBox" style="display:none; margin-bottom:12px;">
         <button type="button" class="btn" style="background:#0284c7; width:100%; justify-content:center; padding:10px 14px; font-size:0.95rem;" onclick="ouvrirDocRessourceEleve()">
           📖 Consulter le Document Ressource
         </button>
       </div>
 
-      <!-- Barre de progression -->
       <div class="progress-bar-container">
         <div id="progressBarFill" class="progress-bar-fill"></div>
       </div>
@@ -338,7 +331,6 @@
       </div>
 
       <div id="singleQuestionContainer"></div>
-
       <div id="feedbackContainer" class="feedback-box" style="display:none;"></div>
 
       <div style="margin-top:20px; display:flex; gap:10px;">
@@ -406,7 +398,6 @@
     <!-- ======================================================== -->
     <div id="viewProfDashboard" style="display:none;">
 
-      <!-- Barre utilisateur prof -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:white; padding:10px 16px; border-radius:8px; border:1px solid var(--border-color);">
         <div>
           <span style="font-size:0.9rem; color:#64748b;">Connecté en tant que :</span>
@@ -674,7 +665,7 @@
   <!-- JAVASCRIPT COMPLET                         -->
   <!-- ========================================== -->
   <script>
-    // Variables globales
+    // Variables d'état globales
     let currentProf = null;
     let authMode = "login";
     let offsetSemaine = 0;
@@ -717,7 +708,7 @@
       basculerMode('eleve');
     });
 
-    // Bascule de vue
+    // Bascule entre mode Élève et mode Enseignant
     function basculerMode(mode) {
       document.getElementById('viewEleveLogin').style.display = 'none';
       document.getElementById('viewEleveDashboard').style.display = 'none';
@@ -813,7 +804,6 @@
         ? '<span class="badge" style="background:#fdf4ff; color:#7e22ce; font-size:0.75rem; vertical-align:middle; margin-left:6px;">Aménagement PAP</span>' 
         : '';
 
-      // 1. Remplir QCM à faire
       const contAFaire = document.getElementById('conteneurQcmAFaire');
       const aFaire = sessionEleve.a_faire || [];
 
@@ -846,7 +836,6 @@
         `;
       }
 
-      // 2. Remplir QCM passés
       const contPasses = document.getElementById('conteneurQcmPasses');
       const passes = sessionEleve.passes || [];
 
@@ -1023,7 +1012,8 @@
                    || xmlDoc.querySelector('question[type="category"] category text')
                    || xmlDoc.querySelector('question[type="category"] text name')
                    || xmlDoc.querySelector('question[type="category"] text');
-      if (catNode && catNode.textContent && catNode.textContent.trim()) {
+
+      if (catNode && catNode.textContent && catNode.textContent.trim().length > 0) {
         titreQcm = catNode.textContent.trim();
       }
 
@@ -1224,14 +1214,12 @@
       chargerClassesProf();
     }
 
-    // PDF DES IDENTIFIANTS CENTRÉ SANS COLONNE N°
     async function genererPdfClasse(classeId, nomClasse, codePartage) {
       const res = await fetch(`/api/classes?classe_id=${classeId}`);
       const eleves = await res.json();
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      // En-tête bleu
       doc.setFillColor(11, 92, 171);
       doc.rect(0, 0, 210, 20, 'F');
       doc.setTextColor(255, 255, 255);
@@ -1565,8 +1553,7 @@
       basculerMode('prof');
     }
 
-    // ==================== 8. RÉSULTATS & EXPORT PRONOTE ====================
-    async 
+    // ==================== 8. RÉSULTATS, PURGE & EXPORT PRONOTE ====================
     async function purgerJournalAlertes() {
       if (!confirm("Voulez-vous vraiment effacer l'intégralité du journal des alertes et incidents ?")) return;
       try {
@@ -1583,16 +1570,17 @@
       }
     }
 
-    function chargerResultatsProf() {
+    async function chargerResultatsProf() {
       if (!currentProf) return;
       try {
         const res = await fetch(`/api/resultats?prof_id=${currentProf.id}`);
         const data = await res.json();
-        memoireToutesLesNotes = data.notes;
+        memoireToutesLesNotes = data.notes || [];
         filtrerResultats();
 
-        document.getElementById('tableSortiesBody').innerHTML = data.sorties.length === 0 ? "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:10px;'>Aucun incident consigné.</td></tr>" :
-          data.sorties.map(s => `
+        const sorties = data.sorties || [];
+        document.getElementById('tableSortiesBody').innerHTML = sorties.length === 0 ? "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:10px;'>Aucun incident consigné.</td></tr>" :
+          sorties.map(s => `
             <tr>
               <td>${new Date(s.horodatage).toLocaleTimeString()}</td>
               <td>${s.eleve_id}</td>
