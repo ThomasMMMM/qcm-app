@@ -127,22 +127,45 @@
 
   <div class="container">
 
-    <!-- 1. VUE ÉLÈVE : ACCUEIL -->
+    <!-- 1. VUE ÉLÈVE : AUTHENTIFICATION TRIPTYQUE -->
     <div id="viewEleveLogin" class="card">
-      <h1>Connexion à l'évaluation</h1>
+      <h1>Espace Élève</h1>
+      <p style="color:#64748b; font-size:0.9rem; margin-top:0;">Connectez-vous pour consulter vos évaluations à faire et vos résultats.</p>
+
       <label>Votre Prénom :</label>
       <input type="text" id="elevePrenom" class="input-field" placeholder="Ex: Alice">
 
-      <label>Votre Code individuel élève (ex: sur votre étiquette) :</label>
+      <label>Date de naissance (JJ/MM/AAAA) :</label>
+      <input type="text" id="eleveDateN" class="input-field" placeholder="Ex: 14/05/2009">
+
+      <label>Votre Code individuel (ex: 7B2K) :</label>
       <input type="text" id="eleveCodePerso" class="input-field" style="text-transform:uppercase; font-family:monospace; font-weight:bold; letter-spacing:1px;" placeholder="Ex: 7B2K">
 
-      <label>Code de l'épreuve (au tableau) :</label>
-      <input type="text" id="eleveCodeSession" class="input-field" style="text-transform:uppercase; font-weight:bold; letter-spacing:1px;" placeholder="Ex: DS1">
-
-      <button type="button" class="btn" onclick="lancerQcmEleve()">Commencer l'évaluation</button>
+      <button type="button" class="btn" onclick="connexionPortailEleve()">Accéder à mon espace</button>
       
       <div class="link-mode">
-        <a onclick="basculerMode('prof')">Espace Enseignant</a>
+        <a onclick="basculerMode('prof')">Accès Enseignant</a>
+      </div>
+    </div>
+
+    <!-- 1bis. VUE ÉLÈVE : TABLEAU DE BORD PERSONNEL -->
+    <div id="viewEleveDashboard" class="card" style="display: none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 style="margin:0; font-size:1.4rem;">Bonjour, <span id="portalElevePrenom" style="color:var(--pronote-blue);"></span> 👋</h2>
+        <button onclick="deconnexionEleve()" style="border:none; background:none; color:#dc2626; cursor:pointer; font-size:0.85rem; text-decoration:underline;">Déconnexion</button>
+      </div>
+      <p style="margin:0 0 16px 0; font-size:0.85rem; color:#64748b;">Classe : <strong id="portalEleveClasse"></strong></p>
+
+      <!-- Évaluations à faire -->
+      <div class="section-box" style="background:#f0fdf4; border-color:#bbf7d0;">
+        <h3 style="color:#166534; margin-bottom:10px;">📝 Évaluations à faire</h3>
+        <div id="listeSeancesAFaire">Chargement...</div>
+      </div>
+
+      <!-- Historique des évaluations -->
+      <div class="section-box">
+        <h3 style="margin-bottom:10px;">📊 Mes QCM terminés</h3>
+        <div id="listeHistoriqueEleve">Chargement...</div>
       </div>
     </div>
 
@@ -189,6 +212,7 @@
         <span style="font-size: 0.9rem; color: #64748b;">Note obtenue</span>
         <h3 id="noteFinaleText" style="color: var(--pronote-blue); font-size: 2rem; margin: 5px 0 0 0;"></h3>
       </div>
+      <button id="btnRetourPortailEleve" type="button" class="btn" style="display:none;" onclick="retourPortailApresQuiz()">Retourner à mon tableau de bord</button>
 
       <button id="btnRetourApresSimu" type="button" class="btn btn-secondary" style="display:none;" onclick="quitterSimulation()">Retour au tableau de bord enseignant</button>
     </div>
@@ -363,6 +387,122 @@
     let authMode = "login";
     let currentProf = JSON.parse(localStorage.getItem('qcm_prof_user') || 'null');
 
+    
+    let currentEleveSession = JSON.parse(sessionStorage.getItem('qcm_eleve_session') || 'null');
+
+    async function connexionPortailEleve() {
+      const prenom = document.getElementById('elevePrenom').value.trim();
+      const dateN = document.getElementById('eleveDateN').value.trim();
+      const code = document.getElementById('eleveCodePerso').value.trim().toUpperCase();
+
+      if (!prenom || !code) {
+        alert("Veuillez renseigner au moins votre prénom et votre code individuel.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/eleve_portal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prenom, date_naissance: dateN, code_eleve: code })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Impossible de se connecter.");
+          return;
+        }
+
+        currentEleveSession = data;
+        sessionStorage.setItem('qcm_eleve_session', JSON.stringify(data));
+        afficherPortailEleve();
+
+      } catch(e) {
+        alert("Erreur de connexion au serveur.");
+      }
+    }
+
+    function afficherPortailEleve() {
+      if (!currentEleveSession) return;
+
+      document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveDashboard').style.display = 'block';
+      document.getElementById('portalElevePrenom').innerText = currentEleveSession.eleve.prenom;
+      document.getElementById('portalEleveClasse').innerText = currentEleveSession.eleve.classe_nom;
+
+      // 1. Liste des séances à faire
+      const contAFaire = document.getElementById('listeSeancesAFaire');
+      if (!currentEleveSession.a_faire || currentEleveSession.a_faire.length === 0) {
+        contAFaire.innerHTML = "<p style='font-size:0.9rem; color:#166534; margin:0;'>🎉 Aucun QCM en attente pour le moment !</p>";
+      } else {
+        contAFaire.innerHTML = currentEleveSession.a_faire.map(s => `
+          <div style="background:white; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="color:var(--pronote-blue); font-size:1.05rem;">${s.titre}</strong>
+              <div style="font-size:0.8rem; color:#64748b;">Code épreuve : <span class="badge-session">${s.code_session}</span></div>
+            </div>
+            <button type="button" class="btn btn-success" style="width:auto; margin:0; padding:8px 14px; font-size:0.9rem;" onclick="demarrerSeanceDepuisPortail('${s.code_session}')">
+              Commencer &rarr;
+            </button>
+          </div>
+        `).join('');
+      }
+
+      // 2. Liste historique
+      const contHisto = document.getElementById('listeHistoriqueEleve');
+      if (!currentEleveSession.historique || currentEleveSession.historique.length === 0) {
+        contHisto.innerHTML = "<p style='font-size:0.85rem; color:#64748b; margin:0;'>Vous n'avez pas encore passé d'évaluation.</p>";
+      } else {
+        contHisto.innerHTML = `
+          <table>
+            <thead><tr><th>Date</th><th>Questionnaire</th><th>Note</th></tr></thead>
+            <tbody>
+              ${currentEleveSession.historique.map(h => `
+                <tr>
+                  <td>${new Date(h.date_soumission).toLocaleDateString()}</td>
+                  <td><strong>${h.qcm_titre || 'Épreuve ' + h.session_code}</strong></td>
+                  <td><strong style="color:var(--pronote-blue); font-size:1.05rem;">${h.note} / ${h.total}</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    }
+
+    async function demarrerSeanceDepuisPortail(codeSession) {
+      currentCode = codeSession;
+      eleveInfo.prenom = currentEleveSession.eleve.prenom;
+      eleveInfo.code_perso = currentEleveSession.eleve.code_eleve;
+
+      const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(currentCode)}&code_eleve=${encodeURIComponent(eleveInfo.code_perso)}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Épreuve inaccessible.");
+        return;
+      }
+
+      currentQuestions = data.questions;
+      currentSeanceId = data.seance_id;
+      currentQuestionIndex = 0;
+      totalScoreObtenu = 0;
+      totalScorePossible = 0;
+      currentQuestions.forEach(q => { totalScorePossible += q.points; });
+
+      document.getElementById('viewEleveDashboard').style.display = 'none';
+      document.getElementById('viewEleveQcm').style.display = 'block';
+
+      afficherQuestionCourante();
+    }
+
+    function deconnexionEleve() {
+      currentEleveSession = null;
+      sessionStorage.removeItem('qcm_eleve_session');
+      document.getElementById('viewEleveDashboard').style.display = 'none';
+      document.getElementById('viewEleveLogin').style.display = 'block';
+    }
+
     let isModeSimulation = false;
     let compteurSortiesEleve = 0;
     let currentQuestionIndex = 0;
@@ -382,7 +522,7 @@
     });
 
     function basculerMode(mode) {
-      document.getElementById('viewEleveLogin').style.display = mode === 'eleve' ? 'block' : 'none';
+      document.getElementById('viewEleveLogin').style.display = (mode === 'eleve' && !currentEleveSession) ? 'block' : 'none'; if(mode === 'eleve' && currentEleveSession) afficherPortailEleve(); else document.getElementById('viewEleveDashboard').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'none';
       document.getElementById('viewEleveFin').style.display = 'none';
 
@@ -1092,6 +1232,7 @@
         document.getElementById('btnRetourApresSimu').style.display = 'none';
         document.getElementById('finTitleText').innerText = "Évaluation terminée !";
         document.getElementById('finDescText').innerText = "Votre copie a été transmise avec succès au professeur.";
+        document.getElementById('btnRetourPortailEleve').style.display = 'block';
       } else {
         document.getElementById('simuBannerFin').style.display = 'flex';
         document.getElementById('btnRetourApresSimu').style.display = 'block';
@@ -1168,6 +1309,28 @@
       currentProf = data.user;
       localStorage.setItem('qcm_prof_user', JSON.stringify(currentProf));
       basculerMode('prof');
+    }
+
+    
+    function retourPortailApresQuiz() {
+      document.getElementById('viewEleveFin').style.display = 'none';
+      // Recharger les données du portail
+      if (currentEleveSession && currentEleveSession.eleve) {
+        fetch('/api/eleve_portal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prenom: currentEleveSession.eleve.prenom,
+            code_eleve: currentEleveSession.eleve.code_eleve
+          })
+        }).then(r => r.json()).then(data => {
+          if (data.eleve) {
+            currentEleveSession = data;
+            sessionStorage.setItem('qcm_eleve_session', JSON.stringify(data));
+          }
+          afficherPortailEleve();
+        });
+      }
     }
 
     function deconnecterProf() {
