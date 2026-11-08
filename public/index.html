@@ -244,33 +244,75 @@
 
   <div class="container">
 
-    <!-- ========================================== -->
-    <!-- 1. VUE PORTAIL ÉLÈVE : ACCÈS ÉPREUVE       -->
-    <!-- ========================================== -->
-    <div id="viewEleveLogin" class="card" style="max-width:440px; margin:40px auto; text-align:center;">
-      <h3 style="justify-content:center;"><i class="fa-solid fa-pen-nib"></i> Connexion à l'épreuve</h3>
-      <p style="color:#64748b; font-size:0.9rem; margin-bottom:18px;">
-        Entrez le code communiqué par votre professeur ainsi que votre code personnel.
+    <!-- ======================================================== -->
+    <!-- 1. VUE PORTAIL ÉLÈVE : CONNEXION (Prénom, Date, Code)    -->
+    <!-- ======================================================== -->
+    <div id="viewEleveLogin" class="card" style="max-width:440px; margin:40px auto;">
+      <h3 style="justify-content:center;"><i class="fa-solid fa-id-card"></i> Connexion Élève</h3>
+      <p style="color:#64748b; font-size:0.88rem; text-align:center; margin-bottom:18px;">
+        Renseignez vos identifiants personnels pour accéder à votre espace d'évaluation.
       </p>
       
-      <div style="text-align:left; margin-bottom:12px;">
-        <label style="font-weight:bold; font-size:0.85rem;">Code d'épreuve :</label>
-        <input type="text" id="codeSessionEleve" class="input-field" placeholder="Ex: SESS-7890" style="text-transform:uppercase; font-family:monospace; font-weight:bold; font-size:1.1rem; text-align:center;">
+      <div style="margin-bottom:12px;">
+        <label style="font-weight:bold; font-size:0.85rem;">Prénom :</label>
+        <input type="text" id="eleveLoginPrenom" class="input-field" placeholder="Ex: Arthur">
       </div>
 
-      <div style="text-align:left; margin-bottom:18px;">
-        <label style="font-weight:bold; font-size:0.85rem;">Code individuel élève :</label>
-        <input type="text" id="codePersonnelEleve" class="input-field" placeholder="Ex: 4A7B" style="text-transform:uppercase; font-family:monospace; font-weight:bold; font-size:1.1rem; text-align:center;">
+      <div style="margin-bottom:12px;">
+        <label style="font-weight:bold; font-size:0.85rem;">Date de naissance :</label>
+        <input type="date" id="eleveLoginDate" class="input-field">
       </div>
 
-      <button type="button" class="btn btn-success" style="width:100%; justify-content:center; padding:12px; font-size:1rem;" onclick="rejoindreEpreuve()">
-        Démarrer l'évaluation →
+      <div style="margin-bottom:18px;">
+        <label style="font-weight:bold; font-size:0.85rem;">Code individuel (4 caractères) :</label>
+        <input type="text" id="eleveLoginCode" class="input-field" placeholder="Ex: 4A7B" style="text-transform:uppercase; font-family:monospace; font-weight:bold; font-size:1.15rem; text-align:center;">
+      </div>
+
+      <button type="button" class="btn btn-success" style="width:100%; justify-content:center; padding:12px; font-size:1rem;" onclick="connecterEleve()">
+        Accéder à mon espace →
       </button>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 2. VUE ÉLÈVE : PASSATION DU QCM            -->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- 2. VUE TABLEAU DE BORD ÉLÈVE : QCM À FAIRE & HISTORIQUE  -->
+    <!-- ======================================================== -->
+    <div id="viewEleveDashboard" style="display:none;">
+      
+      <!-- Barre d'identité élève -->
+      <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:12px 18px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:18px;">
+        <div>
+          <div style="font-size:0.85rem; color:#64748b;">Espace Personnel Élève</div>
+          <h2 style="margin:2px 0; color:var(--pronote-blue); font-size:1.3rem;">
+            Bonjour <span id="dashElevePrenom"></span> <span id="dashEleveBadgePap"></span>
+          </h2>
+          <div style="font-size:0.85rem; color:#475569;">Classe : <strong id="dashEleveClasse"></strong></div>
+        </div>
+        <button type="button" class="btn btn-pdf" style="padding:6px 12px; font-size:0.8rem;" onclick="deconnecterEleve()">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Déconnexion
+        </button>
+      </div>
+
+      <!-- QCM À FAIRE -->
+      <div class="card">
+        <h3><i class="fa-solid fa-list-check"></i> Évaluations en cours (QCM à faire)</h3>
+        <div id="conteneurQcmAFaire">
+          <!-- Rempli en JS -->
+        </div>
+      </div>
+
+      <!-- QCM PASSÉS (HISTORIQUE) -->
+      <div class="card">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
+        <div id="conteneurQcmPasses">
+          <!-- Rempli en JS -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 3. VUE ÉLÈVE : PASSATION D'UNE ÉPREUVE (QUIZ ACTIF)      -->
+    <!-- ======================================================== -->
     <div id="viewEleveQcm" class="card" style="display:none;">
       <!-- Bandeau Simulation prof -->
       <div id="simuBannerBox" style="display:none; background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; justify-content:space-between; align-items:center;">
@@ -313,9 +355,9 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 3. VUE ÉLÈVE : FIN DU QCM                  -->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- 4. VUE ÉLÈVE : FIN DU QCM & NOTE                          -->
+    <!-- ======================================================== -->
     <div id="viewEleveFin" class="card" style="display:none; max-width:480px; margin:40px auto; text-align:center;">
       <h3 style="justify-content:center; color:var(--success-green);"><i class="fa-solid fa-circle-check"></i> <span id="finTitleText">Épreuve terminée !</span></h3>
       <p id="finDescText" style="color:#64748b; font-size:0.95rem;">Votre copie a été enregistrée avec succès.</p>
@@ -325,17 +367,17 @@
         <div id="noteFinaleText" style="font-size:2.4rem; font-weight:bold; color:var(--pronote-blue); margin-top:4px;">-- / 20</div>
       </div>
 
-      <button type="button" id="btnRetourPortailEleve" class="btn" style="width:100%; justify-content:center; padding:12px;" onclick="reinitialiserPortailEleve()">
-        Terminer et revenir à l'accueil
+      <button type="button" id="btnRetourTableauEleve" class="btn btn-success" style="width:100%; justify-content:center; padding:12px;" onclick="retournerTableauBordEleve()">
+        Revenir à mon tableau de bord élève
       </button>
       <button type="button" id="btnRetourApresSimu" class="btn btn-simu" style="display:none; width:100%; justify-content:center; padding:12px;" onclick="quitterSimulation()">
         Retourner au tableau de bord Enseignant
       </button>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 4. VUE ENSEIGNANT : AUTHENTIFICATION       -->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- 5. VUE ENSEIGNANT : AUTHENTIFICATION                      -->
+    <!-- ======================================================== -->
     <div id="viewProfAuth" class="card" style="display:none; max-width:420px; margin:40px auto;">
       <h3 id="authTitle"><i class="fa-solid fa-lock"></i> Connexion Enseignant</h3>
       <div id="nomRegisterGroup" style="display:none; margin-bottom:12px;">
@@ -359,9 +401,9 @@
       </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 5. VUE ENSEIGNANT : TABLEAU DE BORD TOTAL  -->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- 6. VUE ENSEIGNANT : TABLEAU DE BORD PROFESSEUR           -->
+    <!-- ======================================================== -->
     <div id="viewProfDashboard" style="display:none;">
 
       <!-- Barre utilisateur prof -->
@@ -627,7 +669,7 @@
   <!-- JAVASCRIPT COMPLET                         -->
   <!-- ========================================== -->
   <script>
-    // Variables globales d'état
+    // Variables globales
     let currentProf = null;
     let authMode = "login";
     let offsetSemaine = 0;
@@ -637,6 +679,9 @@
     let listeBanqueQcmMemoire = [];
     let memoireToutesLesNotes = [];
 
+    // Session Élève connectée
+    let sessionEleve = null;
+
     // Variables Quiz
     let currentQuestions = [];
     let currentQuestionIndex = 0;
@@ -645,30 +690,44 @@
     let currentDocumentHtml = null;
     let isModeSimulation = false;
     let compteurSortiesEleve = 0;
-    let eleveInfo = null;
     let currentCode = "";
     let currentSeanceId = null;
 
-    // Initialisation au chargement
+    // Initialisation
     window.addEventListener('DOMContentLoaded', () => {
       const savedProf = localStorage.getItem('qcm_prof_user');
       if (savedProf) {
         try { currentProf = JSON.parse(savedProf); } catch(e) {}
       }
+      
+      const savedEleve = localStorage.getItem('qcm_eleve_session');
+      if (savedEleve) {
+        try {
+          sessionEleve = JSON.parse(savedEleve);
+          afficherEspaceEleve();
+          return;
+        } catch(e) {}
+      }
+
       basculerMode('eleve');
     });
 
-    // Bascule entre mode Élève et mode Enseignant
+    // Bascule de vue
     function basculerMode(mode) {
       document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveDashboard').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'none';
       document.getElementById('viewEleveFin').style.display = 'none';
       document.getElementById('viewProfAuth').style.display = 'none';
       document.getElementById('viewProfDashboard').style.display = 'none';
 
       if (mode === 'eleve') {
-        document.getElementById('viewEleveLogin').style.display = 'block';
         document.getElementById('btnSwitchEleve').style.display = 'none';
+        if (sessionEleve) {
+          afficherEspaceEleve();
+        } else {
+          document.getElementById('viewEleveLogin').style.display = 'block';
+        }
       } else if (mode === 'prof') {
         document.getElementById('btnSwitchEleve').style.display = 'inline-flex';
         if (currentProf) {
@@ -681,13 +740,192 @@
       }
     }
 
-    function reinitialiserPortailEleve() {
-      document.getElementById('codeSessionEleve').value = "";
-      document.getElementById('codePersonnelEleve').value = "";
+    // ==================== 1. CONNEXION & DASHBOARD ÉLÈVE ====================
+    async function connecterEleve() {
+      const prenom = document.getElementById('eleveLoginPrenom').value.trim();
+      const dateNaissance = document.getElementById('eleveLoginDate').value;
+      const code = document.getElementById('eleveLoginCode').value.trim().toUpperCase();
+
+      if (!prenom || !code) {
+        alert("Veuillez renseigner votre prénom et votre code individuel.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/eleve_espace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prenom, date_naissance: dateNaissance, code_eleve: code })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Identifiants non reconnus.");
+          return;
+        }
+
+        sessionEleve = data;
+        localStorage.setItem('qcm_eleve_session', JSON.stringify(sessionEleve));
+        afficherEspaceEleve();
+
+      } catch(err) {
+        alert("Erreur de connexion au serveur.");
+      }
+    }
+
+    async function actualiserEspaceEleve() {
+      if (!sessionEleve || !sessionEleve.eleve) return;
+      try {
+        const res = await fetch('/api/eleve_espace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prenom: sessionEleve.eleve.prenom,
+            code_eleve: sessionEleve.eleve.code_eleve
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          sessionEleve = data;
+          localStorage.setItem('qcm_eleve_session', JSON.stringify(sessionEleve));
+          afficherEspaceEleve();
+        }
+      } catch(e) {}
+    }
+
+    function afficherEspaceEleve() {
+      document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveQcm').style.display = 'none';
+      document.getElementById('viewEleveFin').style.display = 'none';
+      document.getElementById('viewProfAuth').style.display = 'none';
+      document.getElementById('viewProfDashboard').style.display = 'none';
+      document.getElementById('viewEleveDashboard').style.display = 'block';
+
+      const el = sessionEleve.eleve;
+      document.getElementById('dashElevePrenom').innerText = el.prenom;
+      document.getElementById('dashEleveClasse').innerText = el.classe_nom;
+      document.getElementById('dashEleveBadgePap').innerHTML = el.est_pap 
+        ? '<span class="badge" style="background:#fdf4ff; color:#7e22ce; font-size:0.75rem; vertical-align:middle; margin-left:6px;">Aménagement PAP</span>' 
+        : '';
+
+      // 1. Remplir QCM à faire
+      const contAFaire = document.getElementById('conteneurQcmAFaire');
+      const aFaire = sessionEleve.a_faire || [];
+
+      if (aFaire.length === 0) {
+        contAFaire.innerHTML = "<p style='color:#64748b; font-style:italic; padding:10px 0;'>Aucun QCM en attente pour le moment. Vous êtes à jour !</p>";
+      } else {
+        contAFaire.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Évaluation</th>
+                <th>Date / Horaire</th>
+                <th style="text-align:center; width:150px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${aFaire.map(q => `
+                <tr>
+                  <td><strong>${q.qcm_titre}</strong> <span class="badge badge-session">${q.code_session}</span></td>
+                  <td>${q.date_seance ? `${q.date_seance} (${q.horaire_seance || ''})` : 'Séance en cours'}</td>
+                  <td style="text-align:center;">
+                    <button type="button" class="btn btn-success" style="padding:6px 14px; font-size:0.85rem;" onclick="demarrerQuizDepuisEspace('${q.code_session}')">
+                      Commencer →
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // 2. Remplir QCM passés
+      const contPasses = document.getElementById('conteneurQcmPasses');
+      const passes = sessionEleve.passes || [];
+
+      if (passes.length === 0) {
+        contPasses.innerHTML = "<p style='color:#64748b; font-style:italic; padding:10px 0;'>Aucun devoir terminé pour le moment.</p>";
+      } else {
+        contPasses.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Évaluation</th>
+                <th>Date de réalisation</th>
+                <th style="text-align:center; width:140px;">Note obtenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${passes.map(p => `
+                <tr>
+                  <td><strong>${p.qcm_titre}</strong></td>
+                  <td>${new Date(p.date_soumission).toLocaleDateString()} à ${new Date(p.date_soumission).toLocaleTimeString()}</td>
+                  <td style="text-align:center;">
+                    <strong style="color:var(--pronote-blue); font-size:1.05rem;">${p.note} / ${p.total}</strong>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    }
+
+    function deconnecterEleve() {
+      sessionEleve = null;
+      localStorage.removeItem('qcm_eleve_session');
+      document.getElementById('eleveLoginPrenom').value = "";
+      document.getElementById('eleveLoginDate').value = "";
+      document.getElementById('eleveLoginCode').value = "";
       basculerMode('eleve');
     }
 
-    // ==================== 1. DOCUMENT RESSOURCE ====================
+    function retournerTableauBordEleve() {
+      actualiserEspaceEleve();
+      document.getElementById('viewEleveFin').style.display = 'none';
+      document.getElementById('viewEleveDashboard').style.display = 'block';
+    }
+
+    // ==================== 2. LANCEMENT DU QUIZ DEPUIS L'ESPACE ====================
+    async function demarrerQuizDepuisEspace(codeSession) {
+      if (!sessionEleve) return;
+      const el = sessionEleve.eleve;
+
+      try {
+        const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(codeSession)}&code_eleve=${encodeURIComponent(el.code_eleve)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Impossible d'accéder à l'épreuve.");
+          return;
+        }
+
+        currentCode = codeSession;
+        currentSeanceId = data.seance_id;
+        currentQuestions = data.questions;
+        currentQuestionIndex = 0;
+        totalScoreObtenu = 0;
+        totalScorePossible = 0;
+        currentQuestions.forEach(q => { totalScorePossible += q.points; });
+        compteurSortiesEleve = 0;
+
+        currentDocumentHtml = data.document_html || null;
+        const boxDoc = document.getElementById('btnOuvrirDocBox');
+        if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
+
+        document.getElementById('viewEleveDashboard').style.display = 'none';
+        document.getElementById('viewEleveQcm').style.display = 'block';
+        document.getElementById('simuBannerBox').style.display = 'none';
+
+        afficherQuestionCourante();
+      } catch(e) {
+        alert("Erreur de connexion au serveur.");
+      }
+    }
+
+    // ==================== 3. DOCUMENT RESSOURCE ====================
     function importerFichierHtmlDoc(input) {
       const file = input.files[0];
       if (!file) return;
@@ -740,7 +978,7 @@
       document.getElementById('modalDocRessourceEleve').style.display = 'none';
     }
 
-    // ==================== 2. BANQUE DE QCM ====================
+    // ==================== 4. BANQUE DE QCM ====================
     async function chargerBanqueProf() {
       if (!currentProf) return;
       try {
@@ -851,7 +1089,7 @@
       chargerBanqueProf();
     }
 
-    // ==================== 3. GESTION DES CLASSES & PDF ====================
+    // ==================== 5. GESTION DES CLASSES & PDF ====================
     let parsedElevesPreview = [];
 
     function analyserCsvPronote(input) {
@@ -976,7 +1214,7 @@
       chargerClassesProf();
     }
 
-    // FONCTION GÉNÉRATION DU PDF PROPRE ET CENTRÉ
+    // PDF DES IDENTIFIANTS CENTRÉ SANS COLONNE N°
     async function genererPdfClasse(classeId, nomClasse, codePartage) {
       const res = await fetch(`/api/classes?classe_id=${classeId}`);
       const eleves = await res.json();
@@ -1096,7 +1334,7 @@
       } catch(e) {}
     }
 
-    // ==================== 4. SÉANCES & PLANNING SEMAINE ====================
+    // ==================== 6. SÉANCES & PLANNING SEMAINE ====================
     async function creerNouvelleSeance() {
       const qcmId = document.getElementById('selectSeanceQcm').value;
       const classeId = document.getElementById('selectSeanceClasse').value;
@@ -1255,7 +1493,7 @@
       }
     }
 
-    // ==================== 5. SIMULATEUR PROFESSEUR ====================
+    // ==================== 7. SIMULATEUR PROFESSEUR ====================
     async function lancerSimulationBanque(qcmId) {
       try {
         const resDetail = await fetch(`/api/eleve_quiz?simulateur_qcm_id=${qcmId}`);
@@ -1300,6 +1538,7 @@
 
       document.getElementById('viewProfDashboard').style.display = 'none';
       document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveDashboard').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'block';
 
       document.getElementById('simuBannerBox').style.display = 'flex';
@@ -1316,7 +1555,7 @@
       basculerMode('prof');
     }
 
-    // ==================== 6. RÉSULTATS & COPIES ====================
+    // ==================== 8. RÉSULTATS & EXPORT PRONOTE ====================
     async function chargerResultatsProf() {
       if (!currentProf) return;
       try {
@@ -1377,7 +1616,6 @@
         `).join('');
     }
 
-    // ==================== 7. EXPORT PRONOTE ====================
     let elevesClassePourExport = [];
     async function ouvrirModalExportPronote() {
       const classeFiltreId = document.getElementById('filtreClasseSelect').value;
@@ -1442,54 +1680,7 @@
       document.body.removeChild(link);
     }
 
-    // ==================== 8. PORTAIL ÉLÈVE & MOTEUR QCM ====================
-    async function rejoindreEpreuve() {
-      const code = document.getElementById('codeSessionEleve').value.trim().toUpperCase();
-      const codeEleve = document.getElementById('codePersonnelEleve').value.trim().toUpperCase();
-
-      if (!code || !codeEleve) {
-        alert("Veuillez saisir votre code d'épreuve et votre code individuel.");
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(code)}&code_eleve=${encodeURIComponent(codeEleve)}`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          alert(data.error || "Impossible d'accéder à l'épreuve.");
-          return;
-        }
-
-        currentCode = code;
-        currentSeanceId = data.seance_id;
-        eleveInfo = {
-          prenom: data.eleve_prenom,
-          code_perso: codeEleve,
-          est_pap: data.est_pap
-        };
-
-        currentQuestions = data.questions;
-        currentQuestionIndex = 0;
-        totalScoreObtenu = 0;
-        totalScorePossible = 0;
-        currentQuestions.forEach(q => { totalScorePossible += q.points; });
-        compteurSortiesEleve = 0;
-
-        currentDocumentHtml = data.document_html || null;
-        const boxDoc = document.getElementById('btnOuvrirDocBox');
-        if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
-
-        document.getElementById('viewEleveLogin').style.display = 'none';
-        document.getElementById('viewEleveQcm').style.display = 'block';
-        document.getElementById('simuBannerBox').style.display = 'none';
-
-        afficherQuestionCourante();
-      } catch(e) {
-        alert("Erreur de connexion au serveur.");
-      }
-    }
-
+    // ==================== 9. MOTEUR DU QUIZ ====================
     function afficherQuestionCourante() {
       const q = currentQuestions[currentQuestionIndex];
       const totalQ = currentQuestions.length;
@@ -1632,12 +1823,13 @@
       const note20 = ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2);
 
       if (!isModeSimulation) {
+        const el = sessionEleve.eleve;
         await fetch('/api/soumettre', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            nom: eleveInfo.prenom,
-            prenom: `[Code: ${eleveInfo.code_perso}]`,
+            nom: el.prenom,
+            prenom: `[Code: ${el.code_eleve}]`,
             session_code: currentCode,
             seance_id: currentSeanceId,
             nb_sorties: compteurSortiesEleve,
@@ -1647,13 +1839,13 @@
         });
         document.getElementById('simuBannerFin').style.display = 'none';
         document.getElementById('btnRetourApresSimu').style.display = 'none';
+        document.getElementById('btnRetourTableauEleve').style.display = 'block';
         document.getElementById('finTitleText').innerText = "Évaluation terminée !";
         document.getElementById('finDescText').innerText = "Votre copie a été transmise avec succès au professeur.";
-        document.getElementById('btnRetourPortailEleve').style.display = 'block';
       } else {
         document.getElementById('simuBannerFin').style.display = 'flex';
         document.getElementById('btnRetourApresSimu').style.display = 'block';
-        document.getElementById('btnRetourPortailEleve').style.display = 'none';
+        document.getElementById('btnRetourTableauEleve').style.display = 'none';
         document.getElementById('finTitleText').innerText = "Fin du test professeur";
         document.getElementById('finDescText').innerText = "Simulation réalisée sans enregistrement de note.";
       }
@@ -1667,11 +1859,12 @@
       if (isModeSimulation) return;
       if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
       try {
+        const el = sessionEleve.eleve;
         await fetch('/api/evenement', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            eleve_id: `${eleveInfo.prenom} [${eleveInfo.code_perso}]`,
+            eleve_id: `${el.prenom} [${el.code_eleve}]`,
             type_evenement: type
           })
         });
@@ -1690,7 +1883,7 @@
       }
     });
 
-    // ==================== 9. AUTHENTIFICATION PROF ====================
+    // ==================== 10. AUTHENTIFICATION PROF ====================
     function toggleAuthMode() {
       authMode = authMode === "login" ? "register" : "login";
       if (authMode === "register") {
