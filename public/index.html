@@ -4,6 +4,7 @@ async function genererPdfClasse(classeId, nomClasse, codePartage) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
+      // En-tête bleu
       doc.setFillColor(11, 92, 171);
       doc.rect(0, 0, 210, 20, 'F');
       doc.setTextColor(255, 255, 255);
@@ -11,15 +12,25 @@ async function genererPdfClasse(classeId, nomClasse, codePartage) {
       doc.setFont("helvetica", "bold");
       doc.text(`Identifiants QCM — Classe : ${nomClasse}`, 14, 14);
 
+      // Préparation des lignes : Prénom avec astérisque si PAP, puis Code, puis Date de naissance
+      let aDesPap = false;
+      const bodyData = eleves.map((e, idx) => {
+        const estPap = (e.est_pap === 1 || e.est_pap === true);
+        if (estPap) aDesPap = true;
+        const prenomAffiche = estPap ? `${e.prenom} *` : e.prenom;
+        return [idx + 1, prenomAffiche, e.code_eleve, e.date_naissance || "-"];
+      });
+
       doc.autoTable({
         startY: 28,
-        head: [['N°', 'Prénom élève', 'Né(e) le', 'Code individuel élève']],
-        body: eleves.map((e, idx) => [idx + 1, e.prenom, e.date_naissance || "-", e.code_eleve]),
+        head: [['N°', 'Prénom élève', 'Code individuel', 'Né(e) le']],
+        body: bodyData,
         theme: 'striped',
         styles: {
           fontSize: 10,
-          cellPadding: 4,
-          textColor: [30, 41, 59]
+          cellPadding: 3.5,
+          textColor: [30, 41, 59],
+          valign: 'middle'
         },
         headStyles: {
           fillColor: [11, 92, 171],
@@ -30,14 +41,23 @@ async function genererPdfClasse(classeId, nomClasse, codePartage) {
           fillColor: [241, 245, 249]
         },
         columnStyles: {
-          0: { cellWidth: 15, halign: 'center' },
-          1: { fontStyle: 'bold' },
-          2: { cellWidth: 35, halign: 'center' },
-          3: { cellWidth: 50, fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], halign: 'center' }
+          0: { cellWidth: 14, halign: 'center' },
+          1: { cellWidth: 48, fontStyle: 'bold' },
+          2: { cellWidth: 42, fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], halign: 'center', fillColor: [254, 243, 199] },
+          3: { cellWidth: 35, halign: 'center', textColor: [71, 85, 105] }
+        },
+        didDrawPage: function (data) {
+          if (aDesPap) {
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(100, 116, 139);
+            doc.text("* Élève bénéficiant d'un aménagement d'épreuve (PAP)", 14, doc.internal.pageSize.height - 10);
+          }
         }
       });
 
       doc.save(`Codes_${nomClasse}.pdf`);
+    }.pdf`);
     }.pdf`);
     }
 
