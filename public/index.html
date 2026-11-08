@@ -439,7 +439,7 @@
           <div style="background:white; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
             <div>
               <strong style="color:var(--pronote-blue); font-size:1.05rem;">${s.titre}</strong>
-              <div style="font-size:0.8rem; color:#64748b;">Code épreuve : <span class="badge-session">${s.code_session}</span></div>
+              
             </div>
             <button type="button" class="btn btn-success" style="width:auto; margin:0; padding:8px 14px; font-size:0.9rem;" onclick="demarrerSeanceDepuisPortail('${s.code_session}')">
               Commencer &rarr;
@@ -460,7 +460,7 @@
               ${currentEleveSession.historique.map(h => `
                 <tr>
                   <td>${new Date(h.date_soumission).toLocaleDateString()}</td>
-                  <td><strong>${h.qcm_titre || 'Épreuve ' + h.session_code}</strong></td>
+                  <td><strong>${h.qcm_titre || 'Évaluation'}</strong></td>
                   <td><strong style="color:var(--pronote-blue); font-size:1.05rem;">${h.note} / ${h.total}</strong></td>
                 </tr>
               `).join('')}
