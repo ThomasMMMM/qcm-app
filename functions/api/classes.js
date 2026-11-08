@@ -5,18 +5,19 @@
     const prof_id = url.searchParams.get("prof_id");
     const classe_id = url.searchParams.get("classe_id");
 
-    // Si on demande la liste des élèves d'une classe (pour PDF ou export)
+    // Liste détaillée des élèves d'une classe avec statut PAP
     if (classe_id) {
       const { results } = await env.DB.prepare(
-        "SELECT id, prenom, date_naissance, code_eleve FROM eleves WHERE classe_id = ? ORDER BY prenom ASC"
+        "SELECT id, prenom, date_naissance, code_eleve, COALESCE(est_pap, 0) AS est_pap FROM eleves WHERE classe_id = ? ORDER BY prenom ASC"
       ).bind(classe_id).all();
       return new Response(JSON.stringify(results), { headers: { "Content-Type": "application/json" } });
     }
 
-    // Sinon, liste des classes avec l'effectif calculé
+    // Liste des classes du professeur avec effectif
     let query = `
       SELECT c.*, 
-             (SELECT COUNT(*) FROM eleves e WHERE e.classe_id = c.id) AS effectif
+             (SELECT COUNT(*) FROM eleves e WHERE e.classe_id = c.id) AS effectif,
+             (SELECT COUNT(*) FROM eleves e WHERE e.classe_id = c.id AND e.est_pap = 1) AS nb_pap
       FROM classes c
     `;
     const params = [];
@@ -38,6 +39,15 @@ export async function onRequestPost(context) {
     const { request, env } = context;
     const body = await request.json();
 
+    // 1. Basculer le statut PAP d'un élève
+    if (body.action === "toggle_pap" && body.eleve_id !== undefined) {
+      await env.DB.prepare(
+        "UPDATE eleves SET est_pap = ? WHERE id = ?"
+      ).bind(body.est_pap ? 1 : 0, body.eleve_id).run();
+      return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // 2. Création / Importation d'une classe
     const nomFinal = (body.nom || body.classe_nom || body.nom_classe || body.classe || body.name || "").trim();
     if (!nomFinal) {
       return new Response(JSON.stringify({ error: "Nom de classe requis" }), { status: 400 });
@@ -47,12 +57,10 @@ export async function onRequestPost(context) {
     const h = body.horaire_cours || "10h-11h";
     const profId = body.prof_id || null;
 
-    // 1. Créer ou mettre à jour la classe
     let exist = await env.DB.prepare("SELECT id FROM classes WHERE nom = ?").bind(nomFinal).first();
     let classeId;
 
     if (!exist) {
-      // Génération code partage court (ex: CLS-4A2K)
       const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
       let codePartage = "CLS-";
       for (let i = 0; i < 4; i++) codePartage += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
@@ -68,7 +76,7 @@ export async function onRequestPost(context) {
       ).bind(j, h, classeId).run();
     }
 
-    // 2. Insérer les élèves transmis s'il y en a
+    // Insertion des élèves avec prise en compte éventuelle de est_pap
     if (Array.isArray(body.eleves) && body.eleves.length > 0) {
       const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
       function genCode() {
@@ -81,6 +89,7 @@ export async function onRequestPost(context) {
         const p = (el.prenom || "").trim();
         const d = (el.date_naissance || "").trim();
         const codePerso = (el.code_eleve || genCode()).trim().toUpperCase();
+        const estPap = el.est_pap ? 1 : 0;
         if (!p) continue;
 
         const eleveExist = await env.DB.prepare(
@@ -89,12 +98,12 @@ export async function onRequestPost(context) {
 
         if (!eleveExist) {
           await env.DB.prepare(
-            "INSERT INTO eleves (classe_id, prenom, date_naissance, code_eleve) VALUES (?, ?, ?, ?)"
-          ).bind(classeId, p, d || null, codePerso).run();
-        } else if (d) {
+            "INSERT INTO eleves (classe_id, prenom, date_naissance, code_eleve, est_pap) VALUES (?, ?, ?, ?, ?)"
+          ).bind(classeId, p, d || null, codePerso, estPap).run();
+        } else {
           await env.DB.prepare(
-            "UPDATE eleves SET date_naissance = ? WHERE id = ?"
-          ).bind(d, eleveExist.id).run();
+            "UPDATE eleves SET date_naissance = COALESCE(?, date_naissance), est_pap = ? WHERE id = ?"
+          ).bind(d || null, estPap, eleveExist.id).run();
         }
       }
     }
@@ -107,7 +116,6 @@ export async function onRequestPost(context) {
   }
 }
 
-// 3. GESTIONNAIRE DE SUPPRESSION DE CLASSE
 export async function onRequestDelete(context) {
   try {
     const { request, env } = context;
@@ -118,13 +126,8 @@ export async function onRequestDelete(context) {
       return new Response(JSON.stringify({ error: "Identifiant de classe requis" }), { status: 400 });
     }
 
-    // Supprimer les élèves de cette classe
     await env.DB.prepare("DELETE FROM eleves WHERE classe_id = ?").bind(classe_id).run();
-
-    // Supprimer les séances associées
     await env.DB.prepare("DELETE FROM seances WHERE classe_id = ?").bind(classe_id).run();
-
-    // Supprimer la classe
     await env.DB.prepare("DELETE FROM classes WHERE id = ?").bind(classe_id).run();
 
     return new Response(JSON.stringify({ success: true }), {

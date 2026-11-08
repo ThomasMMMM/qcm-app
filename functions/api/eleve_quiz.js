@@ -7,8 +7,16 @@
   return copie;
 }
 
-function preparerQuestions(questions) {
-  return questions.map(q => {
+function preparerQuestions(questions, estPap = false) {
+  let liste = [...questions];
+
+  // Aménagement PAP : on retire 1/4 des questions (les dernières)
+  if (estPap && liste.length > 1) {
+    const nbQuestionsARetirer = Math.max(1, Math.round(liste.length * 0.25));
+    liste = liste.slice(0, liste.length - nbQuestionsARetirer);
+  }
+
+  return liste.map(q => {
     const points = Number(q.points) > 0 ? Number(q.points) : 1;
     
     if (q.type === "multichoice") {
@@ -28,7 +36,6 @@ function preparerQuestions(questions) {
         points: points,
         single: q.single,
         generalFeedback: q.generalFeedback || "",
-        // Mélange aléatoire des réponses pour chaque élève
         answers: melangerTableau(reponsesFormatees)
       };
 
@@ -69,7 +76,7 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({
         qcm_id: qcm.id,
         titre: qcm.titre,
-        questions: preparerQuestions(brute)
+        questions: preparerQuestions(brute, false)
       }), { headers: { "Content-Type": "application/json" } });
     }
 
@@ -87,7 +94,7 @@ export async function onRequestGet(context) {
         seance_id: seance.id,
         titre: seance.titre,
         code_session: seance.code_session,
-        questions: preparerQuestions(brute)
+        questions: preparerQuestions(brute, false)
       }), { headers: { "Content-Type": "application/json" } });
     }
 
@@ -111,12 +118,13 @@ export async function onRequestGet(context) {
     if (!seance.actif) return new Response(JSON.stringify({ error: "Cette épreuve est actuellement clôturée par le professeur." }), { status: 403 });
 
     const eleve = await env.DB.prepare(
-      "SELECT id, prenom FROM eleves WHERE code_eleve = ? AND classe_id = ?"
+      "SELECT id, prenom, COALESCE(est_pap, 0) AS est_pap FROM eleves WHERE code_eleve = ? AND classe_id = ?"
     ).bind(cleanCodeEleve, seance.classe_id).first();
 
     if (!eleve) return new Response(JSON.stringify({ error: "Code individuel élève non reconnu dans cette classe." }), { status: 403 });
 
     const questionsBrutes = JSON.parse(seance.data_json);
+    const estPap = eleve.est_pap === 1;
 
     return new Response(JSON.stringify({
       seance_id: seance.seance_id,
@@ -124,7 +132,8 @@ export async function onRequestGet(context) {
       titre: seance.titre,
       classe_nom: seance.classe_nom,
       eleve_prenom: eleve.prenom,
-      questions: preparerQuestions(questionsBrutes)
+      est_pap: estPap,
+      questions: preparerQuestions(questionsBrutes, estPap)
     }), { headers: { "Content-Type": "application/json" } });
 
   } catch (err) {

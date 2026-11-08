@@ -65,6 +65,26 @@
 </head>
 <body>
 
+  
+  <!-- MODAL GESTION ÉLÈVES & STATUT PAP -->
+  <div id="modalGestionEleves" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;">
+    <div style="background:white; border-radius:8px; max-width:650px; width:100%; max-height:85vh; overflow-y:auto; padding:22px; box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; color:var(--pronote-blue);">Élèves & Aménagements PAP — <span id="nomClasseGestionPap"></span></h3>
+        <button onclick="fermerModalGestionEleves()" style="border:none; background:none; font-size:1.4rem; cursor:pointer; color:#64748b;">&times;</button>
+      </div>
+      <p style="font-size:0.85rem; color:#64748b; margin-top:0;">
+        Cochez les élèves bénéficiant d'un PAP : ils recevront automatiquement <strong>un quart de questions en moins</strong> sur chaque QCM, tout en conservant une notation sur 20.
+      </p>
+      <div id="conteneurListeElevesPap" style="max-height:350px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:6px;">
+        Chargement...
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:15px;">
+        <button type="button" class="btn btn-secondary" style="width:auto; margin:0;" onclick="fermerModalGestionEleves()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL EXPORT PRONOTE -->
   <div id="modalExportPronote" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;">
     <div style="background:white; border-radius:8px; max-width:650px; width:100%; max-height:90vh; overflow-y:auto; padding:22px; box-shadow:0 4px 20px rgba(0,0,0,0.2);">
@@ -261,7 +281,7 @@
         <div id="previewZone" style="display:none; margin-top:12px; background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1;">
           <h4 style="margin:0 0 8px 0; color:#0d47a1;">Aperçu (<span id="previewCount">0</span> élèves)</h4>
           <div style="max-height:140px; overflow-y:auto;">
-            <table><thead><tr><th>Prénom</th><th>Né(e) le</th><th>Code individuel</th></tr></thead><tbody id="previewTableBody"></tbody></table>
+            <table><thead><tr><th>Prénom</th><th>Né(e) le</th><th>Code</th><th style="text-align:center;">PAP (-25% Q)</th></tr></thead><tbody id="previewTableBody"></tbody></table>
           </div>
           <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="enregistrerClasseValidee()">Valider cette classe</button>
         </div>
@@ -831,7 +851,10 @@
                   <td><span class="badge-share" onclick="navigator.clipboard.writeText('${c.code_partage}'); alert('Code copié !');">📋 ${c.code_partage || 'N/A'}</span></td>
                   <td>${c.effectif || 0} élèves</td>
                   <td style="display:flex; gap:5px;">
-                    <button class="btn-pdf" onclick="genererPdfClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}', '${c.code_partage || ''}')">PDF</button>
+                    
+  <button class="btn-pdf" style="background:#7c3aed;" onclick="ouvrirModalGestionEleves(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">👥 Élèves ${c.nb_pap > 0 ? `(${c.nb_pap} PAP)` : ''}</button>
+  <button class="btn-pdf" onclick="genererPdfClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}', '${c.code_partage || ''}')">PDF</button>
+
                     <button class="btn-danger" onclick="supprimerClasse(${c.id}, '${c.nom.replace(/'/g, "\\'")}')">${c.createur_id == currentProf.id ? 'Suppr' : 'Retirer'}</button>
                   </td>
                 </tr>
@@ -901,14 +924,76 @@
 
       doc.autoTable({
         startY: 30,
-        head: [['N°', 'Prénom élève', 'Né(e) le', 'Code individuel élève']],
-        body: eleves.map((e, idx) => [idx + 1, e.prenom, e.date_naissance || "-", e.code_eleve]),
+        head: [['N°', 'Prénom élève', 'Né(e) le', 'Code individuel élève', 'Aménagement']],
+        body: eleves.map((e, idx) => [idx + 1, e.prenom, e.date_naissance || "-", e.code_eleve, e.est_pap ? 'PAP (-25% Q)' : 'Standard']),
         theme: 'grid',
         headStyles: { fillColor: [11, 92, 171] },
         columnStyles: { 3: { fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], fillColor: [254, 243, 199] } }
       });
 
       doc.save(`Codes_${nomClasse}.pdf`);
+    }
+
+    
+    let classeSelectionneePapId = null;
+
+    async function ouvrirModalGestionEleves(classeId, nomClasse) {
+      classeSelectionneePapId = classeId;
+      document.getElementById('nomClasseGestionPap').innerText = nomClasse;
+      document.getElementById('modalGestionEleves').style.display = 'flex';
+      
+      const cont = document.getElementById('conteneurListeElevesPap');
+      cont.innerHTML = "<p style='padding:12px; color:#64748b; font-size:0.9rem;'>Chargement des élèves...</p>";
+
+      try {
+        const res = await fetch(`/api/classes?classe_id=${classeId}`);
+        const eleves = await res.json();
+
+        if (eleves.length === 0) {
+          cont.innerHTML = "<p style='padding:12px; color:#64748b; font-size:0.9rem;'>Aucun élève dans cette classe.</p>";
+          return;
+        }
+
+        cont.innerHTML = `
+          <table>
+            <thead><tr><th>N°</th><th>Élève</th><th>Code</th><th style="text-align:center;">Aménagement PAP</th></tr></thead>
+            <tbody>
+              ${eleves.map((e, idx) => `
+                <tr style="background:${e.est_pap ? '#fdf4ff' : 'white'};">
+                  <td>${idx + 1}</td>
+                  <td><strong>${e.prenom}</strong></td>
+                  <td><span class="badge-session">${e.code_eleve}</span></td>
+                  <td style="text-align:center;">
+                    <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:bold; color:${e.est_pap ? '#7e22ce' : '#64748b'};">
+                      <input type="checkbox" style="transform:scale(1.3); cursor:pointer;" ${e.est_pap ? 'checked' : ''} onchange="basculerPapEleve(${e.id}, this.checked)">
+                      ${e.est_pap ? 'PAP Activé' : 'Standard'}
+                    </label>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch(err) {
+        cont.innerHTML = "<p style='padding:12px; color:#dc2626;'>Erreur de chargement.</p>";
+      }
+    }
+
+    function fermerModalGestionEleves() {
+      document.getElementById('modalGestionEleves').style.display = 'none';
+      chargerClassesProf();
+    }
+
+    async function basculerPapEleve(eleveId, estPap) {
+      try {
+        await fetch('/api/classes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "toggle_pap", eleve_id: eleveId, est_pap: estPap })
+        });
+      } catch(e) {
+        alert("Erreur de mise à jour du statut PAP.");
+      }
     }
 
     // ==================== 4. SÉANCES & PLANNING SEMAINE ====================
