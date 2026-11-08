@@ -11,7 +11,7 @@
     const cleanPrenom = prenom.trim().toLowerCase();
     const cleanCode = code_eleve.trim().toUpperCase();
 
-    // 1. Recherche de l'élève par son code et prénom
+    // 1. Authentification de l'élève
     const eleve = await env.DB.prepare(`
       SELECT e.id, e.prenom, e.date_naissance, e.code_eleve, e.classe_id, c.nom AS classe_nom
       FROM eleves e
@@ -23,12 +23,10 @@
       return new Response(JSON.stringify({ error: "Identifiants incorrects (code inconnu)" }), { status: 403 });
     }
 
-    // Vérification souple du prénom (pour gérer la casse et d'éventuelles initiales d'homonymes)
     if (!eleve.prenom.toLowerCase().startsWith(cleanPrenom.split(" ")[0])) {
       return new Response(JSON.stringify({ error: "Le prénom ne correspond pas au code fourni" }), { status: 403 });
     }
 
-    // Vérification de la date de naissance si elle est renseignée dans la base
     if (eleve.date_naissance && date_naissance) {
       const dbDate = eleve.date_naissance.replace(/[\/\-\.]/g, "");
       const inputDate = date_naissance.trim().replace(/[\/\-\.]/g, "");
@@ -37,7 +35,7 @@
       }
     }
 
-    // 2. Récupérer les séances ouvertes (actives) pour sa classe
+    // 2. Séances actives pour sa classe
     const { results: seancesDispo } = await env.DB.prepare(`
       SELECT s.id AS seance_id, s.code_session, s.actif, s.date_creation, q.titre, q.id AS qcm_id
       FROM seances s
@@ -46,17 +44,19 @@
       ORDER BY s.date_creation DESC
     `).bind(eleve.classe_id).all();
 
-    // 3. Récupérer l'historique des notes déjà soumises par cet élève
+    // 3. Historique des notes avec récupération directe du titre du QCM (même pour les copies passées)
     const { results: notesPassees } = await env.DB.prepare(`
-      SELECT r.id, r.seance_id, r.session_code, r.qcm_titre, r.note, r.total, r.date_soumission
+      SELECT r.id, r.seance_id, r.session_code, 
+             COALESCE(q.titre, r.qcm_titre, 'Évaluation ' || r.session_code) AS qcm_titre,
+             r.note, r.total, r.date_soumission
       FROM resultats_qcm r
-      WHERE (r.prenom LIKE ? OR (r.nom = ? AND r.classe = ?))
+      LEFT JOIN seances s ON r.seance_id = s.id
+      LEFT JOIN qcm_banque q ON s.qcm_id = q.id
+      WHERE (r.prenom LIKE ? OR r.nom = ?)
       ORDER BY r.date_soumission DESC
-    `).bind(`%${eleve.code_eleve}%`, eleve.prenom, eleve.classe_nom).all();
+    `).bind(`%${eleve.code_eleve}%`, eleve.prenom).all();
 
     const seancesFaitesIds = new Set(notesPassees.map(n => n.seance_id).filter(id => id !== null));
-
-    // Séparer les séances à faire de celles déjà faites
     const aFaire = seancesDispo.filter(s => !seancesFaitesIds.has(s.seance_id));
 
     return new Response(JSON.stringify({
