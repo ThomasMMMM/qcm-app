@@ -12,7 +12,7 @@
     const cleanCode = code_eleve.trim().toUpperCase();
     const cleanDate = (date_naissance || "").trim();
 
-    // 1. Recherche de l'élève par son code et son prénom
+    // 1. Recherche de l'élève
     const queryEleve = `
       SELECT e.id, e.prenom, e.date_naissance, e.code_eleve, e.classe_id, COALESCE(e.est_pap, 0) AS est_pap, c.nom AS classe_nom
       FROM eleves e
@@ -26,7 +26,7 @@
       return new Response(JSON.stringify({ error: "Identifiants incorrects. Vérifiez votre prénom et votre code." }), { status: 404 });
     }
 
-    // Vérification de la date de naissance si renseignée
+    // Vérification date de naissance si renseignée
     if (eleve.date_naissance && cleanDate) {
       const dDb = eleve.date_naissance.replace(/[-/]/g, "");
       const dSaisie = cleanDate.replace(/[-/]/g, "");
@@ -36,51 +36,34 @@
       }
     }
 
-    // 2. Déterminer la table des copies (copies ou notes)
+    // 2. Récupération des copies déjà soumises dans resultats_qcm
     let passes = [];
     let seanceIdsPassees = [];
 
     try {
-      // Tentative sur la table copies (table standard de soumission)
       const resCopies = await env.DB.prepare(`
-        SELECT c.id, c.seance_id, c.note, c.total, c.date_soumission, s.code_session, q.titre AS qcm_titre
-        FROM copies c
-        INNER JOIN seances s ON c.seance_id = s.id
+        SELECT r.id, r.seance_id, r.note, r.total, r.date_soumission, s.code_session, q.titre AS qcm_titre
+        FROM resultats_qcm r
+        INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
-        WHERE s.classe_id = ? AND (c.nom = ? OR c.prenom LIKE ?)
-        ORDER BY c.date_soumission DESC
+        WHERE s.classe_id = ? AND (r.nom = ? OR r.prenom LIKE ?)
+        ORDER BY r.date_soumission DESC
       `).bind(eleve.classe_id, eleve.prenom, `%${cleanCode}%`).all();
 
       passes = resCopies.results || [];
       seanceIdsPassees = passes.map(p => p.seance_id);
     } catch (e1) {
-      // Fallback si la table s'appelle notes
-      try {
-        const resNotes = await env.DB.prepare(`
-          SELECT n.id, n.seance_id, n.note, n.total, n.date_soumission, s.code_session, q.titre AS qcm_titre
-          FROM notes n
-          INNER JOIN seances s ON n.seance_id = s.id
-          INNER JOIN qcm_banque q ON s.qcm_id = q.id
-          WHERE s.classe_id = ? AND (n.nom = ? OR n.prenom LIKE ?)
-          ORDER BY n.date_soumission DESC
-        `).bind(eleve.classe_id, eleve.prenom, `%${cleanCode}%`).all();
-
-        passes = resNotes.results || [];
-        seanceIdsPassees = passes.map(p => p.seance_id);
-      } catch (e2) {
-        // Si aucune table de copies n'a encore été créée
-        passes = [];
-        seanceIdsPassees = [];
-      }
+      passes = [];
+      seanceIdsPassees = [];
     }
 
-    // 3. Séances actives pour sa classe non encore passées
+    // 3. Récupération des séances actives de la classe triées par s.id DESC
     const seancesActives = await env.DB.prepare(`
       SELECT s.id AS seance_id, s.code_session, s.date_seance, s.horaire_seance, q.titre AS qcm_titre
       FROM seances s
       INNER JOIN qcm_banque q ON s.qcm_id = q.id
-      WHERE s.classe_id = ? AND (s.actif = 1 OR s.actif IS NULL OR s.actif = 1.0 OR s.actif = true)
-      ORDER BY s.date_creation DESC
+      WHERE s.classe_id = ? AND (s.actif = 1 OR s.actif IS NULL OR s.actif = '1')
+      ORDER BY s.id DESC
     `).bind(eleve.classe_id).all();
 
     const aFaire = (seancesActives.results || []).filter(s => !seanceIdsPassees.includes(s.seance_id));
