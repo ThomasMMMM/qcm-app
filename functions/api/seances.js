@@ -1,64 +1,30 @@
-﻿export async function onRequestPost(context) {
-  try {
-    const { request, env } = context;
-    const body = await request.json();
-    const { action, code_session, prof_id, qcm_id, classe_id, seance_id, actif } = body;
-
-    // Basculer l'état (Actif / Fermé)
-    if (action === "toggle_actif") {
-      await env.DB.prepare("UPDATE seances SET actif = ? WHERE id = ?").bind(actif ? 1 : 0, seance_id).run();
-      return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
-    }
-
-    // Création d'une nouvelle séance
-    if (!code_session || !prof_id || !qcm_id || !classe_id) {
-      return new Response(JSON.stringify({ error: "Données de séance incomplètes" }), { status: 400 });
-    }
-
-    const cleanCode = code_session.trim().toUpperCase();
-
-    // Vérifier l'unicité du code de session
-    const existe = await env.DB.prepare("SELECT id FROM seances WHERE code_session = ?").bind(cleanCode).first();
-    if (existe) {
-      return new Response(JSON.stringify({ error: "Ce code de séance est déjà utilisé. Choisissez-en un autre." }), { status: 400 });
-    }
-
-    const res = await env.DB.prepare(
-      "INSERT INTO seances (code_session, prof_id, qcm_id, classe_id, actif) VALUES (?, ?, ?, ?, 1)"
-    ).bind(cleanCode, prof_id, qcm_id, classe_id).run();
-
-    return new Response(JSON.stringify({ success: true, seance_id: res.meta.last_row_id, code_session: cleanCode }), {
-      headers: { "Content-Type": "application/json" }
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
-  }
-}
-
-export async function onRequestGet(context) {
+﻿export async function onRequestGet(context) {
   try {
     const { request, env } = context;
     const url = new URL(request.url);
     const prof_id = url.searchParams.get("prof_id");
+    const vue_planning = url.searchParams.get("planning"); // si true, renvoie l'historique complet pour le planning
 
     if (!prof_id) {
       return new Response(JSON.stringify([]), { headers: { "Content-Type": "application/json" } });
     }
 
-    const { results } = await env.DB.prepare(`
-      SELECT 
-        s.id, s.code_session, s.actif, s.date_creation,
-        q.titre AS qcm_titre,
-        c.nom AS classe_nom, c.id AS classe_id,
-        COUNT(r.id) AS nb_copies
+    let query = `
+      SELECT s.*, c.nom AS classe_nom, c.jour_cours, c.horaire_cours, q.titre AS qcm_titre,
+             (SELECT COUNT(*) FROM resultats_qcm r WHERE r.seance_id = s.id) AS nb_copies
       FROM seances s
-      INNER JOIN qcm_banque q ON s.qcm_id = q.id
       INNER JOIN classes c ON s.classe_id = c.id
-      LEFT JOIN resultats_qcm r ON s.id = r.seance_id
+      INNER JOIN qcm_banque q ON s.qcm_id = q.id
       WHERE s.prof_id = ?
-      GROUP BY s.id
-      ORDER BY s.date_creation DESC
-    `).bind(prof_id).all();
+    `;
+
+    if (!vue_planning) {
+      query += " ORDER BY s.date_creation DESC";
+    } else {
+      query += " ORDER BY s.date_seance DESC, s.date_creation DESC";
+    }
+
+    const { results } = await env.DB.prepare(query).bind(prof_id).all();
 
     return new Response(JSON.stringify(results), { headers: { "Content-Type": "application/json" } });
   } catch (err) {
@@ -66,18 +32,35 @@ export async function onRequestGet(context) {
   }
 }
 
-export async function onRequestDelete(context) {
+export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    const url = new URL(request.url);
-    const seance_id = url.searchParams.get("seance_id");
+    const body = await request.json();
+    const { prof_id, qcm_id, classe_id, code_session, date_seance, horaire_seance } = body;
 
-    if (!seance_id) {
-      return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
+    if (!prof_id || !qcm_id || !classe_id || !code_session) {
+      return new Response(JSON.stringify({ error: "Tous les champs sont requis" }), { status: 400 });
     }
 
-    await env.DB.prepare("DELETE FROM seances WHERE id = ?").bind(seance_id).run();
-    return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+    const cleanCode = code_session.trim().toUpperCase();
+
+    // Vérifier unicité du code actif
+    const exist = await env.DB.prepare(
+      "SELECT id FROM seances WHERE code_session = ? AND actif = 1"
+    ).bind(cleanCode).first();
+
+    if (exist) {
+      return new Response(JSON.stringify({ error: "Ce code de séance est déjà actif." }), { status: 400 });
+    }
+
+    const res = await env.DB.prepare(`
+      INSERT INTO seances (prof_id, qcm_id, classe_id, code_session, actif, date_seance, horaire_seance)
+      VALUES (?, ?, ?, ?, 1, ?, ?)
+    `).bind(prof_id, qcm_id, classe_id, cleanCode, date_seance || null, horaire_seance || null).run();
+
+    return new Response(JSON.stringify({ success: true, id: res.meta.last_row_id }), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
