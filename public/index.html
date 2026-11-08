@@ -260,14 +260,24 @@
             <label style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin:0;">
               📄 Document Ressource associé (Facultatif - HTML / Tableaux / Textes) :
             </label>
-            <div>
+            <!-- ZONE DOCUMENT RESSOURCE HTML -->
+        <div style="margin-top:12px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+            <label style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin:0;">
+              📄 Document Ressource associé (Facultatif - HTML / Tableaux / Textes) :
+            </label>
+            <div style="display:flex; gap:6px;">
+              <input type="file" id="inputFichierDocHtml" accept=".html,.htm" style="display:none;" onchange="importerFichierHtmlDoc(this)">
+              <button type="button" class="btn" style="background:#0284c7; margin:0; padding:5px 10px; font-size:0.8rem;" onclick="document.getElementById('inputFichierDocHtml').click()">
+                📁 Importer fichier .html
+              </button>
               <input type="file" id="inputImagePourDoc" accept="image/*" style="display:none;" onchange="convertirImageEtInsererHtml(this)">
-              <button type="button" class="btn-pdf" style="margin:0; padding:4px 8px; font-size:0.75rem;" onclick="document.getElementById('inputImagePourDoc').click()">
+              <button type="button" class="btn-pdf" style="margin:0; padding:5px 10px; font-size:0.8rem;" onclick="document.getElementById('inputImagePourDoc').click()">
                 🖼️ Insérer une image
               </button>
             </div>
           </div>
-          <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML (ex: <h3>Document 1</h3><p>Texte...</p><table>...</table>)"></textarea>
+          <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML ou importez un fichier .html avec le bouton ci-dessus..."></textarea>
         </div>
         <div style="max-height:180px; overflow-y:auto; margin-top:12px;">
           <table>
