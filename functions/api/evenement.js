@@ -8,30 +8,18 @@
       return new Response(JSON.stringify({ error: "Champs requis manquants" }), { status: 400 });
     }
 
-    // Enregistrement dans les deux tables potentielles pour compatibilité totale
-    try {
-      await env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS sorties (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          eleve_id TEXT,
-          type_evenement TEXT,
-          horodatage DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
-      await env.DB.prepare("INSERT INTO sorties (eleve_id, type_evenement) VALUES (?, ?)").bind(eleve_id, type_evenement).run();
-    } catch(e) {}
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS sorties_ecran (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        eleve_id TEXT,
+        type_evenement TEXT,
+        horodatage DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
 
-    try {
-      await env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS evenements (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          eleve_id TEXT,
-          type_evenement TEXT,
-          horodatage DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
-      await env.DB.prepare("INSERT INTO evenements (eleve_id, type_evenement) VALUES (?, ?)").bind(eleve_id, type_evenement).run();
-    } catch(e) {}
+    await env.DB.prepare(
+      "INSERT INTO sorties_ecran (eleve_id, type_evenement) VALUES (?, ?)"
+    ).bind(eleve_id, type_evenement).run();
 
     return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
   } catch (err) {
@@ -43,16 +31,9 @@ export async function onRequestDelete(context) {
   try {
     const { env } = context;
 
-    // Suppression stricte dans les deux tables (sans bloc catch mutuel)
-    try {
-      await env.DB.prepare("DELETE FROM sorties").run();
-    } catch (e) {}
+    await env.DB.prepare("DELETE FROM sorties_ecran").run();
 
-    try {
-      await env.DB.prepare("DELETE FROM evenements").run();
-    } catch (e) {}
-
-    return new Response(JSON.stringify({ success: true, message: "Journal des alertes purgé" }), {
+    return new Response(JSON.stringify({ success: true, message: "Journal des alertes purgé avec succès" }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
