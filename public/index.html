@@ -817,9 +817,10 @@
 
       const counts = {};
       elevesBruts.forEach(e => { counts[e.prenomBrut.toLowerCase()] = (counts[e.prenomBrut.toLowerCase()] || 0) + 1; });
-      parsedElevesPreview = elevesBruts.map(e => {
+      parsedElevesPreview = elevesBruts.map((e, idx) => {
         const estDbl = counts[e.prenomBrut.toLowerCase()] > 1;
         return {
+          ordre: idx + 1,
           prenom: estDbl && e.init ? `${e.prenomBrut} ${e.init}` : e.prenomBrut,
           date_naissance: e.dateNaissance,
           code_eleve: genererCodeCourt()

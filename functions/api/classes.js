@@ -5,15 +5,15 @@
     const prof_id = url.searchParams.get("prof_id");
     const classe_id = url.searchParams.get("classe_id");
 
-    // Liste détaillée des élèves d'une classe avec statut PAP
+    // 1. Liste des élèves d'une classe : TRI PAR L'ORDRE DU CSV PRONOTE (Ordre alphabétique du Nom)
     if (classe_id) {
       const { results } = await env.DB.prepare(
-        "SELECT id, prenom, date_naissance, code_eleve, COALESCE(est_pap, 0) AS est_pap FROM eleves WHERE classe_id = ? ORDER BY prenom ASC"
+        "SELECT id, prenom, date_naissance, code_eleve, COALESCE(est_pap, 0) AS est_pap, COALESCE(ordre, id) AS ordre FROM eleves WHERE classe_id = ? ORDER BY COALESCE(ordre, id) ASC"
       ).bind(classe_id).all();
       return new Response(JSON.stringify(results), { headers: { "Content-Type": "application/json" } });
     }
 
-    // Liste des classes du professeur avec effectif
+    // 2. Liste des classes avec effectifs
     let query = `
       SELECT c.*, 
              (SELECT COUNT(*) FROM eleves e WHERE e.classe_id = c.id) AS effectif,
@@ -39,7 +39,7 @@ export async function onRequestPost(context) {
     const { request, env } = context;
     const body = await request.json();
 
-    // 1. Basculer le statut PAP d'un élève
+    // Modification du statut PAP
     if (body.action === "toggle_pap" && body.eleve_id !== undefined) {
       await env.DB.prepare(
         "UPDATE eleves SET est_pap = ? WHERE id = ?"
@@ -47,7 +47,7 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
     }
 
-    // 2. Création / Importation d'une classe
+    // Création / Importation d'une classe
     const nomFinal = (body.nom || body.classe_nom || body.nom_classe || body.classe || body.name || "").trim();
     if (!nomFinal) {
       return new Response(JSON.stringify({ error: "Nom de classe requis" }), { status: 400 });
@@ -76,7 +76,7 @@ export async function onRequestPost(context) {
       ).bind(j, h, classeId).run();
     }
 
-    // Insertion des élèves avec prise en compte éventuelle de est_pap
+    // Enregistrement des élèves avec préservation de leur index d'ordre d'origine
     if (Array.isArray(body.eleves) && body.eleves.length > 0) {
       const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
       function genCode() {
@@ -85,11 +85,13 @@ export async function onRequestPost(context) {
         return c;
       }
 
-      for (const el of body.eleves) {
+      for (let idx = 0; idx < body.eleves.length; idx++) {
+        const el = body.eleves[idx];
         const p = (el.prenom || "").trim();
         const d = (el.date_naissance || "").trim();
         const codePerso = (el.code_eleve || genCode()).trim().toUpperCase();
         const estPap = el.est_pap ? 1 : 0;
+        const numOrdre = (el.ordre !== undefined && el.ordre !== null) ? el.ordre : (idx + 1);
         if (!p) continue;
 
         const eleveExist = await env.DB.prepare(
@@ -98,12 +100,12 @@ export async function onRequestPost(context) {
 
         if (!eleveExist) {
           await env.DB.prepare(
-            "INSERT INTO eleves (classe_id, prenom, date_naissance, code_eleve, est_pap) VALUES (?, ?, ?, ?, ?)"
-          ).bind(classeId, p, d || null, codePerso, estPap).run();
+            "INSERT INTO eleves (classe_id, prenom, date_naissance, code_eleve, est_pap, ordre) VALUES (?, ?, ?, ?, ?, ?)"
+          ).bind(classeId, p, d || null, codePerso, estPap, numOrdre).run();
         } else {
           await env.DB.prepare(
-            "UPDATE eleves SET date_naissance = COALESCE(?, date_naissance), est_pap = ? WHERE id = ?"
-          ).bind(d || null, estPap, eleveExist.id).run();
+            "UPDATE eleves SET date_naissance = COALESCE(?, date_naissance), est_pap = ?, ordre = ? WHERE id = ?"
+          ).bind(d || null, estPap, numOrdre, eleveExist.id).run();
         }
       }
     }
