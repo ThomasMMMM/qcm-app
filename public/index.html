@@ -85,6 +85,19 @@
     </div>
   </div>
 
+  
+  <!-- MODAL DOCUMENT RESSOURCE ÉLÈVE -->
+  <div id="modalDocRessourceEleve" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10000; justify-content:center; align-items:center; padding:10px; box-sizing:border-box;">
+    <div style="background:white; border-radius:8px; max-width:800px; width:100%; height:92vh; display:flex; flex-direction:column; padding:16px; box-sizing:border-box; box-shadow:0 6px 24px rgba(0,0,0,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px;">
+        <h3 style="margin:0; color:var(--pronote-blue); font-size:1.15rem;">📖 Document Ressource</h3>
+        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceEleve()">✖ Fermer et revenir au QCM</button>
+      </div>
+      <div id="corpsDocRessourceEleve" style="flex:1; overflow-y:auto; overflow-x:auto; padding:8px; font-size:0.95rem; line-height:1.5;"></div>
+      <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerDocRessourceEleve()">✓ Revenir à la question</button>
+    </div>
+  </div>
+
   <!-- MODAL EXPORT PRONOTE -->
   <div id="modalExportPronote" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;">
     <div style="background:white; border-radius:8px; max-width:650px; width:100%; max-height:90vh; overflow-y:auto; padding:22px; box-shadow:0 4px 20px rgba(0,0,0,0.2);">
@@ -165,6 +178,13 @@
         <span class="q-counter" id="questionProgressionText">Question 1 sur 5</span>
         <span style="font-size: 0.85rem; font-weight: bold; color: var(--pronote-blue);" id="questionPointsText">1 pt</span>
       </div>
+      
+      <div id="btnOuvrirDocBox" style="display:none; margin-bottom:12px;">
+        <button type="button" class="btn" style="background:#0284c7; margin:0; padding:10px 14px; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="ouvrirDocRessourceEleve()">
+          📖 Consulter le Document Ressource
+        </button>
+      </div>
+
       <div class="progress-bar-container">
         <div class="progress-bar-fill" id="progressBarFill"></div>
       </div>
@@ -232,6 +252,22 @@
           <div style="flex:1;">
             <button type="button" class="btn" style="margin-top:0; padding:10px;" onclick="importerDansBanque()">Ajouter à ma banque</button>
           </div>
+        </div>
+
+        <!-- ZONE DOCUMENT RESSOURCE HTML -->
+        <div style="margin-top:12px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin:0;">
+              📄 Document Ressource associé (Facultatif - HTML / Tableaux / Textes) :
+            </label>
+            <div>
+              <input type="file" id="inputImagePourDoc" accept="image/*" style="display:none;" onchange="convertirImageEtInsererHtml(this)">
+              <button type="button" class="btn-pdf" style="margin:0; padding:4px 8px; font-size:0.75rem;" onclick="document.getElementById('inputImagePourDoc').click()">
+                🖼️ Insérer une image
+              </button>
+            </div>
+          </div>
+          <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML (ex: <h3>Document 1</h3><p>Texte...</p><table>...</table>)"></textarea>
         </div>
         <div style="max-height:180px; overflow-y:auto; margin-top:12px;">
           <table>
@@ -450,6 +486,40 @@
       chargerResultatsProf();
     }
 
+    
+    let currentDocumentHtml = null;
+
+    function convertirImageEtInsererHtml(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        const tagImg = `\n<img src="${base64Data}" alt="Image ressource" style="max-width:100%; height:auto; border-radius:6px; margin:10px 0; border:1px solid #cbd5e1; display:block;">\n`;
+        
+        const textarea = document.getElementById('documentHtmlInput');
+        if (textarea) {
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          textarea.value = textarea.value.substring(0, start) + tagImg + textarea.value.substring(end);
+          alert("Image convertie en Base64 et insérée dans le HTML !");
+        }
+      };
+      reader.readAsDataURL(file);
+      input.value = "";
+    }
+
+    function ouvrirDocRessourceEleve() {
+      if (!currentDocumentHtml) return;
+      document.getElementById('corpsDocRessourceEleve').innerHTML = currentDocumentHtml;
+      document.getElementById('modalDocRessourceEleve').style.display = 'flex';
+    }
+
+    function fermerDocRessourceEleve() {
+      document.getElementById('modalDocRessourceEleve').style.display = 'none';
+    }
+
     // ==================== 1. PORTAIL ÉLÈVE ====================
     async function connexionPortailEleve() {
       const prenom = document.getElementById('elevePrenom').value.trim();
@@ -538,6 +608,9 @@
       }
 
       currentQuestions = data.questions;
+      currentDocumentHtml = data.document_html || null;
+      const boxDoc = document.getElementById('btnOuvrirDocBox');
+      if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
       currentSeanceId = data.seance_id;
       currentQuestionIndex = 0;
       totalScoreObtenu = 0;
@@ -641,12 +714,17 @@
         const res = await fetch('/api/banque', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ titre: titreQcm, questions, prof_id: currentProf.id })
+          body: JSON.stringify({
+            titre: titreQcm,
+            questions,
+            prof_id: currentProf.id,
+            document_html: document.getElementById('documentHtmlInput') ? document.getElementById('documentHtmlInput').value.trim() : null
+          })
         });
 
         if (res.ok) {
           alert(`Questionnaire "${titreQcm}" ajouté à votre banque !`);
-          fileInput.value = "";
+          fileInput.value = ""; if(document.getElementById("documentHtmlInput")) document.getElementById("documentHtmlInput").value = "";
           chargerBanqueQcm();
         } else {
           const errData = await res.json().catch(() => ({}));
@@ -1166,7 +1244,7 @@
           alert("Erreur simulateur : " + (data.error || "Questions introuvables"));
           return;
         }
-        demarrerSimulation(data.questions, `[Simulation] ${data.titre}`);
+        demarrerSimulation(data.questions, `[Simulation] ${data.titre}`, data.document_html);
       } catch(e) {
         alert("Erreur au chargement du simulateur : " + e.message);
       }
@@ -1182,13 +1260,16 @@
           alert("Erreur simulateur : " + (data.error || "Questions introuvables"));
           return;
         }
-        demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`);
+        demarrerSimulation(data.questions, `[Simulation Séance: ${seance.code_session}] ${data.titre}`, data.document_html);
       } catch(e) {
         alert("Erreur au chargement du simulateur : " + e.message);
       }
     }
 
-    function demarrerSimulation(questions, titre) {
+    function demarrerSimulation(questions, titre, docHtml = null) {
+      currentDocumentHtml = docHtml;
+      const boxDoc = document.getElementById('btnOuvrirDocBox');
+      if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
       isModeSimulation = true;
       currentQuestions = questions;
       currentQuestionIndex = 0;
