@@ -994,6 +994,7 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
+      // Bandeau d'en-tête bleu
       doc.setFillColor(11, 92, 171);
       doc.rect(0, 0, 210, 20, 'F');
       doc.setTextColor(255, 255, 255);
@@ -1001,13 +1002,31 @@
       doc.setFont("helvetica", "bold");
       doc.text(`Identifiants QCM — Classe : ${nomClasse}`, 14, 14);
 
+      // Tableau avec 4 colonnes et alternance de couleur des lignes (striped)
       doc.autoTable({
-        startY: 30,
-        head: [['N°', 'Prénom élève', 'Né(e) le', 'Code individuel élève', 'Aménagement']],
-        body: eleves.map((e, idx) => [idx + 1, e.prenom, e.date_naissance || "-", e.code_eleve, e.est_pap ? 'PAP (-25% Q)' : 'Standard']),
-        theme: 'grid',
-        headStyles: { fillColor: [11, 92, 171] },
-        columnStyles: { 3: { fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], fillColor: [254, 243, 199] } }
+        startY: 28,
+        head: [['N°', 'Prénom élève', 'Né(e) le', 'Code individuel élève']],
+        body: eleves.map((e, idx) => [idx + 1, e.prenom, e.date_naissance || "-", e.code_eleve]),
+        theme: 'striped',
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+          textColor: [30, 41, 59]
+        },
+        headStyles: {
+          fillColor: [11, 92, 171],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [241, 245, 249]
+        },
+        columnStyles: {
+          0: { cellWidth: 15, halign: 'center' },
+          1: { fontStyle: 'bold' },
+          2: { cellWidth: 35, halign: 'center' },
+          3: { cellWidth: 50, fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], halign: 'center' }
+        }
       });
 
       doc.save(`Codes_${nomClasse}.pdf`);
