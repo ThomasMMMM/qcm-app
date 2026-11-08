@@ -1002,26 +1002,25 @@
       doc.text(`Identifiants QCM — Classe : ${nomClasse}`, 14, 14);
 
       let aDesPap = false;
-      const bodyData = eleves.map((e, idx) => {
+      const bodyData = eleves.map(e => {
         const estPap = (e.est_pap === 1 || e.est_pap === true);
         if (estPap) aDesPap = true;
         const prenomAffiche = estPap ? `${e.prenom} *` : e.prenom;
-        return [idx + 1, prenomAffiche, e.code_eleve, e.date_naissance || "-"];
+        return [prenomAffiche, e.code_eleve, e.date_naissance || "-"];
       });
 
       doc.autoTable({
         startY: 28,
-        head: [['N°', 'Prénom élève', 'Code individuel', 'Né(e) le']],
+        head: [['Prénom élève', 'Code individuel', 'Né(e) le']],
         body: bodyData,
         theme: 'striped',
         styles: { fontSize: 10, cellPadding: 3.5, textColor: [30, 41, 59], valign: 'middle' },
         headStyles: { fillColor: [11, 92, 171], textColor: [255, 255, 255], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [241, 245, 249] },
         columnStyles: {
-          0: { cellWidth: 14, halign: 'center' },
-          1: { cellWidth: 48, fontStyle: 'bold' },
-          2: { cellWidth: 42, fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], halign: 'center', fillColor: [254, 243, 199] },
-          3: { cellWidth: 35, halign: 'center', textColor: [71, 85, 105] }
+          0: { cellWidth: 60, fontStyle: 'bold', halign: 'right' },
+          1: { cellWidth: 45, fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], halign: 'left', fillColor: [254, 243, 199] },
+          2: { cellWidth: 40, halign: 'center', textColor: [71, 85, 105] }
         },
         didDrawPage: function () {
           if (aDesPap) {
