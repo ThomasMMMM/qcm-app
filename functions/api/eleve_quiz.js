@@ -1,31 +1,39 @@
-﻿function aseptiserQuestions(questions) {
+﻿function preparerQuestions(questions) {
   return questions.map(q => {
-    const propre = {
-      type: q.type,
-      title: q.title,
-      enonce: q.enonce,
-      image: q.image,
-      points: q.points
-    };
-
+    const points = Number(q.points) > 0 ? Number(q.points) : 1;
+    
     if (q.type === "multichoice") {
-      propre.single = q.single;
-      // On retire fraction et feedback
-      propre.answers = q.answers.map((a, idx) => ({
-        id: idx,
-        text: a.text,
-        image: a.image
-      }));
+      return {
+        type: q.type,
+        title: q.title || "",
+        enonce: q.enonce || "",
+        image: q.image || null,
+        points: points,
+        single: q.single,
+        generalFeedback: q.generalFeedback || "",
+        answers: (q.answers || []).map((a, idx) => ({
+          id: idx,
+          text: a.text || "",
+          image: a.image || null,
+          fraction: (typeof a.fraction === "number" && !isNaN(a.fraction)) ? a.fraction : (parseFloat(a.fraction) || 0),
+          feedback: a.feedback || ""
+        }))
+      };
     } else if (q.type === "matching") {
-      // Pour l'appariement, on mélange les choix sans révéler les paires
-      const tousLesChoix = q.subquestions.map(s => s.answer).sort(() => Math.random() - 0.5);
-      propre.subquestions = q.subquestions.map((s, idx) => ({
-        id: idx,
-        question: s.question
-      }));
-      propre.choices = tousLesChoix;
+      const subqs = q.subquestions || [];
+      const tousLesChoix = subqs.map(s => s.answer).sort(() => Math.random() - 0.5);
+      return {
+        type: q.type,
+        title: q.title || "",
+        enonce: q.enonce || "",
+        image: q.image || null,
+        points: points,
+        generalFeedback: q.generalFeedback || "",
+        subquestions: subqs,
+        choices: tousLesChoix
+      };
     }
-    return propre;
+    return q;
   });
 }
 
@@ -47,7 +55,7 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({
         qcm_id: qcm.id,
         titre: qcm.titre,
-        questions: aseptiserQuestions(brute)
+        questions: preparerQuestions(brute)
       }), { headers: { "Content-Type": "application/json" } });
     }
 
@@ -65,7 +73,7 @@ export async function onRequestGet(context) {
         seance_id: seance.id,
         titre: seance.titre,
         code_session: seance.code_session,
-        questions: aseptiserQuestions(brute)
+        questions: preparerQuestions(brute)
       }), { headers: { "Content-Type": "application/json" } });
     }
 
@@ -102,7 +110,7 @@ export async function onRequestGet(context) {
       titre: seance.titre,
       classe_nom: seance.classe_nom,
       eleve_prenom: eleve.prenom,
-      questions: aseptiserQuestions(questionsBrutes)
+      questions: preparerQuestions(questionsBrutes)
     }), { headers: { "Content-Type": "application/json" } });
 
   } catch (err) {
