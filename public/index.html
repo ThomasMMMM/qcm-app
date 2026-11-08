@@ -1560,6 +1560,9 @@
         const res = await fetch('/api/evenement', { method: 'DELETE' });
         const data = await res.json();
         if (res.ok) {
+          // Vidage immédiat de l'affichage
+          const tbody = document.getElementById('tableSortiesBody');
+          if (tbody) tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:10px;'>Aucun incident consigné.</td></tr>";
           alert("✓ Le journal des sorties d'écran et incidents a été purgé !");
           await chargerResultatsProf();
         } else {
