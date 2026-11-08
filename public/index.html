@@ -701,6 +701,7 @@
         try {
           sessionEleve = JSON.parse(savedEleve);
           afficherEspaceEleve();
+          actualiserEspaceEleve(); // Re-synchronisation serveur immédiate en arrière-plan
           return;
         } catch(e) {}
       }
