@@ -79,7 +79,7 @@
       SELECT s.id AS seance_id, s.code_session, s.date_seance, s.horaire_seance, q.titre AS qcm_titre
       FROM seances s
       INNER JOIN qcm_banque q ON s.qcm_id = q.id
-      WHERE s.classe_id = ? AND s.actif = 1
+      WHERE s.classe_id = ? AND (s.actif = 1 OR s.actif IS NULL OR s.actif = 1.0 OR s.actif = true)
       ORDER BY s.date_creation DESC
     `).bind(eleve.classe_id).all();
 

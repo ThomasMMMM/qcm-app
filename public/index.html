@@ -1008,13 +1008,16 @@
       const xmlDoc = parser.parseFromString(text, "text/xml");
 
       let titreQcm = file.name.replace(/\.[^/.]+$/, "");
-      const catNode = xmlDoc.querySelector('question[type="category"] category name') 
-                   || xmlDoc.querySelector('question[type="category"] category text')
-                   || xmlDoc.querySelector('question[type="category"] text name')
-                   || xmlDoc.querySelector('question[type="category"] text');
-
-      if (catNode && catNode.textContent && catNode.textContent.trim().length > 0) {
-        titreQcm = catNode.textContent.trim();
+      const catTextNode = xmlDoc.querySelector('question[type="category"] text');
+      if (catTextNode && catTextNode.textContent) {
+        let brut = catTextNode.textContent.trim();
+        // Si le contenu CDATA contient <name>...</name>
+        const matchName = brut.match(/<name>([^<]+)<\/name>/i);
+        if (matchName && matchName[1]) {
+          titreQcm = matchName[1].trim();
+        } else if (!brut.startsWith('<') && brut.length > 0) {
+          titreQcm = brut;
+        }
       }
 
       const questionsNodes = xmlDoc.querySelectorAll('question:not([type="category"])');
