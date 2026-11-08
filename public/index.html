@@ -1846,19 +1846,19 @@
         ? ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2) 
         : "0.00";
 
+      // Récupération du profil élève
+      let nomEleve = "Élève";
+      let codeEleve = "";
+
+      if (sessionEleve && sessionEleve.eleve) {
+        nomEleve = sessionEleve.eleve.prenom || "Élève";
+        codeEleve = sessionEleve.eleve.code_eleve || "";
+      } else if (typeof eleveInfo !== 'undefined' && eleveInfo) {
+        nomEleve = eleveInfo.prenom || "Élève";
+        codeEleve = eleveInfo.code_perso || "";
+      }
+
       if (!isModeSimulation) {
-        // Récupération sécurisée des données de l'élève
-        let nomEleve = "Élève";
-        let codeEleve = "";
-
-        if (sessionEleve && sessionEleve.eleve) {
-          nomEleve = sessionEleve.eleve.prenom;
-          codeEleve = sessionEleve.eleve.code_eleve;
-        } else if (typeof eleveInfo !== 'undefined' && eleveInfo) {
-          nomEleve = eleveInfo.prenom || "Élève";
-          codeEleve = eleveInfo.code_perso || "";
-        }
-
         try {
           await fetch('/api/soumettre', {
             method: 'POST',
@@ -1874,25 +1874,49 @@
             })
           });
         } catch (err) {
-          console.error("Erreur de transmission de la copie :", err);
+          console.error("Erreur transmission copie :", err);
         }
 
-        document.getElementById('simuBannerFin').style.display = 'none';
-        document.getElementById('btnRetourApresSimu').style.display = 'none';
-        document.getElementById('btnRetourTableauEleve').style.display = 'block';
-        document.getElementById('finTitleText').innerText = "Évaluation terminée !";
-        document.getElementById('finDescText').innerText = "Votre copie a été transmise avec succès au professeur.";
+        const elSimuFin = document.getElementById('simuBannerFin');
+        if (elSimuFin) elSimuFin.style.display = 'none';
+
+        const elBtnSimu = document.getElementById('btnRetourApresSimu');
+        if (elBtnSimu) elBtnSimu.style.display = 'none';
+
+        const elBtnTableau = document.getElementById('btnRetourTableauEleve');
+        if (elBtnTableau) elBtnTableau.style.display = 'block';
+
+        const elFinTitre = document.getElementById('finTitleText');
+        if (elFinTitre) elFinTitre.innerText = "Évaluation terminée !";
+
+        const elFinDesc = document.getElementById('finDescText');
+        if (elFinDesc) elFinDesc.innerText = "Votre copie a été transmise avec succès au professeur.";
       } else {
-        document.getElementById('simuBannerFin').style.display = 'flex';
-        document.getElementById('btnRetourApresSimu').style.display = 'block';
-        document.getElementById('btnRetourTableauEleve').style.display = 'none';
-        document.getElementById('finTitleText').innerText = "Fin du test professeur";
-        document.getElementById('finDescText').innerText = "Simulation réalisée sans enregistrement de note.";
+        const elSimuFin = document.getElementById('simuBannerFin');
+        if (elSimuFin) elSimuFin.style.display = 'flex';
+
+        const elBtnSimu = document.getElementById('btnRetourApresSimu');
+        if (elBtnSimu) elBtnSimu.style.display = 'block';
+
+        const elBtnTableau = document.getElementById('btnRetourTableauEleve');
+        if (elBtnTableau) elBtnTableau.style.display = 'none';
+
+        const elFinTitre = document.getElementById('finTitleText');
+        if (elFinTitre) elFinTitre.innerText = "Fin du test professeur";
+
+        const elFinDesc = document.getElementById('finDescText');
+        if (elFinDesc) elFinDesc.innerText = "Simulation réalisée sans enregistrement de note.";
       }
 
-      document.getElementById('viewEleveQcm').style.display = 'none';
-      document.getElementById('viewEleveFin').style.display = 'block';
-      document.getElementById('noteFinaleText').innerText = `${note20} / 20`;
+      // Basculement garanti vers l'écran de note
+      const elViewQcm = document.getElementById('viewEleveQcm');
+      if (elViewQcm) elViewQcm.style.display = 'none';
+
+      const elViewFin = document.getElementById('viewEleveFin');
+      if (elViewFin) elViewFin.style.display = 'block';
+
+      const elNote = document.getElementById('noteFinaleText');
+      if (elNote) elNote.innerText = `${note20} / 20`;
     }
 
     async function logSortie(type) {
