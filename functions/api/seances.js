@@ -29,14 +29,24 @@ export async function onRequestPost(context) {
   try {
     const { request, env } = context;
     const body = await request.json();
-    const { prof_id, qcm_id, classe_id, code_session, date_seance, horaire_seance } = body;
+    const { action, seance_id, actif, prof_id, qcm_id, classe_id, code_session, date_seance, horaire_seance } = body;
 
+    // 1. Basculer l'état Actif / Clôturé
+    if (action === "toggle_actif" && seance_id !== undefined) {
+      await env.DB.prepare(
+        "UPDATE seances SET actif = ? WHERE id = ?"
+      ).bind(actif ? 1 : 0, seance_id).run();
+      return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // 2. Création d'une nouvelle séance
     if (!prof_id || !qcm_id || !classe_id || !code_session) {
       return new Response(JSON.stringify({ error: "Tous les champs sont requis" }), { status: 400 });
     }
 
     const cleanCode = code_session.trim().toUpperCase();
 
+    // Vérifier si ce code n'est pas déjà actif
     const exist = await env.DB.prepare(
       "SELECT id FROM seances WHERE code_session = ? AND actif = 1"
     ).bind(cleanCode).first();
@@ -51,6 +61,31 @@ export async function onRequestPost(context) {
     `).bind(prof_id, qcm_id, classe_id, cleanCode, date_seance || null, horaire_seance || null).run();
 
     return new Response(JSON.stringify({ success: true, id: res.meta.last_row_id }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+}
+
+// 3. GESTIONNAIRE DE SUPPRESSION RÉELLE D'UNE SÉANCE
+export async function onRequestDelete(context) {
+  try {
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const seance_id = url.searchParams.get("seance_id");
+
+    if (!seance_id) {
+      return new Response(JSON.stringify({ error: "Identifiant de séance requis" }), { status: 400 });
+    }
+
+    // Supprimer les copies/résultats rattachés à cette séance
+    await env.DB.prepare("DELETE FROM resultats_qcm WHERE seance_id = ?").bind(seance_id).run();
+
+    // Supprimer la séance
+    await env.DB.prepare("DELETE FROM seances WHERE id = ?").bind(seance_id).run();
+
+    return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (err) {

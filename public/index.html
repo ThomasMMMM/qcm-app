@@ -957,10 +957,19 @@
     }
 
     async function supprimerSeance(seanceId, code) {
-      if (!confirm(`Supprimer la séance "${code}" ?`)) return;
-      await fetch(`/api/seances?seance_id=${seanceId}`, { method: 'DELETE' });
-      chargerSeancesProf();
-      chargerResultatsProf();
+      if (!confirm(`Voulez-vous vraiment supprimer la séance "${code}" ainsi que les copies associées ?`)) return;
+      try {
+        const res = await fetch(`/api/seances?seance_id=${seanceId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          await chargerSeancesProf();
+          await chargerResultatsProf();
+        } else {
+          alert("Erreur lors de la suppression : " + (data.error || "Erreur serveur"));
+        }
+      } catch(e) {
+        alert("Erreur réseau : " + e.message);
+      }
     }
 
     async function chargerSeancesProf() {
