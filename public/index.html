@@ -1014,20 +1014,33 @@
         head: [['Prénom élève', 'Code individuel', 'Né(e) le']],
         body: bodyData,
         theme: 'striped',
-        styles: { fontSize: 10, cellPadding: 3.5, textColor: [30, 41, 59], valign: 'middle' },
-        headStyles: { fillColor: [11, 92, 171], textColor: [255, 255, 255], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [241, 245, 249] },
+        margin: { left: 47 },
+        styles: {
+          fontSize: 12,
+          cellPadding: 2.5,
+          textColor: [30, 41, 59],
+          valign: 'middle'
+        },
+        headStyles: {
+          fillColor: [11, 92, 171],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 11
+        },
+        alternateRowStyles: {
+          fillColor: [241, 245, 249]
+        },
         columnStyles: {
-          0: { cellWidth: 60, fontStyle: 'bold', halign: 'right' },
-          1: { cellWidth: 45, fontStyle: 'bold', font: 'courier', textColor: [146, 64, 14], halign: 'left', fillColor: [254, 243, 199] },
-          2: { cellWidth: 40, halign: 'center', textColor: [71, 85, 105] }
+          0: { cellWidth: 46, fontStyle: 'bold', halign: 'right' },
+          1: { cellWidth: 34, fontStyle: 'bold', font: 'courier', textColor: [15, 23, 42], halign: 'left' },
+          2: { cellWidth: 36, halign: 'center', textColor: [71, 85, 105], fontSize: 10 }
         },
         didDrawPage: function () {
           if (aDesPap) {
             doc.setFontSize(8);
             doc.setFont("helvetica", "italic");
             doc.setTextColor(100, 116, 139);
-            doc.text("* Élève bénéficiant d'un aménagement d'épreuve (PAP)", 14, doc.internal.pageSize.height - 10);
+            doc.text("* Élève bénéficiant d'un aménagement d'épreuve (PAP)", 47, doc.internal.pageSize.height - 10);
           }
         }
       });
