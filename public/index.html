@@ -749,30 +749,42 @@
       const jourCours = document.getElementById('classeJourCours') ? document.getElementById('classeJourCours').value : "Lundi";
       const horaireCours = document.getElementById('classeHoraireCours') ? document.getElementById('classeHoraireCours').value.trim() : "10h-11h";
 
-      const res = await fetch('/api/classes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nom: nomClasse,
-          classe_nom: nomClasse,
-          nom_classe: nomClasse,
-          prof_id: currentProf ? currentProf.id : null,
-          jour_cours: jourCours,
-          horaire_cours: horaireCours,
-          eleves: parsedElevesPreview
-        })
-      });
+      const btn = document.querySelector('#previewZone button.btn-success');
+      if (btn) btn.disabled = true;
 
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Classe "${nomClasse}" enregistrée ! (${jourCours} ${horaireCours})`);
-        document.getElementById('previewZone').style.display = 'none';
-        document.getElementById('nomClasseInput').value = "";
-        document.getElementById('csvElevesInput').value = "";
-        parsedElevesPreview = [];
-        chargerClassesProf();
-      } else {
-        alert("Erreur: " + data.error);
+      try {
+        const res = await fetch('/api/classes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: nomClasse,
+            classe_nom: nomClasse,
+            nom_classe: nomClasse,
+            prof_id: currentProf ? currentProf.id : null,
+            jour_cours: jourCours,
+            horaire_cours: horaireCours,
+            eleves: parsedElevesPreview
+          })
+        });
+
+        const data = await res.json();
+        if (btn) btn.disabled = false;
+
+        if (res.ok) {
+          alert("Classe \"" + nomClasse + "\" enregistrée avec succès ! (" + jourCours + " " + horaireCours + ")");
+          document.getElementById('previewZone').style.display = 'none';
+          document.getElementById('nomClasseInput').value = "";
+          document.getElementById('csvElevesInput').value = "";
+          parsedElevesPreview = [];
+          
+          // Réactualisation instantanée de la liste et des listes déroulantes
+          await chargerClassesProf();
+        } else {
+          alert("Erreur: " + data.error);
+        }
+      } catch(e) {
+        if (btn) btn.disabled = false;
+        alert("Erreur de connexion : " + e.message);
       }
     }
 
@@ -857,9 +869,21 @@
     }
 
     async function supprimerClasse(classeId, nom) {
-      if (!confirm(`Supprimer ou retirer la classe "${nom}" ?`)) return;
-      await fetch(`/api/classes?classe_id=${classeId}&prof_id=${currentProf.id}`, { method: 'DELETE' });
-      chargerClassesProf();
+      if (!confirm("Voulez-vous vraiment supprimer la classe \"" + nom + "\" ainsi que ses élèves et ses séances associées ?")) return;
+      try {
+        const res = await fetch("/api/classes?classe_id=" + classeId + "&prof_id=" + (currentProf ? currentProf.id : ""), { 
+          method: 'DELETE' 
+        });
+        const data = await res.json();
+        if (res.ok) {
+          await chargerClassesProf();
+          await chargerSeancesProf();
+        } else {
+          alert("Erreur lors de la suppression : " + (data.error || "Erreur serveur"));
+        }
+      } catch(e) {
+        alert("Erreur réseau : " + e.message);
+      }
     }
 
     async function genererPdfClasse(classeId, nomClasse, codePartage) {
