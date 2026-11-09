@@ -742,6 +742,55 @@
     // Variables Quiz
     let currentQuestions = [];
 
+    // Navigation du Hub Élève par tuiles
+    function retournerAuHubEleve() {
+      document.querySelectorAll('.rubrique-contenu-eleve').forEach(el => el.style.display = 'none');
+      const hub = document.getElementById('vueHubEleve');
+      if (hub) hub.style.display = 'block';
+      actualiserCompteursTuilesEleve();
+    }
+
+    function ouvrirRubriqueEleve(idRubrique) {
+      const hub = document.getElementById('vueHubEleve');
+      if (hub) hub.style.display = 'none';
+      document.querySelectorAll('.rubrique-contenu-eleve').forEach(el => el.style.display = 'none');
+      const cible = document.getElementById(idRubrique);
+      if (cible) {
+        cible.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function actualiserCompteursTuilesEleve() {
+      if (typeof sessionEleve === 'undefined' || !sessionEleve) return;
+
+      // 1. Devoirs à faire
+      const elDevoirs = document.getElementById('tuileInfoDevoirs');
+      if (elDevoirs) {
+        const aFaire = sessionEleve.a_faire || [];
+        elDevoirs.innerText = aFaire.length > 0 
+          ? (aFaire.length + ' évaluation' + (aFaire.length > 1 ? 's disponible(s)' : ' disponible'))
+          : 'Aucun devoir en attente';
+      }
+
+      // 2. Fiches Synthèse
+      const elFiches = document.getElementById('tuileInfoFichesEleve');
+      if (elFiches && typeof fichesEleveMemoire !== 'undefined') {
+        const nbF = fichesEleveMemoire.length;
+        elFiches.innerText = nbF > 0 ? (nbF + ' fiche' + (nbF > 1 ? 's de révision' : ' de révision')) : 'Consulter mes cours';
+      }
+
+      // 3. Devoirs terminés
+      const elHistorique = document.getElementById('tuileInfoHistorique');
+      if (elHistorique) {
+        const passes = sessionEleve.passes || [];
+        elHistorique.innerText = passes.length > 0
+          ? (passes.length + ' devoir' + (passes.length > 1 ? 's terminés' : ' terminé'))
+          : '0 copie archivée';
+      }
+    }
+
+
     // --- GESTION REPRISE QCM APRES DECONNEXION ---
     function getCodeEleveEnCours() {
       if (typeof sessionEleve !== 'undefined' && sessionEleve) {
@@ -998,6 +1047,7 @@
       document.getElementById('viewProfAuth').style.display = 'none';
       document.getElementById('viewProfDashboard').style.display = 'none';
       document.getElementById('viewEleveDashboard').style.display = 'block';
+      retournerAuHubEleve();
       chargerFichesSyntheseEleve();
 
       const el = sessionEleve.eleve;
