@@ -716,29 +716,47 @@
 
     // Bascule entre mode Élève et mode Enseignant
     function basculerMode(mode) {
-      document.getElementById('viewEleveLogin').style.display = 'none';
-      document.getElementById('viewEleveDashboard').style.display = 'none';
-      document.getElementById('viewEleveQcm').style.display = 'none';
-      document.getElementById('viewEleveFin').style.display = 'none';
-      document.getElementById('viewProfAuth').style.display = 'none';
-      document.getElementById('viewProfDashboard').style.display = 'none';
+      try {
+        const vues = ['viewEleveLogin', 'viewEleveDashboard', 'viewEleveQcm', 'viewEleveFin', 'viewProfAuth', 'viewProfDashboard'];
+        vues.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
 
-      if (mode === 'eleve') {
-        document.getElementById('btnSwitchEleve').style.display = 'none';
-        if (sessionEleve) {
-          afficherEspaceEleve();
-        } else {
-          document.getElementById('viewEleveLogin').style.display = 'block';
+        const btnSwitch = document.getElementById('btnSwitchEleve');
+
+        if (mode === 'eleve') {
+          if (btnSwitch) btnSwitch.style.display = 'none';
+          if (typeof sessionEleve !== 'undefined' && sessionEleve) {
+            afficherEspaceEleve();
+          } else {
+            const elLogin = document.getElementById('viewEleveLogin');
+            if (elLogin) elLogin.style.display = 'block';
+          }
+        } else if (mode === 'prof') {
+          if (btnSwitch) btnSwitch.style.display = 'inline-flex';
+          
+          // Vérification de currentProf
+          if (typeof currentProf !== 'undefined' && currentProf) {
+            const labelNom = document.getElementById('labelProfNom');
+            if (labelNom) {
+              labelNom.innerText = currentProf.nom || currentProf.email || 'Enseignant';
+            }
+            const dashboard = document.getElementById('viewProfDashboard');
+            if (dashboard) dashboard.style.display = 'block';
+            if (typeof chargerDonneesProf === 'function') {
+              chargerDonneesProf();
+            }
+          } else {
+            const authView = document.getElementById('viewProfAuth');
+            if (authView) authView.style.display = 'block';
+          }
         }
-      } else if (mode === 'prof') {
-        document.getElementById('btnSwitchEleve').style.display = 'inline-flex';
-        if (currentProf) {
-          document.getElementById('labelProfNom').innerText = currentProf.nom || currentProf.email;
-          document.getElementById('viewProfDashboard').style.display = 'block';
-          chargerDonneesProf();
-        } else {
-          document.getElementById('viewProfAuth').style.display = 'block';
-        }
+      } catch (err) {
+        console.error("Erreur lors de la bascule de mode :", err);
+        // Secours absolu : afficher la mire de connexion prof
+        const authView = document.getElementById('viewProfAuth');
+        if (authView) authView.style.display = 'block';
       }
     }
 
