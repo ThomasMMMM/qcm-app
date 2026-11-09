@@ -811,7 +811,7 @@
       const conteneur = document.getElementById('conteneurFichesSyntheseEleve');
       if (!conteneur) return;
       try {
-        const res = await fetch('/api/fiches?mode=eleve');
+        const res = await fetch(`/api/fiches?mode=eleve&classe_id=${sessionEleve && sessionEleve.eleve ? sessionEleve.eleve.classe_id : ''}`);
         const fiches = await res.json();
 
         if (fiches.length === 0) {

@@ -61,6 +61,7 @@ function analyserCsvPronote(input) {
             </span>
           </td>
           <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
+            <button type="button" class="btn btn-pdf" style="background:#4f46e5; padding:4px 8px; font-size:0.75rem;" onclick="ouvrirModalMatieresClasse(${c.id}, '${c.nom}')">📚 Matières</button>
             <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="ouvrirModalGestionEleves(${c.id}, '${c.nom}')">👥 Élèves</button>
             <button type="button" class="btn btn-pdf" style="background:#0284c7; padding:4px 8px; font-size:0.75rem;" onclick="genererPdfClasse(${c.id}, '${c.nom}')">📄 PDF</button>
             <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerClasse(${c.id}, '${c.nom}')">Suppr</button>
@@ -159,6 +160,64 @@ async function basculerPapEleve(eleveId, estPap) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: "toggle_pap", eleve_id: eleveId, est_pap: estPap })
+    });
+  } catch(e) {}
+}
+
+let classeSelectionneeMatieresId = null;
+
+async function ouvrirModalMatieresClasse(classeId, nomClasse) {
+  classeSelectionneeMatieresId = classeId;
+  document.getElementById('nomClasseGestionMatieres').innerText = nomClasse;
+  document.getElementById('modalGestionMatieresClasse').style.display = 'flex';
+
+  const cont = document.getElementById('conteneurListeMatieresClasse');
+  cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Chargement des matières...</p>";
+
+  try {
+    const res = await fetch(`/api/fiches?mode=classe_matieres&classe_id=${classeId}&prof_id=${currentProf.id}`);
+    const matieres = await res.json();
+
+    if (matieres.length === 0) {
+      cont.innerHTML = "<p style='padding:12px; color:#64748b; font-style:italic;'>Aucune matière créée. Créez d'abord vos matières dans le module Fiches Synthèse.</p>";
+      return;
+    }
+
+    cont.innerHTML = `
+      <p style="font-size:0.85rem; color:#64748b; margin-top:0;">
+        Cochez les matières enseignées à cette classe. Les élèves de cette classe auront accès aux fiches synthèse de ces matières :
+      </p>
+      <table>
+        <thead><tr><th>Matière</th><th style="text-align:center; width:140px;">Enseignée</th></tr></thead>
+        <tbody>
+          ${matieres.map(m => `
+            <tr style="background:${m.attribuee ? '#f0fdf4' : 'white'};">
+              <td><strong>${m.nom}</strong></td>
+              <td style="text-align:center;">
+                <input type="checkbox" style="transform:scale(1.3); cursor:pointer;" 
+                       ${m.attribuee ? 'checked' : ''} 
+                       onchange="basculerMatiereClasse(${classeId}, ${m.id}, this.checked)">
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch(err) {
+    cont.innerHTML = "<p style='padding:12px; color:#dc2626;'>Erreur de chargement.</p>";
+  }
+}
+
+function fermerModalMatieresClasse() {
+  document.getElementById('modalGestionMatieresClasse').style.display = 'none';
+}
+
+async function basculerMatiereClasse(classeId, matiereId, active) {
+  try {
+    await fetch('/api/fiches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: "toggle_classe_matiere", classe_id: classeId, matiere_id: matiereId, active })
     });
   } catch(e) {}
 }

@@ -403,6 +403,19 @@
   </div>
 
   <!-- MODALES -->
+  
+  <!-- Modale Matières de la Classe -->
+  <div id="modalGestionMatieresClasse" class="modal-overlay">
+    <div class="modal-content" style="max-width:550px;">
+      <div class="modal-header">
+        <h3>Matières dispensées — <span id="nomClasseGestionMatieres"></span></h3>
+        <button type="button" class="btn btn-danger" style="margin:0; padding:4px 8px;" onclick="fermerModalMatieresClasse()">✖</button>
+      </div>
+      <div id="conteneurListeMatieresClasse" style="flex:1; overflow-y:auto;"></div>
+      <button type="button" class="btn btn-success" style="margin-top:12px; justify-content:center;" onclick="fermerModalMatieresClasse()">Valider et fermer</button>
+    </div>
+  </div>
+
   <!-- Modale Élèves PAP -->
   <div id="modalGestionEleves" class="modal-overlay">
     <div class="modal-content">
