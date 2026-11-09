@@ -222,6 +222,92 @@
       margin: 10px 0;
       border: 1px solid #cbd5e1;
     }
+  
+    /* ======================================================== */
+    /*   GRILLE ET CARTES TUILES (STYLE ESPACE ENSEIGNANT)      */
+    /* ======================================================== */
+    .tuiles-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      gap: 16px !important;
+      margin-bottom: 25px !important;
+    }
+
+    .tuile-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+      padding: 18px 20px !important;
+      cursor: pointer !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 16px !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+      position: relative !important;
+      user-select: none !important;
+    }
+
+    .tuile-card:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 10px 20px -3px rgba(11, 92, 171, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+      border-color: #3b82f6 !important;
+    }
+
+    .tuile-icon {
+      width: 52px !important;
+      height: 52px !important;
+      border-radius: 12px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 1.45rem !important;
+      flex-shrink: 0 !important;
+    }
+
+    .tuile-corps {
+      flex: 1 !important;
+      min-width: 0 !important;
+    }
+
+    .tuile-titre {
+      font-size: 1.05rem !important;
+      font-weight: 700 !important;
+      color: #1e293b !important;
+      margin-bottom: 4px !important;
+    }
+
+    .tuile-info {
+      font-size: 0.82rem !important;
+      color: #64748b !important;
+      font-weight: 500 !important;
+    }
+
+    .tuile-fleche {
+      color: #cbd5e1 !important;
+      font-size: 1rem !important;
+      transition: transform 0.2s ease, color 0.2s ease !important;
+    }
+
+    .tuile-card:hover .tuile-fleche {
+      color: #2563eb !important;
+      transform: translateX(4px) !important;
+    }
+
+    /* Thèmes de couleur des icônes de tuiles */
+    .icon-seances { background: #dcfce7 !important; color: #16a34a !important; }
+    .icon-fiches { background: #f3e8ff !important; color: #9333ea !important; }
+    .icon-resultats { background: #fee2e2 !important; color: #dc2626 !important; }
+
+    /* Barres de navigation interne dans chaque rubrique */
+    .rubrique-header-bar {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 16px !important;
+    }
+
   </style>
 </head>
 <body>
