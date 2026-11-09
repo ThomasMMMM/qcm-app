@@ -296,6 +296,16 @@
         <div id="conteneurQcmAFaire"></div>
       </div>
 
+      
+      <!-- FICHES SYNTHÈSE & COURS ÉLÈVE -->
+      <div class="card">
+        <h3><i class="fa-solid fa-book-bookmark"></i> Mes Fiches de Cours & Synthèses</h3>
+        <p style="color:#64748b; font-size:0.85rem; margin-top:0;">
+          Consultez vos fiches ressources classées par matière pour réviser et préparer vos évaluations.
+        </p>
+        <div id="conteneurFichesSyntheseEleve"></div>
+      </div>
+
       <!-- QCM PASSÉS (HISTORIQUE) -->
       <div class="card">
         <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
@@ -796,6 +806,69 @@
       } catch(e) {}
     }
 
+    
+    async function chargerFichesSyntheseEleve() {
+      const conteneur = document.getElementById('conteneurFichesSyntheseEleve');
+      if (!conteneur) return;
+      try {
+        const res = await fetch('/api/fiches?mode=eleve');
+        const fiches = await res.json();
+
+        if (fiches.length === 0) {
+          conteneur.innerHTML = "<p style='color:#94a3b8; font-style:italic; padding:10px 0;'>Aucune fiche synthèse disponible pour le moment.</p>";
+          return;
+        }
+
+        // Regroupement par matière
+        const parMatiere = {};
+        fiches.forEach(f => {
+          if (!parMatiere[f.matiere_nom]) parMatiere[f.matiere_nom] = [];
+          parMatiere[f.matiere_nom].push(f);
+        });
+
+        let h = "";
+        for (const [matiere, liste] of Object.entries(parMatiere)) {
+          h += `
+            <div style="margin-bottom:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px;">
+              <div style="font-weight:bold; color:var(--pronote-blue); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-folder-open"></i> ${matiere}
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                ${liste.map(f => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:8px 12px; border-radius:4px; border:1px solid #cbd5e1;">
+                    <span style="font-size:0.9rem; font-weight:600; color:#334155;">📄 ${f.titre}</span>
+                    <button type="button" class="btn btn-simu" style="padding:4px 10px; font-size:0.8rem;" onclick="ouvrirFicheEleve(${f.id})">
+                      Lire la fiche →
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+        conteneur.innerHTML = h;
+      } catch(e) {
+        conteneur.innerHTML = "<p style='color:#dc2626; font-size:0.85rem;'>Erreur de chargement des fiches.</p>";
+      }
+    }
+
+    async function ouvrirFicheEleve(ficheId) {
+      try {
+        const res = await fetch(`/api/fiches?fiche_id=${ficheId}`);
+        const f = await res.json();
+        if (!f) return;
+
+        currentDocumentHtml = `
+          <h2 style="color:var(--pronote-blue); border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:0;">${f.titre}</h2>
+          <div style="margin-bottom:14px;"><span class="badge" style="background:#e0f2fe; color:#0369a1;">${f.matiere_nom}</span></div>
+          ${f.contenu_html}
+        `;
+        ouvrirDocRessourceEleve();
+      } catch(e) {
+        alert("Impossible d'ouvrir la fiche.");
+      }
+    }
+
     function afficherEspaceEleve() {
       document.getElementById('viewEleveLogin').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'none';
@@ -803,6 +876,7 @@
       document.getElementById('viewProfAuth').style.display = 'none';
       document.getElementById('viewProfDashboard').style.display = 'none';
       document.getElementById('viewEleveDashboard').style.display = 'block';
+      chargerFichesSyntheseEleve();
 
       const el = sessionEleve.eleve;
       document.getElementById('dashElevePrenom').innerText = el.prenom;

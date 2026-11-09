@@ -86,6 +86,8 @@ function deconnecterProf() {
 }
 
 function chargerToutesLesDonnees() {
+  if (typeof chargerMatieresProf === 'function') chargerMatieresProf();
+  if (typeof chargerFichesProf === 'function') chargerFichesProf();
   if (typeof chargerBanqueProf === 'function') chargerBanqueProf();
   if (typeof chargerClassesProf === 'function') chargerClassesProf();
   if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
