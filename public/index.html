@@ -341,6 +341,11 @@
           Question suivante →
         </button>
       </div>
+      <div style="margin-top:10px;">
+        <button type="button" id="btnRendreCopieAnticipee" class="btn" style="width:100%; justify-content:center; padding:9px; font-size:0.85rem; background-color:#b91c1c; color:white; border:none; opacity:0.9;" onclick="confirmerEnvoiAnticipe()">
+          <i class="fa-solid fa-triangle-exclamation"></i> Rendre ma copie maintenant (incomplète)
+        </button>
+      </div>
 
       <div id="alerteSortieEleve" style="margin-top:14px; font-size:0.75rem; color:#dc2626; text-align:center;">
         ⚠️ Attention : Les changements d'application ou d'onglet sont consignés.
@@ -1830,6 +1835,28 @@
       const btnSuivant = document.getElementById('btnQuestionSuivante');
       btnSuivant.style.display = 'block';
       btnSuivant.innerText = currentQuestionIndex === currentQuestions.length - 1 ? (isModeSimulation ? "Terminer la simulation" : "Terminer l'évaluation") : "Question suivante →";
+    }
+
+    
+    async function confirmerEnvoiAnticipe() {
+      const restantes = currentQuestions.length - currentQuestionIndex;
+      const messageAlerte = "ATTENTION : Vous êtes sur le point de rendre votre copie AVANT la fin de l'épreuve !\n\n" +
+        "• Il vous reste " + restantes + " question(s) non traitée(s).\n" +
+        "• Les questions restantes compteront pour 0 point.\n" +
+        "• Cette action est définitive : AUCUN RETOUR EN ARRIÈRE N'EST POSSIBLE.\n\n" +
+        "Êtes-vous certain de vouloir clôturer et enregistrer votre note maintenant ?";
+
+      if (!confirm(messageAlerte)) {
+        return;
+      }
+
+      // Deuxième sécurité pour éviter un clic accidentel
+      if (!confirm("Dernière confirmation : voulez-vous vraiment envoyer votre copie incomplète ?")) {
+        return;
+      }
+
+      // Clôture immédiate et calcul de la note
+      await terminerEvaluation();
     }
 
     async function passerQuestionSuivante() {
