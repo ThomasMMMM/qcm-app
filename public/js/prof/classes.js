@@ -1,6 +1,7 @@
-﻿let listeClassesMemoire = [];
+let listeClassesMemoire = [];
 let parsedElevesPreview = [];
 let classeSelectionneePapId = null;
+let classeSelectionneeMatieresId = null;
 
 function analyserCsvPronote(input) {
   const file = input.files[0];
@@ -45,10 +46,51 @@ function analyserCsvPronote(input) {
       const estDbl = counts[e.prenomBrut.toLowerCase()] > 1;
       return {
         ordre: idx + 1,
-        prenom: estDbl && e.init ? `${e.prenomBrut} ${e.init}` : e.prenomBrut, date_naissance: e.dateNaissance, code_eleve: genCode() }; });  const inputNom = document.getElementById('nomClasseInput'); if (!inputNom.value.trim()) { inputNom.value = file.name.replace(/\.[^/.]+$/, "").replace(/Export_?/i, ""); } }; reader.readAsText(file, "ISO-8859-1"); }  async function enregistrerClasseDepuisCsv() { const nom = document.getElementById('nomClasseInput').value.trim(); if (!nom) { alert("Veuillez indiquer un nom pour la classe."); return; } if (parsedElevesPreview.length === 0) { alert("Veuillez sélectionner un fichier CSV Pronote valide."); return; }  const res = await fetch('/api/classes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nom, prof_id: currentProf.id, eleves: parsedElevesPreview }) });  if (res.ok) { alert(`✓ Classe "${nom}" enregistrée avec ${parsedElevesPreview.length} élèves !`); document.getElementById('csvPronoteInput').value = ""; document.getElementById('nomClasseInput').value = ""; parsedElevesPreview = []; chargerClassesProf(); } else { alert("Erreur lors de l'enregistrement de la classe."); } }  async function chargerClassesProf() { if (!currentProf) return; try { const res = await fetch(`/api/classes?prof_id=${currentProf.id}`);
+        prenom: estDbl && e.init ? (e.prenomBrut + ' ' + e.init) : e.prenomBrut,
+        date_naissance: e.dateNaissance,
+        code_eleve: genCode()
+      };
+    });
+
+    const inputNom = document.getElementById('nomClasseInput');
+    if (!inputNom.value.trim()) {
+      inputNom.value = file.name.replace(/\.[^/.]+$/, "").replace(/Export_?/i, "");
+    }
+  };
+  reader.readAsText(file, "ISO-8859-1");
+}
+
+async function enregistrerClasseDepuisCsv() {
+  const nom = document.getElementById('nomClasseInput').value.trim();
+  if (!nom) { alert("Veuillez indiquer un nom pour la classe."); return; }
+  if (parsedElevesPreview.length === 0) { alert("Veuillez sélectionner un fichier CSV Pronote valide."); return; }
+
+  const res = await fetch('/api/classes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nom, prof_id: currentProf.id, eleves: parsedElevesPreview })
+  });
+
+  if (res.ok) {
+    alert("✓ Classe enregistrée avec succès !");
+    document.getElementById('csvPronoteInput').value = "";
+    document.getElementById('nomClasseInput').value = "";
+    parsedElevesPreview = [];
+    chargerClassesProf();
+  } else {
+    alert("Erreur lors de l'enregistrement de la classe.");
+  }
+}
+
+async function chargerClassesProf() {
+  if (!currentProf) return;
+  try {
+    const res = await fetch('/api/classes?prof_id=' + currentProf.id);
     listeClassesMemoire = await res.json();
 
     const tbody = document.getElementById('tableClassesBody');
+    if (!tbody) return;
+
     tbody.innerHTML = listeClassesMemoire.length === 0
       ? "<tr><td colspan='4' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune classe enregistrée.</td></tr>"
       : listeClassesMemoire.map(c => `
@@ -71,14 +113,19 @@ function analyserCsvPronote(input) {
 
     const selClasse = document.getElementById('selectSeanceClasse');
     const selFiltre = document.getElementById('filtreClasseSelect');
-    if (selClasse) selClasse.innerHTML = listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
-    if (selFiltre) selFiltre.innerHTML = '<option value="">Toutes les classes</option>' + listeClassesMemoire.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+    if (selClasse) selClasse.innerHTML = listeClassesMemoire.map(c => '<option value="' + c.id + '">' + c.nom + '</option>').join('');
+    if (selFiltre) selFiltre.innerHTML = '<option value="">Toutes les classes</option>' + listeClassesMemoire.map(c => '<option value="' + c.id + '">' + c.nom + '</option>').join('');
   } catch(e) {}
 }
 
 async function supprimerClasse(classeId, nom) {
-  if (!confirm(`Voulez-vous vraiment supprimer la classe "${nom}" ?`)) return;
-  await fetch(`/api/classes?classe_id=${classeId}`, { method: 'DELETE' }); chargerClassesProf(); }  async function genererPdfClasse(classeId, nomClasse) { const res = await fetch(`/api/classes?classe_id=${classeId}`);
+  if (!confirm('Voulez-vous vraiment supprimer la classe "' + nom + '" ?')) return;
+  await fetch('/api/classes?classe_id=' + classeId, { method: 'DELETE' });
+  chargerClassesProf();
+}
+
+async function genererPdfClasse(classeId, nomClasse) {
+  const res = await fetch('/api/classes?classe_id=' + classeId);
   const eleves = await res.json();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -88,7 +135,13 @@ async function supprimerClasse(classeId, nom) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text(`Identifiants QCM — Classe : ${nomClasse}`, 14, 14);  let aDesPap = false; const bodyData = eleves.map(e => { const estPap = (e.est_pap === 1 \vert{}\vert{} e.est_pap === true); if (estPap) aDesPap = true; const prenomAffiche = estPap ? `${e.prenom} *` : e.prenom;
+  doc.text('Identifiants QCM — Classe : ' + nomClasse, 14, 14);
+
+  let aDesPap = false;
+  const bodyData = eleves.map(e => {
+    const estPap = (e.est_pap === 1 || e.est_pap === true);
+    if (estPap) aDesPap = true;
+    const prenomAffiche = estPap ? (e.prenom + ' *') : e.prenom;
     return [prenomAffiche, e.code_eleve, e.date_naissance || "-"];
   });
 
@@ -116,7 +169,19 @@ async function supprimerClasse(classeId, nom) {
     }
   });
 
-  doc.save(`Codes_${nomClasse}.pdf`); }  async function ouvrirModalGestionEleves(classeId, nomClasse) { classeSelectionneePapId = classeId; document.getElementById('nomClasseGestionPap').innerText = nomClasse; document.getElementById('modalGestionEleves').style.display = 'flex';  const cont = document.getElementById('conteneurListeElevesPap'); cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Chargement des élèves...</p>";  try { const res = await fetch(`/api/classes?classe_id=${classeId}`);
+  doc.save('Codes_' + nomClasse + '.pdf');
+}
+
+async function ouvrirModalGestionEleves(classeId, nomClasse) {
+  classeSelectionneePapId = classeId;
+  document.getElementById('nomClasseGestionPap').innerText = nomClasse;
+  document.getElementById('modalGestionEleves').style.display = 'flex';
+
+  const cont = document.getElementById('conteneurListeElevesPap');
+  cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Chargement des élèves...</p>";
+
+  try {
+    const res = await fetch('/api/classes?classe_id=' + classeId);
     const eleves = await res.json();
 
     if (eleves.length === 0) {
@@ -124,26 +189,20 @@ async function supprimerClasse(classeId, nom) {
       return;
     }
 
-    cont.innerHTML = `
-      <table>
-        <thead><tr><th>N°</th><th>Élève</th><th>Code</th><th style="text-align:center;">Aménagement PAP</th></tr></thead>
-        <tbody>
-          ${eleves.map((e, idx) => `
-            <tr style="background:${e.est_pap ? '#fdf4ff' : 'white'};">
-              <td>${idx + 1}</td>
-              <td><strong>${e.prenom}</strong></td>
-              <td><span class="badge-session">${e.code_eleve}</span></td>
-              <td style="text-align:center;">
-                <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:bold; color:${e.est_pap ? '#7e22ce' : '#64748b'};">
-                  <input type="checkbox" style="transform:scale(1.3); cursor:pointer;" ${e.est_pap ? 'checked' : ''} onchange="basculerPapEleve(${e.id}, this.checked)">
-                  ${e.est_pap ? 'PAP Activé' : 'Standard'}
-                </label>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    cont.innerHTML = '<table><thead><tr><th>N°</th><th>Élève</th><th>Code</th><th style="text-align:center;">Aménagement PAP</th></tr></thead><tbody>' +
+      eleves.map((e, idx) => `
+        <tr style="background:${e.est_pap ? '#fdf4ff' : 'white'};">
+          <td>${idx + 1}</td>
+          <td><strong>${e.prenom}</strong></td>
+          <td><span class="badge-session">${e.code_eleve}</span></td>
+          <td style="text-align:center;">
+            <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:bold; color:${e.est_pap ? '#7e22ce' : '#64748b'};">
+              <input type="checkbox" style="transform:scale(1.3); cursor:pointer;" ${e.est_pap ? 'checked' : ''} onchange="basculerPapEleve(${e.id}, this.checked)">
+              ${e.est_pap ? 'PAP Activé' : 'Standard'}
+            </label>
+          </td>
+        </tr>
+      `).join('') + '</tbody></table>';
   } catch(err) {
     cont.innerHTML = "<p style='padding:12px; color:#dc2626;'>Erreur de chargement.</p>";
   }
@@ -164,8 +223,6 @@ async function basculerPapEleve(eleveId, estPap) {
   } catch(e) {}
 }
 
-let classeSelectionneeMatieresId = null;
-
 async function ouvrirModalMatieresClasse(classeId, nomClasse) {
   classeSelectionneeMatieresId = classeId;
   document.getElementById('nomClasseGestionMatieres').innerText = nomClasse;
@@ -175,7 +232,7 @@ async function ouvrirModalMatieresClasse(classeId, nomClasse) {
   cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Chargement des matières...</p>";
 
   try {
-    const res = await fetch(`/api/fiches?mode=classe_matieres&classe_id=${classeId}&prof_id=${currentProf.id}`);
+    const res = await fetch('/api/fiches?mode=classe_matieres&classe_id=' + classeId + '&prof_id=' + currentProf.id);
     const matieres = await res.json();
 
     if (matieres.length === 0) {
@@ -183,26 +240,16 @@ async function ouvrirModalMatieresClasse(classeId, nomClasse) {
       return;
     }
 
-    cont.innerHTML = `
-      <p style="font-size:0.85rem; color:#64748b; margin-top:0;">
-        Cochez les matières enseignées à cette classe. Les élèves de cette classe auront accès aux fiches synthèse de ces matières :
-      </p>
-      <table>
-        <thead><tr><th>Matière</th><th style="text-align:center; width:140px;">Enseignée</th></tr></thead>
-        <tbody>
-          ${matieres.map(m => `
-            <tr style="background:${m.attribuee ? '#f0fdf4' : 'white'};">
-              <td><strong>${m.nom}</strong></td>
-              <td style="text-align:center;">
-                <input type="checkbox" style="transform:scale(1.3); cursor:pointer;" 
-                       ${m.attribuee ? 'checked' : ''} 
-                       onchange="basculerMatiereClasse(${classeId}, ${m.id}, this.checked)">
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    cont.innerHTML = '<p style="font-size:0.85rem; color:#64748b; margin-top:0;">Cochez les matières enseignées à cette classe :</p>' +
+      '<table><thead><tr><th>Matière</th><th style="text-align:center; width:140px;">Enseignée</th></tr></thead><tbody>' +
+      matieres.map(m => `
+        <tr style="background:${m.attribuee ? '#f0fdf4' : 'white'};">
+          <td><strong>${m.nom}</strong></td>
+          <td style="text-align:center;">
+            <input type="checkbox" style="transform:scale(1.3); cursor:pointer;" ${m.attribuee ? 'checked' : ''} onchange="basculerMatiereClasse(${classeId}, ${m.id}, this.checked)">
+          </td>
+        </tr>
+      `).join('') + '</tbody></table>';
   } catch(err) {
     cont.innerHTML = "<p style='padding:12px; color:#dc2626;'>Erreur de chargement.</p>";
   }
@@ -217,7 +264,7 @@ async function basculerMatiereClasse(classeId, matiereId, active) {
     await fetch('/api/fiches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: "toggle_classe_matiere", classe_id: classeId, matiere_id: matiereId, active })
+      body: JSON.stringify({ type: "toggle_classe_matiere", classe_id: classeId, matiere_id: matiereId, active: active })
     });
   } catch(e) {}
 }
