@@ -274,10 +274,11 @@
     <!-- ======================================================== -->
     <!-- 2. VUE TABLEAU DE BORD ÉLÈVE : QCM À FAIRE & HISTORIQUE  -->
     <!-- ======================================================== -->
+        <!-- 2. TABLEAU DE BORD ÉLÈVE (HUB PAR TUILES) -->
     <div id="viewEleveDashboard" style="display:none;">
-      
+
       <!-- Barre d'identité élève -->
-      <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:12px 18px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:12px 18px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:18px; flex-wrap:wrap; gap:10px;">
         <div>
           <div style="font-size:0.85rem; color:#64748b;">Espace Personnel Élève</div>
           <h2 style="margin:2px 0; color:var(--pronote-blue); font-size:1.3rem;">
@@ -285,38 +286,98 @@
           </h2>
           <div style="font-size:0.85rem; color:#475569;">Classe : <strong id="dashEleveClasse"></strong></div>
         </div>
-        <button type="button" class="btn btn-pdf" style="padding:6px 12px; font-size:0.8rem;" onclick="deconnecterEleve()">
+        <button type="button" class="btn btn-pdf" style="padding:6px 14px; font-size:0.8rem;" onclick="deconnecterEleve()">
           <i class="fa-solid fa-arrow-right-from-bracket"></i> Déconnexion
         </button>
       </div>
 
-      <!-- QCM À FAIRE -->
-      <div class="card">
-        <h3><i class="fa-solid fa-list-check"></i> Évaluations en cours (QCM à faire)</h3>
-        <div id="conteneurQcmAFaire"></div>
+      <!-- ACCUEIL PAR TUILES (DASHBOARD HUB ÉLÈVE) -->
+      <div id="vueHubEleve">
+        <div style="margin-bottom:16px;">
+          <h2 style="margin:0 0 4px 0; font-size:1.25rem; color:var(--pronote-dark);">Mon Espace de Travail</h2>
+          <p style="margin:0; font-size:0.88rem; color:#64748b;">Sélectionnez une rubrique pour accéder à vos évaluations, fiches ou résultats.</p>
+        </div>
+
+        <div class="tuiles-grid">
+          <!-- Tuile 1 : Évaluations -->
+          <div class="tuile-card" onclick="ouvrirRubriqueEleve('rubriqueEleveDevoirs')">
+            <div class="tuile-icon icon-seances"><i class="fa-solid fa-pen-to-square"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Mes Évaluations</div>
+              <div class="tuile-info" id="tuileInfoDevoirs">Évaluations à faire</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 2 : Fiches Synthèse -->
+          <div class="tuile-card" onclick="ouvrirRubriqueEleve('rubriqueEleveFiches')">
+            <div class="tuile-icon icon-fiches"><i class="fa-solid fa-book-open"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Fiches Synthèse</div>
+              <div class="tuile-info" id="tuileInfoFichesEleve">Consulter mes cours</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 3 : Résultats -->
+          <div class="tuile-card" onclick="ouvrirRubriqueEleve('rubriqueEleveHistorique')">
+            <div class="tuile-icon icon-resultats"><i class="fa-solid fa-chart-simple"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Mes Résultats</div>
+              <div class="tuile-info" id="tuileInfoHistorique">Devoirs terminés</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+        </div>
       </div>
 
-      
-      <!-- FICHES SYNTHÈSE & COURS ÉLÈVE -->
-      <div class="card">
-        <h3><i class="fa-solid fa-book-bookmark"></i> Mes Fiches de Cours & Synthèses</h3>
-        <p style="color:#64748b; font-size:0.85rem; margin-top:0;">
-          Consultez vos fiches ressources classées par matière pour réviser et préparer vos évaluations.
-        </p>
-        <div id="conteneurFichesSyntheseEleve"></div>
+      <!-- RUBRIQUE 1 : ÉVALUATIONS EN COURS & À FAIRE -->
+      <div id="rubriqueEleveDevoirs" class="rubrique-contenu-eleve" style="display:none;">
+        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Évaluations</span>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-list-check"></i> Évaluations en cours (QCM à faire)</h3>
+          <div id="conteneurQcmAFaire"></div>
+        </div>
       </div>
 
-      <!-- QCM PASSÉS (HISTORIQUE) -->
-      <div class="card">
-        <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
-        <div id="conteneurQcmPasses"></div>
+      <!-- RUBRIQUE 2 : FICHES DE SYNTHÈSE -->
+      <div id="rubriqueEleveFiches" class="rubrique-contenu-eleve" style="display:none;">
+        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-book-open"></i> Fiches Synthèse</span>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-book-bookmark"></i> Mes Fiches de Cours & Synthèses</h3>
+          <p style="color:#64748b; font-size:0.85rem; margin-top:0;">
+            Consultez vos fiches ressources classées par matière pour réviser et préparer vos évaluations.
+          </p>
+          <div id="conteneurFichesSyntheseEleve"></div>
+        </div>
+      </div>
+
+      <!-- RUBRIQUE 3 : HISTORIQUE ET RÉSULTATS -->
+      <div id="rubriqueEleveHistorique" class="rubrique-contenu-eleve" style="display:none;">
+        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-chart-simple"></i> Mes Résultats</span>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
+          <div id="conteneurQcmPasses"></div>
+        </div>
       </div>
 
     </div>
 
-    <!-- ======================================================== -->
-    <!-- 3. VUE ÉLÈVE : PASSATION D'UNE ÉPREUVE (QUIZ ACTIF)      -->
-    <!-- ======================================================== -->
     <div id="viewEleveQcm" class="card" style="display:none;">
       <div id="simuBannerBox" style="display:none; background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; justify-content:space-between; align-items:center;">
         <span><strong>🔍 Mode Test Professeur :</strong> Les réponses ne sont pas enregistrées.</span>
