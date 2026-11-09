@@ -1627,9 +1627,28 @@
       }
 
       document.getElementById('statCopiesText').innerText = `${filtrees.length} copie(s) ${filtrees.length > 0 ? `(Moyenne : ${moyenne}/20)` : ''}`;
-      const tbody = document.getElementById('tableNotesBody');
-      tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='6' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
-        filtrees.map(n => `
+            const tbody = document.getElementById('tableNotesBody');
+      tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='7' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
+        filtrees.map(n => {
+          const nbS = n.nb_sorties || 0;
+          const durS = parseInt(n.duree_sorties) || 0;
+          let txtDuree = "0 s";
+          if (durS > 0) {
+            const min = Math.floor(durS / 60);
+            const sec = durS % 60;
+            txtDuree = min > 0 ? (min + " min " + (sec > 0 ? sec + " s" : "")) : (sec + " s");
+          }
+
+          let renduTemps = '<span style="color:#94a3b8;">0 s</span>';
+          if (nbS > 0) {
+            if (durS > 0) {
+              renduTemps = `<strong style="color:#b91c1c;">${txtDuree}</strong>`;
+            } else {
+              renduTemps = '<span style="color:#d97706; font-size:0.8rem; font-style:italic;">Non mesuré</span>';
+            }
+          }
+
+          return `
           <tr>
             <td>${new Date(n.date_soumission).toLocaleTimeString()}</td>
             <td><strong>${n.nom}</strong> ${n.prenom}</td>
@@ -1637,13 +1656,15 @@
             <td><span class="badge-session">${n.code_session || n.session_code || '-'}</span></td>
             <td><strong style="color:var(--pronote-blue); font-size:1rem;">${n.note} / ${n.total}</strong></td>
             <td>
-              ${(n.nb_sorties && n.nb_sorties > 0)
-                ? `<span class="badge" style="background:#fee2e2; color:#b91c1c;">⚠️ ${n.nb_sorties} sortie${n.nb_sorties > 1 ? 's' : ''}</span>`
+              ${(nbS > 0)
+                ? `<span class="badge" style="background:#fee2e2; color:#b91c1c;">⚠️ ${nbS} sortie${nbS > 1 ? 's' : ''}</span>`
                 : `<span class="badge" style="background:#dcfce7; color:#15803d;">🟢 Aucune</span>`
               }
             </td>
+            <td>${renduTemps}</td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
     }
 
     let elevesClassePourExport = [];
