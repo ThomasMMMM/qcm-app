@@ -694,6 +694,36 @@
 
     // Variables Quiz
     let currentQuestions = [];
+
+    // Fonctions de sauvegarde et reprise après coupure / déconnexion
+    function getCleSauvegardeProgression(sessionCode, codeEleve) {
+      return 'qcm_progression_' + (sessionCode || '').toUpperCase() + '_' + (codeEleve || '').toUpperCase();
+    }
+
+    function sauvegarderProgressionLocale(sessionCode, codeEleve) {
+      if (!sessionCode || !codeEleve) return;
+      const etat = {
+        sessionCode: sessionCode,
+        codeEleve: codeEleve,
+        currentQuestionIndex: currentQuestionIndex,
+        totalScoreObtenu: totalScoreObtenu,
+        totalScorePossible: totalScorePossible,
+        compteurSortiesEleve: compteurSortiesEleve || 0,
+        dureeCumuleeSortiesSec: dureeCumuleeSortiesSec || 0,
+        timestamp: Date.now()
+      };
+      try {
+        localStorage.setItem(getCleSauvegardeProgression(sessionCode, codeEleve), JSON.stringify(etat));
+      } catch(e) {}
+    }
+
+    function purgerProgressionLocale(sessionCode, codeEleve) {
+      if (!sessionCode || !codeEleve) return;
+      try {
+        localStorage.removeItem(getCleSauvegardeProgression(sessionCode, codeEleve));
+      } catch(e) {}
+    }
+
     let currentQuestionIndex = 0;
     let totalScoreObtenu = 0;
     let totalScorePossible = 0;
