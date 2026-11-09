@@ -1,0 +1,370 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Enseignant — Plateforme QCM & Pronote</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="/css/commun.css">
+  <link rel="stylesheet" href="/css/prof.css">
+</head>
+<body>
+
+  <!-- EN-TÊTE -->
+  <header>
+    <div class="header-title">
+      <i class="fa-solid fa-graduation-cap"></i>
+      <span>Plateforme QCM — Espace Enseignant</span>
+    </div>
+    <div>
+      <a href="/" class="btn btn-simu" style="font-size:0.85rem; padding:6px 14px;">
+        <i class="fa-solid fa-user-graduate"></i> Accès Portail Élève
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- 1. AUTHENTIFICATION PROFESSEUR -->
+    <div id="viewProfAuth" class="card" style="display:none; max-width:420px; margin:40px auto;">
+      <h3 id="authTitle"><i class="fa-solid fa-lock"></i> Connexion Enseignant</h3>
+      <div id="nomRegisterGroup" style="display:none; margin-bottom:12px;">
+        <label style="font-size:0.85rem; font-weight:bold;">Nom et prénom :</label>
+        <input type="text" id="profNom" class="input-field" placeholder="M. Dupont">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.85rem; font-weight:bold;">Adresse e-mail :</label>
+        <input type="email" id="profEmail" class="input-field" placeholder="prof@etablissement.fr">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:0.85rem; font-weight:bold;">Mot de passe :</label>
+        <input type="password" id="profPassword" class="input-field" placeholder="••••••••">
+      </div>
+      <button type="button" id="btnAuthSubmit" class="btn" style="width:100%; justify-content:center; padding:10px;" onclick="traiterAuthProf()">
+        Se connecter
+      </button>
+      <div style="margin-top:14px; text-align:center; font-size:0.85rem;">
+        <span id="authToggleText">Pas encore de compte ?</span>
+        <a href="javascript:void(0)" id="authToggleLink" style="color:var(--pronote-blue); font-weight:bold; text-decoration:none;" onclick="toggleAuthMode()">Créer un compte</a>
+      </div>
+    </div>
+
+    <!-- 2. TABLEAU DE BORD PROFESSEUR -->
+    <div id="viewProfDashboard" style="display:none;">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:white; padding:10px 16px; border-radius:8px; border:1px solid var(--border-color);">
+        <div>
+          <span style="font-size:0.9rem; color:#64748b;">Connecté en tant que :</span>
+          <strong id="labelProfNom" style="color:var(--pronote-blue); margin-left:6px;">Enseignant</strong>
+        </div>
+        <button type="button" class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deconnecterProf()">
+          <i class="fa-solid fa-power-off"></i> Déconnexion
+        </button>
+      </div>
+
+      <!-- MODULE 1 : CAHIER DE TEXTE & PLANNING SEMAINE -->
+      <div class="card">
+        <h3><i class="fa-solid fa-calendar-week"></i> Cahier de Texte & Planning de la Semaine</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(-1)">← Semaine précédente</button>
+          <strong id="labelSemainePlanning" style="font-size:0.9rem; color:#334155;">Semaine en cours</strong>
+          <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(1)">Semaine suivante →</button>
+        </div>
+        <div id="grillePlanningSemaine" class="grille-semaine"></div>
+      </div>
+
+      <!-- MODULE 2 : GESTION DES CLASSES -->
+      <div class="card">
+        <h3><i class="fa-solid fa-users"></i> Gestion des Classes & Aménagements PAP</h3>
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:14px;">
+          <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:6px;">
+            Importer une classe via un export CSV Pronote :
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+            <div style="flex:2; min-width:200px;">
+              <input type="file" id="csvPronoteInput" accept=".csv" class="input-field" style="margin-bottom:0;" onchange="analyserCsvPronote(this)">
+            </div>
+            <div style="flex:1; min-width:140px;">
+              <input type="text" id="nomClasseInput" class="input-field" placeholder="Nom de la classe" style="margin-bottom:0;">
+            </div>
+            <div>
+              <button type="button" class="btn btn-success" style="margin:0; padding:10px;" onclick="enregistrerClasseDepuisCsv()">Enregistrer la classe</button>
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Classe</th>
+              <th style="text-align:center;">Effectif</th>
+              <th style="text-align:center;">Élèves PAP</th>
+              <th style="text-align:center; width:220px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableClassesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- MODULE 3 : BANQUE DE QCM -->
+      <div class="card">
+        <h3><i class="fa-solid fa-box-archive"></i> Banque de QCM (Questionnaires réutilisables)</h3>
+        <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
+          Importez vos XML Pronote pour constituer votre bibliothèque et testez-les directement.
+        </p>
+
+        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
+          <div style="flex:1; min-width:260px;">
+            <label style="font-weight:bold; font-size:0.85rem;">Fichier XML Pronote :</label>
+            <input type="file" id="xmlBanqueInput" accept=".xml" class="input-field" style="margin-bottom:0;">
+          </div>
+          <div>
+            <button type="button" class="btn" style="margin:0; padding:10px 18px;" onclick="importerDansBanque()">
+              Ajouter à ma banque
+            </button>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:12px; margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+            <label style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin:0;">
+              📄 Document Ressource associé (Facultatif - HTML / Tableaux / Textes) :
+            </label>
+            <div style="display:flex; gap:6px;">
+              <input type="file" id="inputFichierDocHtml" accept=".html,.htm" style="display:none;" onchange="importerFichierHtmlDoc(this)">
+              <button type="button" class="btn" style="background:#0284c7; margin:0; padding:5px 12px; font-size:0.8rem;" onclick="document.getElementById('inputFichierDocHtml').click()">
+                📁 Importer fichier .html
+              </button>
+              <input type="file" id="inputImagePourDoc" accept="image/*" style="display:none;" onchange="convertirImageEtInsererHtml(this)">
+              <button type="button" class="btn-pdf" style="margin:0; padding:5px 12px; font-size:0.8rem;" onclick="document.getElementById('inputImagePourDoc').click()">
+                🖼️ Insérer une image
+              </button>
+            </div>
+          </div>
+          <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML ou importez un fichier .html..."></textarea>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left;">Titre du QCM</th>
+                <th style="text-align:center; width:120px;">Date</th>
+                <th style="text-align:center; width:180px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableBanqueQcmBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MODULE 4 : SÉANCES -->
+      <div class="card">
+        <h3><i class="fa-solid fa-play"></i> Programmer & Activer une Séance d'Évaluation</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Sélectionner le QCM :</label>
+            <select id="selectSeanceQcm" class="input-field"></select>
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Classe concernée :</label>
+            <select id="selectSeanceClasse" class="input-field"></select>
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Code d'épreuve :</label>
+            <input type="text" id="codeSeanceInput" class="input-field" placeholder="Ex: EVAL-01" style="text-transform:uppercase; font-family:monospace; font-weight:bold;">
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Date de l'épreuve :</label>
+            <input type="date" id="seanceDateInput" class="input-field">
+          </div>
+          <div>
+            <label style="font-size:0.85rem; font-weight:bold;">Horaire :</label>
+            <input type="text" id="seanceHoraireInput" class="input-field" placeholder="Ex: 10h-11h">
+          </div>
+        </div>
+        <button type="button" class="btn btn-success" style="padding:10px 16px;" onclick="creerNouvelleSeance()">
+          Activer la séance
+        </button>
+
+        <table style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th>Code Épreuve</th>
+              <th>Titre QCM</th>
+              <th>Classe</th>
+              <th>Date / Heure</th>
+              <th style="text-align:center;">Statut</th>
+              <th style="text-align:center;">Copies</th>
+              <th style="text-align:center; width:200px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableSeancesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- MODULE 5 : COPIES ET RÉSULTATS -->
+      <div class="card">
+        <h3><i class="fa-solid fa-square-poll-vertical"></i> Copies & Résultats des Élèves</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <div style="display:flex; gap:10px;">
+            <select id="filtreClasseSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
+              <option value="">Toutes les classes</option>
+            </select>
+            <select id="filtreSeanceSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
+              <option value="">Toutes les séances</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-pdf" onclick="ouvrirModalExportPronote()">
+              📋 Exporter vers Pronote
+            </button>
+          </div>
+        </div>
+
+        <div style="font-size:0.85rem; color:#64748b; margin-bottom:8px;" id="statCopiesText">0 copie</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Heure</th>
+              <th>Élève</th>
+              <th>Classe</th>
+              <th>Code</th>
+              <th>Note</th>
+              <th>Alertes Sortie</th>
+              <th>Temps hors écran</th>
+            </tr>
+          </thead>
+          <tbody id="tableNotesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- MODULE 6 : JOURNAL DES INCIDENTS -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--pronote-light); padding-bottom:8px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <h3 style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> Journal des Sorties d'Écran et Incidents</h3>
+          <button type="button" class="btn btn-danger" style="padding:6px 14px; font-size:0.8rem;" onclick="purgerJournalAlertes()">
+            <i class="fa-solid fa-trash-can"></i> Purger le journal
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Heure</th>
+              <th>Élève</th>
+              <th>Événement consigné</th>
+            </tr>
+          </thead>
+          <tbody id="tableSortiesBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- 3. SIMULATEUR PROF -->
+    <div id="viewSimulateurProf" class="card" style="display:none;">
+      <div style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
+        <span><strong>🔍 Mode Test Professeur :</strong> Les réponses ne sont pas enregistrées.</span>
+        <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="quitterSimulation()">Quitter le test</button>
+      </div>
+
+      <div id="btnOuvrirDocBox" style="display:none; margin-bottom:12px;">
+        <button type="button" class="btn" style="background:#0284c7; width:100%; justify-content:center; padding:10px 14px; font-size:0.95rem;" onclick="ouvrirDocRessourceSimu()">
+          📖 Consulter le Document Ressource
+        </button>
+      </div>
+
+      <div class="progress-bar-container">
+        <div id="simuProgressBarFill" class="progress-bar-fill"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span id="simuProgressionText" style="font-weight:bold; color:#64748b; font-size:0.9rem;">Question 1 sur 10</span>
+        <span id="simuPointsText" class="badge badge-session">1 pt</span>
+      </div>
+
+      <div id="simuSingleQuestionContainer"></div>
+      <div id="simuFeedbackContainer" class="feedback-box" style="display:none;"></div>
+
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button type="button" id="btnValiderQuestionSimu" class="btn btn-success" style="flex:1; justify-content:center; padding:12px;" onclick="validerQuestionSimu()">
+          Valider ma réponse
+        </button>
+        <button type="button" id="btnQuestionSuivanteSimu" class="btn" style="flex:1; justify-content:center; padding:12px; display:none;" onclick="passerQuestionSuivanteSimu()">
+          Question suivante →
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. FIN SIMULATION -->
+    <div id="viewSimulateurFin" class="card" style="display:none; max-width:480px; margin:40px auto; text-align:center;">
+      <h3 style="justify-content:center; color:var(--success-green);"><i class="fa-solid fa-circle-check"></i> Fin du test professeur</h3>
+      <p style="color:#64748b; font-size:0.95rem;">Simulation réalisée sans enregistrement de note.</p>
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin:20px 0;">
+        <div style="font-size:0.85rem; color:#64748b; text-transform:uppercase; font-weight:bold;">Note obtenue</div>
+        <div id="simuNoteFinaleText" style="font-size:2.4rem; font-weight:bold; color:var(--pronote-blue); margin-top:4px;">-- / 20</div>
+      </div>
+      <button type="button" class="btn btn-simu" style="width:100%; justify-content:center; padding:12px;" onclick="quitterSimulation()">
+        Retourner au tableau de bord Enseignant
+      </button>
+    </div>
+
+  </div>
+
+  <!-- MODALES -->
+  <!-- Modale Élèves PAP -->
+  <div id="modalGestionEleves" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Élèves & Aménagements PAP — <span id="nomClasseGestionPap"></span></h3>
+        <button type="button" class="btn btn-danger" style="margin:0; padding:4px 8px;" onclick="fermerModalGestionEleves()">✖</button>
+      </div>
+      <div id="conteneurListeElevesPap" style="flex:1; overflow-y:auto;"></div>
+      <button type="button" class="btn" style="margin-top:12px; justify-content:center;" onclick="fermerModalGestionEleves()">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modale Export Pronote -->
+  <div id="modalExportPronote" class="modal-overlay">
+    <div class="modal-content" style="max-width:600px;">
+      <div class="modal-header">
+        <h3>Export des Notes vers Pronote</h3>
+        <button type="button" class="btn btn-danger" style="margin:0; padding:4px 8px;" onclick="fermerModalExportPronote()">✖</button>
+      </div>
+      <p style="font-size:0.85rem; color:#64748b; margin-top:0;">
+        L'ordre des lignes correspond scrupuleusement à l'ordre d'origine de votre fichier Pronote (tri alphabétique du Nom).
+      </p>
+      <div id="previewExportContainer" style="flex:1; overflow-y:auto; margin-bottom:12px;"></div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn btn-success" style="flex:1; justify-content:center;" onclick="copierNotesPressePapier()">
+          📋 Copier la colonne pour Pronote
+        </button>
+        <button type="button" class="btn btn-pdf" style="flex:1; justify-content:center;" onclick="telechargerCsvPronote()">
+          💾 Télécharger en CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Doc Ressource Simu -->
+  <div id="modalDocRessourceSimu" class="modal-overlay">
+    <div class="modal-content" style="max-width:850px; height:92vh;">
+      <div class="modal-header">
+        <h3>📖 Document Ressource</h3>
+        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceSimu()">✖ Fermer</button>
+      </div>
+      <div id="corpsDocRessourceSimu" style="flex:1; overflow-y:auto; padding:8px; font-size:0.95rem; line-height:1.5;"></div>
+      <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerDocRessourceSimu()">✓ Revenir à la question</button>
+    </div>
+  </div>
+
+  <!-- CHARGEMENT DES MODULES JS PROFESSEUR -->
+  <script src="/js/prof/auth.js"></script>
+  <script src="/js/prof/classes.js"></script>
+  <script src="/js/prof/banque.js"></script>
+  <script src="/js/prof/seances.js"></script>
+  <script src="/js/prof/resultats.js"></script>
+  <script src="/js/prof/export_pronote.js"></script>
+  <script src="/js/prof/simulateur.js"></script>
+</body>
+</html>
