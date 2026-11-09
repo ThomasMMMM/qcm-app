@@ -695,6 +695,50 @@
     // Variables Quiz
     let currentQuestions = [];
 
+    // --- GESTION REPRISE QCM APRES DECONNEXION ---
+    function getCodeEleveEnCours() {
+      if (typeof sessionEleve !== 'undefined' && sessionEleve) {
+        if (sessionEleve.eleve && sessionEleve.eleve.code_eleve) return sessionEleve.eleve.code_eleve;
+        if (sessionEleve.code_eleve) return sessionEleve.code_eleve;
+      }
+      return localStorage.getItem('dernier_code_eleve') || 'INCONNU';
+    }
+
+    function cleSauvegardeQcm(codeSession) {
+      return 'qcm_etat_' + String(codeSession || '').trim().toUpperCase() + '_' + String(getCodeEleveEnCours()).trim().toUpperCase();
+    }
+
+    function aUneSessionEnCours(codeSession) {
+      try {
+        const raw = localStorage.getItem(cleSauvegardeQcm(codeSession));
+        if (!raw) return false;
+        const d = JSON.parse(raw);
+        return (Date.now() - d.timestamp < 8 * 3600 * 1000) && (d.index > 0);
+      } catch(e) {
+        return false;
+      }
+    }
+
+    function sauvegarderEtatQuiz(codeSession, idx, score, sorties, duree) {
+      try {
+        const payload = {
+          index: idx,
+          score: score,
+          sorties: sorties || 0,
+          duree: duree || 0,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(cleSauvegardeQcm(codeSession), JSON.stringify(payload));
+      } catch(e) {}
+    }
+
+    function purgerEtatQuiz(codeSession) {
+      try {
+        localStorage.removeItem(cleSauvegardeQcm(codeSession));
+      } catch(e) {}
+    }
+
+
     // Fonctions de sauvegarde et reprise après coupure / déconnexion
     function getCleSauvegardeProgression(sessionCode, codeEleve) {
       return 'qcm_progression_' + (sessionCode || '').toUpperCase() + '_' + (codeEleve || '').toUpperCase();
@@ -808,6 +852,7 @@
         }
 
         sessionEleve = data;
+        if (data && data.eleve && data.eleve.code_eleve) localStorage.setItem('dernier_code_eleve', data.eleve.code_eleve);
         localStorage.setItem('qcm_eleve_session', JSON.stringify(sessionEleve));
         afficherEspaceEleve();
 
@@ -936,9 +981,19 @@
                   <td><strong>${q.qcm_titre}</strong> <span class="badge badge-session">${q.code_session}</span></td>
                   <td>${q.date_seance ? `${q.date_seance} (${q.horaire_seance || ''})` : 'Séance en cours'}</td>
                   <td style="text-align:center;">
-                    <button type="button" class="btn btn-success" style="padding:6px 14px; font-size:0.85rem;" onclick="demarrerQuizDepuisEspace('${q.code_session}')">
-                      Commencer →
-                    </button>
+                    ${aUneSessionEnCours(q.code_session)
+                      ? `${aUneSessionEnCours(q.code_session)
+                    ? `<button type="button" class="btn btn-simu" style="background:#d97706; padding:6px 14px; font-size:0.85rem; font-weight:bold;" onclick="demarrerQuizDepuisEspace('${q.code_session}')">
+                         <i class="fa-solid fa-rotate-right"></i> Continuer →
+                       </button>`
+                    : `<button type="button" class="btn btn-success" style="padding:6px 14px; font-size:0.85rem;" onclick="demarrerQuizDepuisEspace('${q.code_session}')">
+                         Commencer →
+                       </button>`
+                  }`
+                      : `<button type="button" class="btn btn-success" style="padding:6px 14px; font-size:0.85rem;" onclick="demarrerQuizDepuisEspace('${q.code_session}')">
+                           Commencer →
+                         </button>`
+                    }
                   </td>
                 </tr>
               `).join('')}
@@ -1010,11 +1065,23 @@
         currentCode = codeSession;
         currentSeanceId = data.seance_id;
         currentQuestions = data.questions;
-        currentQuestionIndex = 0;
-        totalScoreObtenu = 0;
-        totalScorePossible = 0;
-        currentQuestions.forEach(q => { totalScorePossible += q.points; });
-        compteurSortiesEleve = 0;
+        let sessionSauvee = null;
+        try {
+          const raw = localStorage.getItem(cleSauvegardeQcm(codeSession));
+          if (raw) sessionSauvee = JSON.parse(raw);
+        } catch(e) {}
+
+        if (sessionSauvee && sessionSauvee.index > 0 && sessionSauvee.index < currentQuestions.length) {
+          currentQuestionIndex = sessionSauvee.index;
+          totalScoreObtenu = sessionSauvee.score || 0;
+          compteurSortiesEleve = sessionSauvee.sorties || 0;
+          if (typeof dureeCumuleeSortiesSec !== 'undefined') dureeCumuleeSortiesSec = sessionSauvee.duree || 0;
+          alert("Reprise de votre devoir : vous reprenez directement à la question " + (currentQuestionIndex + 1) + " sur " + currentQuestions.length + ".");
+        } else {
+          currentQuestionIndex = 0;
+          totalScoreObtenu = 0;
+          compteurSortiesEleve = 0;
+        }
 
         currentDocumentHtml = data.document_html || null;
         const boxDoc = document.getElementById('btnOuvrirDocBox');
@@ -1988,6 +2055,8 @@
     async function passerQuestionSuivante() {
       if (currentQuestionIndex < currentQuestions.length - 1) {
         currentQuestionIndex++;
+        const dureeSec = (typeof dureeCumuleeSortiesSec !== 'undefined') ? dureeCumuleeSortiesSec : 0;
+        sauverEtatQcm(currentCode, currentQuestionIndex, totalScoreObtenu, compteurSortiesEleve, dureeSec);
         afficherQuestionCourante();
       } else {
         await terminerEvaluation();
@@ -1995,6 +2064,7 @@
     }
 
     async function terminerEvaluation() {
+      purgerEtatQuiz(currentCode);
       // 1. Calcul immédiat de la note
       const note20 = totalScorePossible > 0 
         ? ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2) 
