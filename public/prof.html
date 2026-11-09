@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -54,7 +54,8 @@
     <!-- 2. TABLEAU DE BORD PROFESSEUR -->
     <div id="viewProfDashboard" style="display:none;">
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:white; padding:10px 16px; border-radius:8px; border:1px solid var(--border-color);">
+      <!-- BANDEAU UTILISATEUR -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; background:white; padding:10px 16px; border-radius:8px; border:1px solid var(--border-color);">
         <div>
           <span style="font-size:0.9rem; color:#64748b;">Connecté en tant que :</span>
           <strong id="labelProfNom" style="color:var(--pronote-blue); margin-left:6px;">Enseignant</strong>
@@ -144,360 +145,349 @@
         </div>
       </div>
 
-
+      <!-- RUBRIQUE 1 : PLANNING -->
       <div id="rubriquePlanning" class="rubrique-contenu-prof" style="display:none;">
         <div class="rubrique-header-bar">
           <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
             <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
           </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Planning</span>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-calendar-week"></i> Planning</span>
         </div>
-        <!-- MODULE 1 : CAHIER DE TEXTE & PLANNING SEMAINE -->
-      <div class="card">
-        <h3><i class="fa-solid fa-calendar-week"></i> Cahier de Texte & Planning de la Semaine</h3>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(-1)">← Semaine précédente</button>
-          <strong id="labelSemainePlanning" style="font-size:0.9rem; color:#334155;">Semaine en cours</strong>
-          <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(1)">Semaine suivante →</button>
+        <div class="card">
+          <h3><i class="fa-solid fa-calendar-week"></i> Cahier de Texte & Planning de la Semaine</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(-1)">← Semaine précédente</button>
+            <strong id="labelSemainePlanning" style="font-size:0.9rem; color:#334155;">Semaine en cours</strong>
+            <button type="button" class="btn btn-pdf" style="padding:4px 8px; font-size:0.75rem;" onclick="changerSemainePlanning(1)">Semaine suivante →</button>
+          </div>
+          <div id="grillePlanningSemaine" class="grille-semaine"></div>
         </div>
-        <div id="grillePlanningSemaine" class="grille-semaine"></div>
       </div>
 
-      
+      <!-- RUBRIQUE 2 : FICHES SYNTHÈSE -->
       <div id="rubriqueFiches" class="rubrique-contenu-prof" style="display:none;">
         <div class="rubrique-header-bar">
           <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
             <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
           </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Fiches Synthèse</span>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-book-open"></i> Fiches Synthèse</span>
         </div>
-        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-book-open"></i> Fiches Synthèse & Dossiers Ressources</h3>
+          <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
+            Créez vos matières et publiez vos fiches de cours en HTML. Ces fiches sont consultables par vos élèves selon leur classe et utilisables comme dossiers ressources pour vos QCM.
+          </p>
 
-      <!-- MODULE NOUVEAU : FICHES DE SYNTHÈSE & MATIÈRES -->
-      <div class="card">
-        <h3><i class="fa-solid fa-book-open"></i> Fiches Synthèse & Dossiers Ressources</h3>
-        <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
-          Créez vos matières et publiez vos fiches de cours en HTML. Ces fiches sont consultables par vos élèves et utilisables comme dossiers ressources pour vos QCM.
-        </p>
-
-        <!-- A. GESTION DES MATIÈRES -->
-        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:16px;">
-          <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:6px;">
-            1. Vos Matières d'enseignement :
+          <!-- A. GESTION DES MATIÈRES -->
+          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:16px;">
+            <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:6px;">
+              1. Vos Matières d'enseignement :
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+              <input type="text" id="nouvelleMatiereInput" class="input-field" placeholder="Ex: Biologie, SMS, Microbiologie..." style="margin-bottom:0; max-width:280px;">
+              <button type="button" class="btn btn-success" style="padding:9px 14px;" onclick="creerNouvelleMatiere()">
+                <i class="fa-solid fa-plus"></i> Ajouter la matière
+              </button>
+            </div>
+            <div id="listeBadgesMatieres" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
           </div>
-          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-            <input type="text" id="nouvelleMatiereInput" class="input-field" placeholder="Ex: Biologie, SMS, Microbiologie..." style="margin-bottom:0; max-width:280px;">
-            <button type="button" class="btn btn-success" style="padding:9px 14px;" onclick="creerNouvelleMatiere()">
-              <i class="fa-solid fa-plus"></i> Ajouter la matière
+
+          <!-- B. AJOUT D'UNE FICHE SYNTHÈSE -->
+          <div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; padding:14px; margin-bottom:18px;">
+            <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:10px;">
+              2. Rédiger ou importer une nouvelle Fiche Synthèse :
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px;">
+              <div>
+                <label style="font-weight:bold; font-size:0.8rem;">Matière associée * :</label>
+                <select id="selectMatiereFiche" class="input-field" style="margin-bottom:0;"></select>
+              </div>
+              <div>
+                <label style="font-weight:bold; font-size:0.8rem;">Titre de la fiche synthèse * :</label>
+                <input type="text" id="ficheTitreInput" class="input-field" placeholder="Ex: Fiche 01 - Les micro-organismes pathogènes" style="margin-bottom:0;">
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+              <label style="font-weight:bold; font-size:0.8rem; color:#475569; margin:0;">
+                Contenu HTML de la fiche (texte, tableaux, images) :
+              </label>
+              <div style="display:flex; gap:6px;">
+                <input type="file" id="inputFichierDocFiche" accept=".html,.htm" style="display:none;" onchange="importerFichierHtmlFiche(this)">
+                <button type="button" class="btn" style="background:#0284c7; padding:4px 10px; font-size:0.75rem;" onclick="document.getElementById('inputFichierDocFiche').click()">
+                  📁 Importer .html
+                </button>
+                <input type="file" id="inputImagePourFiche" accept="image/*" style="display:none;" onchange="insererImageDansFiche(this)">
+                <button type="button" class="btn-pdf" style="padding:4px 10px; font-size:0.75rem;" onclick="document.getElementById('inputImagePourFiche').click()">
+                  🖼️ Insérer image
+                </button>
+              </div>
+            </div>
+            <textarea id="ficheHtmlInput" class="input-field" rows="5" style="margin:0 0 10px 0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.85rem;" placeholder="Rédigez ou importez le contenu HTML..."></textarea>
+
+            <button type="button" class="btn btn-success" style="padding:10px 18px;" onclick="enregistrerNouvelleFiche()">
+              <i class="fa-solid fa-floppy-disk"></i> Enregistrer la fiche synthèse
             </button>
           </div>
-          <div id="listeBadgesMatieres" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-        </div>
 
-        <!-- B. AJOUT D'UNE FICHE SYNTHÈSE -->
-        <div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; padding:14px; margin-bottom:18px;">
-          <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:10px;">
-            2. Rédiger ou importer une nouvelle Fiche Synthèse :
-          </div>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px;">
-            <div>
-              <label style="font-weight:bold; font-size:0.8rem;">Matière associée * :</label>
-              <select id="selectMatiereFiche" class="input-field" style="margin-bottom:0;"></select>
-            </div>
-            <div>
-              <label style="font-weight:bold; font-size:0.8rem;">Titre de la fiche synthèse * :</label>
-              <input type="text" id="ficheTitreInput" class="input-field" placeholder="Ex: Fiche 01 - Les micro-organismes pathogènes" style="margin-bottom:0;">
-            </div>
+          <!-- C. TABLEAU DES FICHES -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+            <strong style="font-size:0.9rem; color:#334155;">Fiches disponibles :</strong>
+            <select id="filtreMatiereFicheSelect" class="input-field" style="margin-bottom:0; max-width:240px;" onchange="afficherTableauFiches()">
+              <option value="">Toutes les matières</option>
+            </select>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
-            <label style="font-weight:bold; font-size:0.8rem; color:#475569; margin:0;">
-              Contenu HTML de la fiche (texte, tableaux, images) :
-            </label>
-            <div style="display:flex; gap:6px;">
-              <input type="file" id="inputFichierDocFiche" accept=".html,.htm" style="display:none;" onchange="importerFichierHtmlFiche(this)">
-              <button type="button" class="btn" style="background:#0284c7; padding:4px 10px; font-size:0.75rem;" onclick="document.getElementById('inputFichierDocFiche').click()">
-                📁 Importer .html
-              </button>
-              <input type="file" id="inputImagePourFiche" accept="image/*" style="display:none;" onchange="insererImageDansFiche(this)">
-              <button type="button" class="btn-pdf" style="padding:4px 10px; font-size:0.75rem;" onclick="document.getElementById('inputImagePourFiche').click()">
-                🖼️ Insérer image
-              </button>
-            </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:140px;">Matière</th>
+                  <th>Titre de la Fiche Synthèse</th>
+                  <th style="text-align:center; width:110px;">Date</th>
+                  <th style="text-align:center; width:150px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tableFichesBody"></tbody>
+            </table>
           </div>
-          <textarea id="ficheHtmlInput" class="input-field" rows="5" style="margin:0 0 10px 0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.85rem;" placeholder="Rédigez ou importez le contenu HTML..."></textarea>
-
-          <button type="button" class="btn btn-success" style="padding:10px 18px;" onclick="enregistrerNouvelleFiche()">
-            <i class="fa-solid fa-floppy-disk"></i> Enregistrer la fiche synthèse
-          </button>
-        </div>
-
-        <!-- C. TABLEAU DES FICHES EXISTANTES -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
-          <strong style="font-size:0.9rem; color:#334155;">Fiches disponibles :</strong>
-          <select id="filtreMatiereFicheSelect" class="input-field" style="margin-bottom:0; max-width:240px;" onchange="afficherTableauFiches()">
-            <option value="">Toutes les matières</option>
-          </select>
-        </div>
-
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:140px;">Matière</th>
-                <th>Titre de la Fiche Synthèse</th>
-                <th style="text-align:center; width:110px;">Date</th>
-                <th style="text-align:center; width:150px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tableFichesBody"></tbody>
-          </table>
         </div>
       </div>
 
+      <!-- RUBRIQUE 3 : CLASSES -->
       <div id="rubriqueClasses" class="rubrique-contenu-prof" style="display:none;">
         <div class="rubrique-header-bar">
           <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
             <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
           </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Classes</span>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-users"></i> Classes</span>
         </div>
-        </div>
-
-      <!-- MODULE 2 : GESTION DES CLASSES -->
-      <div class="card">
-        <h3><i class="fa-solid fa-users"></i> Gestion des Classes & Aménagements PAP</h3>
-        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:14px;">
-          <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:6px;">
-            Importer une classe via un export CSV Pronote :
-          </div>
-          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-            <div style="flex:2; min-width:200px;">
-              <input type="file" id="csvPronoteInput" accept=".csv" class="input-field" style="margin-bottom:0;" onchange="analyserCsvPronote(this)">
+        <div class="card">
+          <h3><i class="fa-solid fa-users"></i> Gestion des Classes & Aménagements PAP</h3>
+          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:14px;">
+            <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin-bottom:6px;">
+              Importer une classe via un export CSV Pronote :
             </div>
-            <div style="flex:1; min-width:140px;">
-              <input type="text" id="nomClasseInput" class="input-field" placeholder="Nom de la classe" style="margin-bottom:0;">
-            </div>
-            <div>
-              <button type="button" class="btn btn-success" style="margin:0; padding:10px;" onclick="enregistrerClasseDepuisCsv()">Enregistrer la classe</button>
+            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+              <div style="flex:2; min-width:200px;">
+                <input type="file" id="csvPronoteInput" accept=".csv" class="input-field" style="margin-bottom:0;" onchange="analyserCsvPronote(this)">
+              </div>
+              <div style="flex:1; min-width:140px;">
+                <input type="text" id="nomClasseInput" class="input-field" placeholder="Nom de la classe" style="margin-bottom:0;">
+              </div>
+              <div>
+                <button type="button" class="btn btn-success" style="margin:0; padding:10px;" onclick="enregistrerClasseDepuisCsv()">Enregistrer la classe</button>
+              </div>
             </div>
           </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Classe</th>
+                <th style="text-align:center;">Effectif</th>
+                <th style="text-align:center;">Élèves PAP</th>
+                <th style="text-align:center; width:260px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableClassesBody"></tbody>
+          </table>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Classe</th>
-              <th style="text-align:center;">Effectif</th>
-              <th style="text-align:center;">Élèves PAP</th>
-              <th style="text-align:center; width:220px;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tableClassesBody"></tbody>
-        </table>
       </div>
 
+      <!-- RUBRIQUE 4 : BANQUE DE QCM -->
       <div id="rubriqueBanque" class="rubrique-contenu-prof" style="display:none;">
         <div class="rubrique-header-bar">
           <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
             <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
           </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Banque QCM</span>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-box-archive"></i> Banque QCM</span>
         </div>
-        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-box-archive"></i> Banque de QCM (Questionnaires réutilisables)</h3>
+          <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
+            Importez vos fichiers XML Pronote pour constituer votre bibliothèque et testez-les directement.
+          </p>
 
-      <!-- MODULE 3 : BANQUE DE QCM -->
-      <div class="card">
-        <h3><i class="fa-solid fa-box-archive"></i> Banque de QCM (Questionnaires réutilisables)</h3>
-        <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
-          Importez vos XML Pronote pour constituer votre bibliothèque et testez-les directement.
-        </p>
-
-        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
-          <div style="flex:1; min-width:260px;">
-            <label style="font-weight:bold; font-size:0.85rem;">Fichier XML Pronote :</label>
-            <input type="file" id="xmlBanqueInput" accept=".xml" class="input-field" style="margin-bottom:0;">
-          </div>
-          <div>
-            <button type="button" class="btn" style="margin:0; padding:10px 18px;" onclick="importerDansBanque()">
-              Ajouter à ma banque
-            </button>
-          </div>
-        </div>
-
-        <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:12px; margin-bottom:18px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
-            <label style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin:0;">
-              📄 Document Ressource associé (Facultatif - HTML / Tableaux / Textes) :
-            </label>
-            <div style="display:flex; gap:6px;">
-              <input type="file" id="inputFichierDocHtml" accept=".html,.htm" style="display:none;" onchange="importerFichierHtmlDoc(this)">
-              <button type="button" class="btn" style="background:#0284c7; margin:0; padding:5px 12px; font-size:0.8rem;" onclick="document.getElementById('inputFichierDocHtml').click()">
-                📁 Importer fichier .html
-              </button>
-              <input type="file" id="inputImagePourDoc" accept="image/*" style="display:none;" onchange="convertirImageEtInsererHtml(this)">
-              <button type="button" class="btn-pdf" style="margin:0; padding:5px 12px; font-size:0.8rem;" onclick="document.getElementById('inputImagePourDoc').click()">
-                🖼️ Insérer une image
+          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
+            <div style="flex:1; min-width:260px;">
+              <label style="font-weight:bold; font-size:0.85rem;">Fichier XML Pronote :</label>
+              <input type="file" id="xmlBanqueInput" accept=".xml" class="input-field" style="margin-bottom:0;">
+            </div>
+            <div>
+              <button type="button" class="btn" style="margin:0; padding:10px 18px;" onclick="importerDansBanque()">
+                Ajouter à ma banque
               </button>
             </div>
           </div>
-          
+
+          <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:12px; margin-bottom:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+              <label style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue); margin:0;">
+                📄 Document Ressource associé (Facultatif - HTML / Tableaux / Textes) :
+              </label>
+              <div style="display:flex; gap:6px;">
+                <input type="file" id="inputFichierDocHtml" accept=".html,.htm" style="display:none;" onchange="importerFichierHtmlDoc(this)">
+                <button type="button" class="btn" style="background:#0284c7; margin:0; padding:5px 12px; font-size:0.8rem;" onclick="document.getElementById('inputFichierDocHtml').click()">
+                  📁 Importer fichier .html
+                </button>
+                <input type="file" id="inputImagePourDoc" accept="image/*" style="display:none;" onchange="convertirImageEtInsererHtml(this)">
+                <button type="button" class="btn-pdf" style="margin:0; padding:5px 12px; font-size:0.8rem;" onclick="document.getElementById('inputImagePourDoc').click()">
+                  🖼️ Insérer une image
+                </button>
+              </div>
+            </div>
             <div style="margin-bottom:8px;">
               <label style="font-size:0.8rem; font-weight:bold; color:#334155;">Ou lier directement une Fiche Synthèse existante comme Dossier Ressource :</label>
               <select id="selectFichePourQcm" class="input-field" style="margin-bottom:0;" onchange="lierFicheAuQcm(this)">
                 <option value="">-- Aucun ou HTML personnalisé ci-dessous --</option>
               </select>
             </div>
+            <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML ou importez un fichier .html..."></textarea>
+          </div>
 
-          <textarea id="documentHtmlInput" class="input-field" rows="4" style="margin:0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.85rem;" placeholder="Collez ici votre code HTML ou importez un fichier .html..."></textarea>
-        </div>
-
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th style="text-align:left;">Titre du QCM</th>
-                <th style="text-align:center; width:120px;">Date</th>
-                <th style="text-align:center; width:180px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tableBanqueQcmBody"></tbody>
-          </table>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Titre du QCM</th>
+                  <th style="text-align:center; width:120px;">Date</th>
+                  <th style="text-align:center; width:180px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tableBanqueQcmBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
+      <!-- RUBRIQUE 5 : SÉANCES -->
       <div id="rubriqueSeances" class="rubrique-contenu-prof" style="display:none;">
         <div class="rubrique-header-bar">
           <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
             <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
           </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Séances</span>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-play"></i> Séances</span>
         </div>
-        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-play"></i> Programmer & Activer une Séance d'Évaluation</h3>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
+            <div>
+              <label style="font-size:0.85rem; font-weight:bold;">Sélectionner le QCM :</label>
+              <select id="selectSeanceQcm" class="input-field"></select>
+            </div>
+            <div>
+              <label style="font-size:0.85rem; font-weight:bold;">Classe concernée :</label>
+              <select id="selectSeanceClasse" class="input-field"></select>
+            </div>
+            <div>
+              <label style="font-size:0.85rem; font-weight:bold;">Code d'épreuve :</label>
+              <input type="text" id="codeSeanceInput" class="input-field" placeholder="Ex: EVAL-01" style="text-transform:uppercase; font-family:monospace; font-weight:bold;">
+            </div>
+            <div>
+              <label style="font-size:0.85rem; font-weight:bold;">Date de l'épreuve :</label>
+              <input type="date" id="seanceDateInput" class="input-field">
+            </div>
+            <div>
+              <label style="font-size:0.85rem; font-weight:bold;">Horaire :</label>
+              <input type="text" id="seanceHoraireInput" class="input-field" placeholder="Ex: 10h-11h">
+            </div>
+          </div>
+          <button type="button" class="btn btn-success" style="padding:10px 16px;" onclick="creerNouvelleSeance()">
+            Activer la séance
+          </button>
 
-      <!-- MODULE 4 : SÉANCES -->
-      <div class="card">
-        <h3><i class="fa-solid fa-play"></i> Programmer & Activer une Séance d'Évaluation</h3>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
-          <div>
-            <label style="font-size:0.85rem; font-weight:bold;">Sélectionner le QCM :</label>
-            <select id="selectSeanceQcm" class="input-field"></select>
-          </div>
-          <div>
-            <label style="font-size:0.85rem; font-weight:bold;">Classe concernée :</label>
-            <select id="selectSeanceClasse" class="input-field"></select>
-          </div>
-          <div>
-            <label style="font-size:0.85rem; font-weight:bold;">Code d'épreuve :</label>
-            <input type="text" id="codeSeanceInput" class="input-field" placeholder="Ex: EVAL-01" style="text-transform:uppercase; font-family:monospace; font-weight:bold;">
-          </div>
-          <div>
-            <label style="font-size:0.85rem; font-weight:bold;">Date de l'épreuve :</label>
-            <input type="date" id="seanceDateInput" class="input-field">
-          </div>
-          <div>
-            <label style="font-size:0.85rem; font-weight:bold;">Horaire :</label>
-            <input type="text" id="seanceHoraireInput" class="input-field" placeholder="Ex: 10h-11h">
-          </div>
+          <table style="margin-top:16px;">
+            <thead>
+              <tr>
+                <th>Code Épreuve</th>
+                <th>Titre QCM</th>
+                <th>Classe</th>
+                <th>Date / Heure</th>
+                <th style="text-align:center;">Statut</th>
+                <th style="text-align:center;">Copies</th>
+                <th style="text-align:center; width:200px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableSeancesBody"></tbody>
+          </table>
         </div>
-        <button type="button" class="btn btn-success" style="padding:10px 16px;" onclick="creerNouvelleSeance()">
-          Activer la séance
-        </button>
-
-        <table style="margin-top:16px;">
-          <thead>
-            <tr>
-              <th>Code Épreuve</th>
-              <th>Titre QCM</th>
-              <th>Classe</th>
-              <th>Date / Heure</th>
-              <th style="text-align:center;">Statut</th>
-              <th style="text-align:center;">Copies</th>
-              <th style="text-align:center; width:200px;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tableSeancesBody"></tbody>
-        </table>
       </div>
 
+      <!-- RUBRIQUE 6 : RÉSULTATS -->
       <div id="rubriqueResultats" class="rubrique-contenu-prof" style="display:none;">
         <div class="rubrique-header-bar">
           <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
             <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
           </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Résultats</span>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-square-poll-vertical"></i> Résultats & Copies</span>
         </div>
-        </div>
-
-      <!-- MODULE 5 : COPIES ET RÉSULTATS -->
-      <div class="card">
-        <h3><i class="fa-solid fa-square-poll-vertical"></i> Copies & Résultats des Élèves</h3>
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-          <div style="display:flex; gap:10px;">
-            <select id="filtreClasseSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
-              <option value="">Toutes les classes</option>
-            </select>
-            <select id="filtreSeanceSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
-              <option value="">Toutes les séances</option>
-            </select>
+        <div class="card">
+          <h3><i class="fa-solid fa-square-poll-vertical"></i> Copies & Résultats des Élèves</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <div style="display:flex; gap:10px;">
+              <select id="filtreClasseSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
+                <option value="">Toutes les classes</option>
+              </select>
+              <select id="filtreSeanceSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
+                <option value="">Toutes les séances</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-pdf" onclick="ouvrirModalExportPronote()">
+                📋 Exporter vers Pronote
+              </button>
+            </div>
           </div>
-          <div style="display:flex; gap:8px;">
-            <button type="button" class="btn btn-pdf" onclick="ouvrirModalExportPronote()">
-              📋 Exporter vers Pronote
-            </button>
-          </div>
-        </div>
 
-        <div style="font-size:0.85rem; color:#64748b; margin-bottom:8px;" id="statCopiesText">0 copie</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Heure</th>
-              <th>Élève</th>
-              <th>Classe</th>
-              <th>Code</th>
-              <th>Note</th>
-              <th>Alertes Sortie</th>
-              <th>Temps hors écran</th>
-            </tr>
-          </thead>
-          <tbody id="tableNotesBody"></tbody>
-        </table>
+          <div style="font-size:0.85rem; color:#64748b; margin-bottom:8px;" id="statCopiesText">0 copie</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Heure</th>
+                <th>Élève</th>
+                <th>Classe</th>
+                <th>Code</th>
+                <th>Note</th>
+                <th>Alertes Sortie</th>
+                <th>Temps hors écran</th>
+              </tr>
+            </thead>
+            <tbody id="tableNotesBody"></tbody>
+          </table>
+        </div>
       </div>
 
+      <!-- RUBRIQUE 7 : ALERTES -->
       <div id="rubriqueAlertes" class="rubrique-contenu-prof" style="display:none;">
         <div class="rubrique-header-bar">
           <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
             <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
           </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Alertes & Incidents</span>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-shield-halved"></i> Journal des Alertes</span>
         </div>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--pronote-light); padding-bottom:8px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <h3 style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> Journal des Sorties d'Écran et Incidents</h3>
+            <button type="button" class="btn btn-danger" style="padding:6px 14px; font-size:0.8rem;" onclick="purgerJournalAlertes()">
+              <i class="fa-solid fa-trash-can"></i> Purger le journal
+            </button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Heure</th>
+                <th>Élève</th>
+                <th>Événement consigné</th>
+              </tr>
+            </thead>
+            <tbody id="tableSortiesBody"></tbody>
+          </table>
         </div>
-
-      <!-- MODULE 6 : JOURNAL DES INCIDENTS -->
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--pronote-light); padding-bottom:8px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-          <h3 style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> Journal des Sorties d'Écran et Incidents</h3>
-          <button type="button" class="btn btn-danger" style="padding:6px 14px; font-size:0.8rem;" onclick="purgerJournalAlertes()">
-            <i class="fa-solid fa-trash-can"></i> Purger le journal
-          </button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Heure</th>
-              <th>Élève</th>
-              <th>Événement consigné</th>
-            </tr>
-          </thead>
-          <tbody id="tableSortiesBody"></tbody>
-        </table>
       </div>
 
     </div>
 
-    </div>
-
-      <!-- 3. SIMULATEUR PROF -->
+    <!-- 3. SIMULATEUR PROF -->
     <div id="viewSimulateurProf" class="card" style="display:none;">
       <div style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
         <span><strong>🔍 Mode Test Professeur :</strong> Les réponses ne sont pas enregistrées.</span>
@@ -547,7 +537,6 @@
   </div>
 
   <!-- MODALES -->
-  
   <!-- Modale Matières de la Classe -->
   <div id="modalGestionMatieresClasse" class="modal-overlay">
     <div class="modal-content" style="max-width:550px;">
@@ -594,19 +583,6 @@
     </div>
   </div>
 
-  <!-- Modale Doc Ressource Simu -->
-  <div id="modalDocRessourceSimu" class="modal-overlay">
-    <div class="modal-content" style="max-width:850px; height:92vh;">
-      <div class="modal-header">
-        <h3>📖 Document Ressource</h3>
-        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceSimu()">✖ Fermer</button>
-      </div>
-      <div id="corpsDocRessourceSimu" style="flex:1; overflow-y:auto; padding:8px; font-size:0.95rem; line-height:1.5;"></div>
-      <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerDocRessourceSimu()">✓ Revenir à la question</button>
-    </div>
-  </div>
-
-  
   <!-- Modale Aperçu Fiche Synthèse -->
   <div id="modalApercuFiche" class="modal-overlay">
     <div class="modal-content" style="max-width:850px; height:92vh;">
@@ -616,6 +592,18 @@
       </div>
       <div id="corpsModalApercuFiche" style="flex:1; overflow-y:auto; padding:12px; font-size:0.95rem; line-height:1.6;"></div>
       <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerApercuFiche()">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modale Doc Ressource Simu -->
+  <div id="modalDocRessourceSimu" class="modal-overlay">
+    <div class="modal-content" style="max-width:850px; height:92vh;">
+      <div class="modal-header">
+        <h3>📖 Document Ressource</h3>
+        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceSimu()">✖ Fermer</button>
+      </div>
+      <div id="corpsDocRessourceSimu" style="flex:1; overflow-y:auto; padding:8px; font-size:0.95rem; line-height:1.5;"></div>
+      <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerDocRessourceSimu()">✓ Revenir à la question</button>
     </div>
   </div>
 
