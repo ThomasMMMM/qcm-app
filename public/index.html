@@ -679,6 +679,53 @@
   <!-- JAVASCRIPT COMPLET                         -->
   <!-- ========================================== -->
   <script>
+
+    // --- GESTION REPRISE QCM APRES DECONNEXION ---
+    function getCodeEleveEnCours() {
+      if (typeof sessionEleve !== 'undefined' && sessionEleve) {
+        if (sessionEleve.eleve && sessionEleve.eleve.code_eleve) return sessionEleve.eleve.code_eleve;
+        if (sessionEleve.code_eleve) return sessionEleve.code_eleve;
+      }
+      return localStorage.getItem('dernier_code_eleve') || 'INCONNU';
+    }
+
+    function cleSauvegardeQcm(codeSession) {
+      return 'qcm_etat_' + String(codeSession || '').trim().toUpperCase() + '_' + String(getCodeEleveEnCours()).trim().toUpperCase();
+    }
+
+    function aUneSessionEnCours(codeSession) {
+      try {
+        const raw = localStorage.getItem(cleSauvegardeQcm(codeSession));
+        if (!raw) return false;
+        const d = JSON.parse(raw);
+        return (Date.now() - d.timestamp < 8 * 3600 * 1000) && (d.index > 0);
+      } catch(e) {
+        return false;
+      }
+    }
+
+    function sauverEtatQcm(codeSession, idx, score, sorties, duree) {
+      try {
+        if (!codeSession) return;
+        const payload = {
+          index: idx,
+          score: score || 0,
+          sorties: sorties || 0,
+          duree: duree || 0,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(cleSauvegardeQcm(codeSession), JSON.stringify(payload));
+      } catch(e) {}
+    }
+
+    function purgerEtatQcm(codeSession) {
+      try {
+        if (!codeSession) return;
+        localStorage.removeItem(cleSauvegardeQcm(codeSession));
+      } catch(e) {}
+    }
+
+
     // Variables d'état globales
     let currentProf = null;
     let authMode = "login";
