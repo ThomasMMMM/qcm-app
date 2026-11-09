@@ -233,10 +233,10 @@
       <span>Plateforme QCM & Pronote</span>
     </div>
     <div id="authHeaderNav">
-      <button type="button" class="btn btn-pdf" id="btnSwitchProf" style="font-size:0.85rem; padding:6px 14px;" onclick="forcerAccesProf()">
+      <button type="button" class="btn btn-pdf" style="font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('prof')">
         <i class="fa-solid fa-user-tie"></i> Espace Enseignant
       </button>
-      <button type="button" class="btn btn-simu" id="btnSwitchEleve" style="display:none; font-size:0.85rem; padding:6px 14px;" onclick="basculerMode('eleve')">
+      <button type="button" class="btn btn-simu" id="btnSwitchEleve" style="display:none; font-size:0.8rem; padding:6px 12px;" onclick="basculerMode('eleve')">
         <i class="fa-solid fa-user-graduate"></i> Accès Élève
       </button>
     </div>
@@ -715,62 +715,29 @@
     });
 
     // Bascule entre mode Élève et mode Enseignant
-    function cacherToutesLesVues() {
-      const ids = [
-        'viewEleveLogin', 'viewEleveDashboard', 'viewEleveQcm', 'viewEleveFin',
-        'viewProfAuth', 'viewProfDashboard'
-      ];
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-      });
-    }
-
-    function forcerAccesProf() {
-      cacherToutesLesVues();
-      const btnProf = document.getElementById('btnSwitchProf');
-      const btnEleve = document.getElementById('btnSwitchEleve');
-      if (btnProf) btnProf.style.display = 'none';
-      if (btnEleve) btnEleve.style.display = 'inline-flex';
-
-      // Vérifier si un compte prof est déjà enregistré
-      const savedProf = localStorage.getItem('qcm_prof_user');
-      if (savedProf) {
-        try {
-          currentProf = JSON.parse(savedProf);
-        } catch(e) {
-          currentProf = null;
-        }
-      }
-
-      if (currentProf && currentProf.id) {
-        const label = document.getElementById('labelProfNom');
-        if (label) label.innerText = currentProf.nom || currentProf.email || 'Enseignant';
-        const dash = document.getElementById('viewProfDashboard');
-        if (dash) dash.style.display = 'block';
-        chargerDonneesProf();
-      } else {
-        const auth = document.getElementById('viewProfAuth');
-        if (auth) auth.style.display = 'block';
-      }
-    }
-
     function basculerMode(mode) {
-      cacherToutesLesVues();
-      const btnProf = document.getElementById('btnSwitchProf');
-      const btnEleve = document.getElementById('btnSwitchEleve');
+      document.getElementById('viewEleveLogin').style.display = 'none';
+      document.getElementById('viewEleveDashboard').style.display = 'none';
+      document.getElementById('viewEleveQcm').style.display = 'none';
+      document.getElementById('viewEleveFin').style.display = 'none';
+      document.getElementById('viewProfAuth').style.display = 'none';
+      document.getElementById('viewProfDashboard').style.display = 'none';
 
-      if (mode === 'prof') {
-        forcerAccesProf();
-      } else {
-        if (btnProf) btnProf.style.display = 'inline-flex';
-        if (btnEleve) btnEleve.style.display = 'none';
-
-        if (sessionEleve && sessionEleve.eleve) {
+      if (mode === 'eleve') {
+        document.getElementById('btnSwitchEleve').style.display = 'none';
+        if (sessionEleve) {
           afficherEspaceEleve();
         } else {
-          const login = document.getElementById('viewEleveLogin');
-          if (login) login.style.display = 'block';
+          document.getElementById('viewEleveLogin').style.display = 'block';
+        }
+      } else if (mode === 'prof') {
+        document.getElementById('btnSwitchEleve').style.display = 'inline-flex';
+        if (currentProf) {
+          document.getElementById('labelProfNom').innerText = currentProf.nom || currentProf.email;
+          document.getElementById('viewProfDashboard').style.display = 'block';
+          chargerDonneesProf();
+        } else {
+          document.getElementById('viewProfAuth').style.display = 'block';
         }
       }
     }
@@ -1724,43 +1691,17 @@
       const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
       const notesSelection = seanceFiltreId ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId) : memoireToutesLesNotes;
 
-      // 1. En-tête : Nom complet puis Note
-      let csvLignes = ["Nom Prenom;Note"];
-
+      let csvContent = "Nom;Prenom;Note\r\n";
       elevesClassePourExport.forEach(el => {
-        // el.prenom contient le nom complet officiel importé (ex: "ALVES-DIENG Alya")
-        const identiteEleve = (el.prenom || "").trim();
-
-        // Recherche de la copie correspondante
-        const noteFound = notesSelection.find(n => 
-          (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) || 
-          (n.nom === el.prenom) ||
-          (n.nom && identiteEleve.toLowerCase().includes(n.nom.toLowerCase()))
-        );
-
-        let noteStr = "";
-        if (noteFound && noteFound.note !== undefined && noteFound.note !== null) {
-          noteStr = String(noteFound.note).replace('.', ',');
-        }
-
-        csvLignes.push(`"${identiteEleve}";"${noteStr}"`);
+        const noteFound = notesSelection.find(n => n.prenom.includes(el.code_eleve) || n.nom === el.prenom);
+        csvContent += `${el.prenom};;${noteFound ? String(noteFound.note).replace('.', ',') : ""}\r\n`;
       });
 
-      const texteCsv = csvLignes.join('
-');
-
-      // 2. Conversion en ISO-8859-1 (ANSI Windows) pour éviter les caractères type CharlÃ¨ne
-      const buffer = new Uint8Array(texteCsv.length);
-      for (let i = 0; i < texteCsv.length; i++) {
-        const charCode = texteCsv.charCodeAt(i);
-        buffer[i] = charCode < 256 ? charCode : 63; // Remplace les caractères hors ANSI si nécessaire
-      }
-
-      const blob = new Blob([buffer], { type: 'text/csv;charset=windows-1252;' });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", "Notes_Pronote.csv");
+      link.setAttribute("download", `Notes_Pronote.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -2058,16 +1999,6 @@
     }
 
     function deconnecterProf() {
-      currentProf = null;
-      localStorage.removeItem("qcm_prof_user");
-      const btnProf = document.getElementById("btnSwitchProf");
-      const btnEleve = document.getElementById("btnSwitchEleve");
-      if (btnProf) btnProf.style.display = "inline-flex";
-      if (btnEleve) btnEleve.style.display = "none";
-      cacherToutesLesVues();
-      document.getElementById("viewProfAuth").style.display = "block";
-      return;
-
       currentProf = null;
       localStorage.removeItem('qcm_prof_user');
       basculerMode('eleve');
