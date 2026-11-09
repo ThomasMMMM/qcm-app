@@ -586,6 +586,7 @@
               <th>Code</th>
               <th>Note</th>
               <th>Alertes Sortie</th>
+              <th>Temps hors écran</th>
             </tr>
           </thead>
           <tbody id="tableNotesBody"></tbody>
@@ -691,6 +692,8 @@
     let currentDocumentHtml = null;
     let isModeSimulation = false;
     let compteurSortiesEleve = 0;
+    let dureeCumuleeSortiesSec = 0;
+    let tempsDepartSortie = null;
     let currentCode = "";
     let currentSeanceId = null;
 
@@ -1918,6 +1921,7 @@
               session_code: currentCode || "",
               seance_id: currentSeanceId || null,
               nb_sorties: compteurSortiesEleve || 0,
+              duree_sorties: dureeCumuleeSortiesSec || 0,
               note: parseFloat(note20),
               total: 20
             })
@@ -1953,10 +1957,16 @@
       if (document.getElementById('viewEleveQcm').style.display === 'block') {
         if (document.visibilityState === "hidden") {
           compteurSortiesEleve++;
+          tempsDepartSortie = Date.now();
           logSortie("page_masquee");
         } else if (document.visibilityState === "visible") {
+          if (tempsDepartSortie) {
+            const deltaSec = Math.round((Date.now() - tempsDepartSortie) / 1000);
+            dureeCumuleeSortiesSec += Math.max(1, deltaSec);
+            tempsDepartSortie = null;
+          }
           logSortie("retour_qcm");
-          alert(isModeSimulation ? "Test Prof : Sortie d'écran détectée." : "Attention : Vous avez quitté la page du QCM. Cette sortie est signalée à l'enseignant.");
+          alert(isModeSimulation ? "Test Prof : Sortie d'écran détectée." : "Attention : Vous avez quitté la page du QCM. Cette sortie et sa durée sont signalées à l'enseignant.");
         }
       }
     });
