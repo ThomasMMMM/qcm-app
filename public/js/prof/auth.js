@@ -92,4 +92,63 @@ function chargerToutesLesDonnees() {
   if (typeof chargerClassesProf === 'function') chargerClassesProf();
   if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
   if (typeof chargerResultatsProf === 'function') chargerResultatsProf();
+  setTimeout(actualiserCompteursTuiles, 600);
+}
+
+
+// ================= NAVIGATION PAR TUILES =================
+function retournerAuHubProf() {
+  document.querySelectorAll('.rubrique-contenu-prof').forEach(el => el.style.display = 'none');
+  const hub = document.getElementById('vueHubProf');
+  if (hub) hub.style.display = 'block';
+  actualiserCompteursTuiles();
+}
+
+function ouvrirRubriqueProf(idRubrique) {
+  const hub = document.getElementById('vueHubProf');
+  if (hub) hub.style.display = 'none';
+  document.querySelectorAll('.rubrique-contenu-prof').forEach(el => el.style.display = 'none');
+  const cible = document.getElementById(idRubrique);
+  if (cible) {
+    cible.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function actualiserCompteursTuiles() {
+  // 1. Classes
+  const elClasses = document.getElementById('tuileInfoClasses');
+  if (elClasses && typeof listeClassesMemoire !== 'undefined') {
+    const nbC = listeClassesMemoire.length;
+    elClasses.innerText = nbC > 0 ? (nbC + ' classe' + (nbC > 1 ? 's configurées' : ' configurée')) : '0 classe enregistrée';
+  }
+
+  // 2. Fiches & Matières
+  const elFiches = document.getElementById('tuileInfoFiches');
+  if (elFiches) {
+    const nbF = (typeof listeFichesMemoire !== 'undefined') ? listeFichesMemoire.length : 0;
+    const nbM = (typeof listeMatieresMemoire !== 'undefined') ? listeMatieresMemoire.length : 0;
+    elFiches.innerText = nbF + ' fiche' + (nbF > 1 ? 's' : '') + ' • ' + nbM + ' matière' + (nbM > 1 ? 's' : '');
+  }
+
+  // 3. Banque QCM
+  const elBanque = document.getElementById('tuileInfoBanque');
+  if (elBanque && typeof listeBanqueQcmMemoire !== 'undefined') {
+    const nbQ = listeBanqueQcmMemoire.length;
+    elBanque.innerText = nbQ > 0 ? (nbQ + ' questionnaire' + (nbQ > 1 ? 's' : '')) : '0 questionnaire';
+  }
+
+  // 4. Séances
+  const elSeances = document.getElementById('tuileInfoSeances');
+  if (elSeances && typeof listeSeancesMemoire !== 'undefined') {
+    const actives = listeSeancesMemoire.filter(s => s.actif).length;
+    elSeances.innerText = actives > 0 ? (actives + ' active' + (actives > 1 ? 's' : '') + ' sur ' + listeSeancesMemoire.length) : '0 active (' + listeSeancesMemoire.length + ' clôturée' + (listeSeancesMemoire.length > 1 ? 's' : '') + ')';
+  }
+
+  // 5. Résultats & Copies
+  const elResultats = document.getElementById('tuileInfoResultats');
+  if (elResultats && typeof memoireToutesLesNotes !== 'undefined') {
+    const nbNotes = memoireToutesLesNotes.length;
+    elResultats.innerText = nbNotes > 0 ? (nbNotes + ' copie' + (nbNotes > 1 ? 's enregistrées' : ' enregistrée')) : '0 copie';
+  }
 }

@@ -64,7 +64,95 @@
         </button>
       </div>
 
-      <!-- MODULE 1 : CAHIER DE TEXTE & PLANNING SEMAINE -->
+      <!-- ACCUEIL PAR TUILES (DASHBOARD HUB) -->
+      <div id="vueHubProf">
+        <div style="margin-bottom:18px;">
+          <h2 style="margin:0 0 4px 0; font-size:1.35rem; color:var(--pronote-dark);">Tableau de bord enseignant</h2>
+          <p style="margin:0; font-size:0.88rem; color:#64748b;">Sélectionnez une rubrique pour gérer vos cours, élèves et devoirs.</p>
+        </div>
+
+        <div class="tuiles-grid">
+          <!-- Tuile 1 : Planning -->
+          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriquePlanning')">
+            <div class="tuile-icon icon-planning"><i class="fa-solid fa-calendar-week"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Planning</div>
+              <div class="tuile-info" id="tuileInfoPlanning">Cahier de texte semaine</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 2 : Fiches Synthèse -->
+          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueFiches')">
+            <div class="tuile-icon icon-fiches"><i class="fa-solid fa-book-open"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Fiches Synthèse</div>
+              <div class="tuile-info" id="tuileInfoFiches">0 fiche • 0 matière</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 3 : Classes -->
+          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueClasses')">
+            <div class="tuile-icon icon-classes"><i class="fa-solid fa-users"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Classes</div>
+              <div class="tuile-info" id="tuileInfoClasses">0 classe enregistrée</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 4 : Banque QCM -->
+          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueBanque')">
+            <div class="tuile-icon icon-banque"><i class="fa-solid fa-box-archive"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Banque QCM</div>
+              <div class="tuile-info" id="tuileInfoBanque">0 questionnaire</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 5 : Séances -->
+          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueSeances')">
+            <div class="tuile-icon icon-seances"><i class="fa-solid fa-play"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Séances</div>
+              <div class="tuile-info" id="tuileInfoSeances">0 séance active</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 6 : Résultats -->
+          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueResultats')">
+            <div class="tuile-icon icon-resultats"><i class="fa-solid fa-square-poll-vertical"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Résultats</div>
+              <div class="tuile-info" id="tuileInfoResultats">0 copie disponible</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Tuile 7 : Alertes -->
+          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueAlertes')">
+            <div class="tuile-icon icon-alertes"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="tuile-corps">
+              <div class="tuile-titre">Alertes & Incidents</div>
+              <div class="tuile-info" id="tuileInfoAlertes">Sorties d'écran</div>
+            </div>
+            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+        </div>
+      </div>
+
+
+      <div id="rubriquePlanning" class="rubrique-contenu-prof" style="display:none;">
+        <div class="rubrique-header-bar">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Planning</span>
+        </div>
+        <!-- MODULE 1 : CAHIER DE TEXTE & PLANNING SEMAINE -->
       <div class="card">
         <h3><i class="fa-solid fa-calendar-week"></i> Cahier de Texte & Planning de la Semaine</h3>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -76,6 +164,15 @@
       </div>
 
       
+      <div id="rubriqueFiches" class="rubrique-contenu-prof" style="display:none;">
+        <div class="rubrique-header-bar">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Fiches Synthèse</span>
+        </div>
+        </div>
+
       <!-- MODULE NOUVEAU : FICHES DE SYNTHÈSE & MATIÈRES -->
       <div class="card">
         <h3><i class="fa-solid fa-book-open"></i> Fiches Synthèse & Dossiers Ressources</h3>
@@ -158,6 +255,15 @@
         </div>
       </div>
 
+      <div id="rubriqueClasses" class="rubrique-contenu-prof" style="display:none;">
+        <div class="rubrique-header-bar">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Classes</span>
+        </div>
+        </div>
+
       <!-- MODULE 2 : GESTION DES CLASSES -->
       <div class="card">
         <h3><i class="fa-solid fa-users"></i> Gestion des Classes & Aménagements PAP</h3>
@@ -189,6 +295,15 @@
           <tbody id="tableClassesBody"></tbody>
         </table>
       </div>
+
+      <div id="rubriqueBanque" class="rubrique-contenu-prof" style="display:none;">
+        <div class="rubrique-header-bar">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Banque QCM</span>
+        </div>
+        </div>
 
       <!-- MODULE 3 : BANQUE DE QCM -->
       <div class="card">
@@ -250,6 +365,15 @@
         </div>
       </div>
 
+      <div id="rubriqueSeances" class="rubrique-contenu-prof" style="display:none;">
+        <div class="rubrique-header-bar">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Séances</span>
+        </div>
+        </div>
+
       <!-- MODULE 4 : SÉANCES -->
       <div class="card">
         <h3><i class="fa-solid fa-play"></i> Programmer & Activer une Séance d'Évaluation</h3>
@@ -295,6 +419,15 @@
         </table>
       </div>
 
+      <div id="rubriqueResultats" class="rubrique-contenu-prof" style="display:none;">
+        <div class="rubrique-header-bar">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Résultats</span>
+        </div>
+        </div>
+
       <!-- MODULE 5 : COPIES ET RÉSULTATS -->
       <div class="card">
         <h3><i class="fa-solid fa-square-poll-vertical"></i> Copies & Résultats des Élèves</h3>
@@ -331,6 +464,15 @@
         </table>
       </div>
 
+      <div id="rubriqueAlertes" class="rubrique-contenu-prof" style="display:none;">
+        <div class="rubrique-header-bar">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-folder-open"></i> Alertes & Incidents</span>
+        </div>
+        </div>
+
       <!-- MODULE 6 : JOURNAL DES INCIDENTS -->
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--pronote-light); padding-bottom:8px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
@@ -353,7 +495,9 @@
 
     </div>
 
-    <!-- 3. SIMULATEUR PROF -->
+    </div>
+
+      <!-- 3. SIMULATEUR PROF -->
     <div id="viewSimulateurProf" class="card" style="display:none;">
       <div style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
         <span><strong>🔍 Mode Test Professeur :</strong> Les réponses ne sont pas enregistrées.</span>

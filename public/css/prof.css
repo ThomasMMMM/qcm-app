@@ -128,3 +128,93 @@
   background: var(--incorrect-bg);
   border-color: var(--incorrect-border);
 }
+
+
+/* ================= GRILLE DE TUILES (DASHBOARD HUB) ================= */
+.tuiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 25px;
+}
+
+.tuile-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.tuile-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(11, 92, 171, 0.12);
+  border-color: var(--pronote-blue);
+}
+
+.tuile-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.tuile-corps {
+  flex: 1;
+  min-width: 0;
+}
+
+.tuile-titre {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tuile-info {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tuile-fleche {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.tuile-card:hover .tuile-fleche {
+  color: var(--pronote-blue);
+  transform: translateX(3px);
+}
+
+/* Couleurs des icônes de tuiles */
+.icon-planning { background: #e0f2fe; color: #0284c7; }
+.icon-fiches { background: #fdf4ff; color: #9333ea; }
+.icon-classes { background: #e0e7ff; color: #4f46e5; }
+.icon-banque { background: #fef3c7; color: #d97706; }
+.icon-seances { background: #dcfce7; color: #16a34a; }
+.icon-resultats { background: #fee2e2; color: #dc2626; }
+.icon-alertes { background: #f1f5f9; color: #475569; }
+
+/* En-tête de vue de rubrique avec bouton retour */
+.rubrique-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
