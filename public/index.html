@@ -2012,17 +2012,19 @@
 
         inputs.forEach(i => i.disabled = true);
         let fracTotale = 0;
-        inputs.forEach(input => {
-          const idx = parseInt(input.value);
-          const ans = q.answers.find(a => (a.id !== undefined ? a.id : 0) === idx) || q.answers[idx];
-          const frac = (typeof ans.fraction === 'number') ? ans.fraction : (parseFloat(ans.fraction) || 0);
-          const label = document.getElementById(`label_ans_${idx}`);
+                inputs.forEach((input, iIdx) => {
+          const idx = !isNaN(parseInt(input.value)) ? parseInt(input.value) : iIdx;
+          const ans = (q.answers && q.answers[idx]) ? q.answers[idx] : ((q.answers && q.answers[iIdx]) ? q.answers[iIdx] : null);
+          if (!ans) return;
 
-          if (frac > 0) label.classList.add('is-correct');
+          const frac = (typeof ans.fraction === 'number') ? ans.fraction : (parseFloat(ans.fraction) || 0);
+          const label = document.getElementById(`label_ans_${idx}`) || input.closest('label');
+
+          if (frac > 0 && label) label.classList.add('is-correct');
           if (input.checked) {
             fracTotale += frac;
-            if (frac <= 0) label.classList.add('is-wrong');
-            if (ans.feedback) explications.push(`<strong>${ans.text} :</strong> ${ans.feedback}`);
+            if (frac <= 0 && label) label.classList.add('is-wrong');
+            if (ans.feedback) explications.push(`<strong>${ans.text || ''} :</strong> ${ans.feedback}`);
           }
         });
 
@@ -2054,7 +2056,16 @@
         scoreQuestion = q.points * (corrects / (q.subquestions.length || 1));
       }
 
-      totalScoreObtenu += scoreQuestion;
+      scoreQuestion = parseFloat(scoreQuestion) || 0;
+      totalScoreObtenu = (parseFloat(totalScoreObtenu) || 0) + scoreQuestion;
+
+      console.log(`🎯 [Points validés] Question ${currentQuestionIndex + 1} : +${scoreQuestion.toFixed(2)} pt(s) | Cumul total : ${totalScoreObtenu.toFixed(2)} / ${totalScorePossible}`);
+
+      // Sauvegarde de l'état avec le nouveau score cumulé
+      const dureeActuelle = (typeof dureeCumuleeSortiesSec !== 'undefined') ? dureeCumuleeSortiesSec : 0;
+      if (typeof sauverEtatQcm === 'function') {
+        sauverEtatQcm(currentCode, currentQuestionIndex, totalScoreObtenu, compteurSortiesEleve, dureeActuelle);
+      }
 
       const fbBox = document.getElementById('feedbackContainer');
       let fbHtml = "";
@@ -2113,9 +2124,16 @@
     async function terminerEvaluation() {
       purgerEtatQuiz(currentCode);
       // 1. Calcul immédiat de la note
-      const note20 = totalScorePossible > 0 
-        ? ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2) 
-        : "0.00";
+      const scoreFinal = (typeof totalScoreObtenu === 'number') ? totalScoreObtenu : (parseFloat(totalScoreObtenu) || 0);
+      let possibleFinal = (typeof totalScorePossible === 'number') ? totalScorePossible : (parseFloat(totalScorePossible) || 0);
+
+      if (possibleFinal <= 0 && currentQuestions && currentQuestions.length > 0) {
+        possibleFinal = currentQuestions.reduce((acc, q) => acc + (parseFloat(q.points) || 1), 0);
+      }
+      if (possibleFinal <= 0) possibleFinal = 1;
+
+      const note20 = ((scoreFinal / possibleFinal) * 20).toFixed(2);
+      console.log(`📊 [Calcul final] Score : ${scoreFinal} / ${possibleFinal} => Note transmise : ${note20} / 20`);
 
       // 2. Basculement immédiat de l'affichage (priorité absolue à l'interface)
       const qcmView = document.getElementById('viewEleveQcm');
