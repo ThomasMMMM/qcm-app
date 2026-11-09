@@ -1967,11 +1967,11 @@
 
       if (q.type === "multichoice") {
         const inputType = q.single ? "radio" : "checkbox";
-        q.answers.forEach((ans) => {
-          const repId = ans.id !== undefined ? ans.id : 0;
+                q.answers.forEach((ans, aIdx) => {
+          const repId = aIdx;
           h += `
-            <label class="reponse-label" id="label_ans_${repId}">
-              <input type="${inputType}" name="current_q_ans" value="${repId}">
+            <label class="reponse-label" id="label_ans_${aIdx}">
+              <input type="${inputType}" name="current_q_ans" value="${aIdx}">
               <div>
                 ${ans.text}
                 ${ans.image ? `<br><img class="img-qcm" style="max-height:120px;" src="data:image/png;base64,${ans.image}">` : ''}
