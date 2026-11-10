@@ -2104,7 +2104,7 @@
       const htmlRows = elevesClassePourExport.map((el, idx) => {
         const noteFound = notesSelection.find(n => n.prenom.includes(el.code_eleve) || n.nom === el.prenom);
         const noteStr = noteFound ? `${noteFound.note} / ${noteFound.total}` : '<span style="color:#94a3b8; font-style:italic;">Absent / Non fait</span>';
-        return `<tr><td style="text-align:center;">${idx + 1}</td><td><strong>${el.prenom}</strong></td><td style="text-align:center;">${noteStr}</td></tr>`;
+        return `<tr><td style="text-align:center;">${idx + 1}</td><td><strong>${(el.nom ? el.nom + " " : "") + el.prenom}</strong></td><td style="text-align:center;">${noteStr}</td></tr>`;
       }).join('');
 
       document.getElementById('previewExportContainer').innerHTML = `<table><thead><tr><th style="width:40px; text-align:center;">N°</th><th>Élève</th><th style="text-align:center; width:120px;">Note</th></tr></thead><tbody>${htmlRows}</tbody></table>`;

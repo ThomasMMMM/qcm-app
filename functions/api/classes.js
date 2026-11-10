@@ -8,7 +8,7 @@
     // 1. Liste des élèves d'une classe : TRI PAR L'ORDRE DU CSV PRONOTE (Ordre alphabétique du Nom)
     if (classe_id) {
       const { results } = await env.DB.prepare(
-        "SELECT id, prenom, date_naissance, code_eleve, COALESCE(est_pap, 0) AS est_pap, COALESCE(ordre, id) AS ordre FROM eleves WHERE classe_id = ? ORDER BY COALESCE(ordre, id) ASC"
+        "SELECT id, nom, prenom, date_naissance, code_eleve, COALESCE(est_pap, 0) AS est_pap, COALESCE(ordre, id) AS ordre FROM eleves WHERE classe_id = ? ORDER BY COALESCE(ordre, id) ASC"
       ).bind(classe_id).all();
       return new Response(JSON.stringify(results), { headers: { "Content-Type": "application/json" } });
     }
