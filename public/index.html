@@ -2128,17 +2128,40 @@
       const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
       const notesSelection = seanceFiltreId ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId) : memoireToutesLesNotes;
 
-      let csvContent = "Nom;Prenom;Note\r\n";
+      // Format standardisé attendu par l'assistant d'importation PRONOTE
+      let csvContent = "\uFEFFNom;Prenom;Date_naissance;Note\r\n";
+
       elevesClassePourExport.forEach(el => {
-        const noteFound = notesSelection.find(n => n.prenom.includes(el.code_eleve) || n.nom === el.prenom);
-        csvContent += `${el.prenom};;${noteFound ? String(noteFound.note).replace('.', ',') : ""}\r\n`;
+        const nomEleve = (el.nom || "").trim().toUpperCase();
+        const prenomEleve = (el.prenom || "").trim();
+        const dateNais = (el.date_naissance || "").trim();
+
+        // Rapprochement avec la copie
+        const noteFound = notesSelection.find(n => 
+          (n.prenom && el.code_eleve && n.prenom.includes(el.code_eleve)) || 
+          (n.nom && nomEleve && n.nom.toUpperCase() === nomEleve) || 
+          (n.nom && n.nom === el.prenom)
+        );
+
+        let noteTexte = "";
+        if (noteFound) {
+          noteTexte = String(noteFound.note).replace('.', ',');
+        } else {
+          noteTexte = "Abs"; // Élève n'ayant pas passé le devoir
+        }
+
+        csvContent += `${nomEleve};${prenomEleve};${dateNais};${noteTexte}\r\n`;
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `Notes_Pronote.csv`);
+
+      const nomClasseFichier = document.getElementById('filtreClasseSelect') 
+        ? (document.getElementById('filtreClasseSelect').selectedOptions[0]?.text || "Classe") 
+        : "Classe";
+      link.setAttribute("download", `Notes_Pronote_${nomClasseFichier}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

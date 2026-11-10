@@ -27,7 +27,7 @@
 
       // Liste ordonnée de tous les élèves de la classe
       const { results: eleves } = await env.DB.prepare(
-        "SELECT id, prenom, date_naissance, code_eleve FROM eleves WHERE classe_id = ? ORDER BY id ASC"
+        "SELECT id, nom, prenom, date_naissance, code_eleve FROM eleves WHERE classe_id = ? ORDER BY COALESCE(ordre, id) ASC"
       ).bind(seance.classe_id).all();
 
       // Résultats enregistrés pour cette séance
@@ -41,8 +41,9 @@
         const copie = copies.find(c => (c.prenom && c.prenom.includes(e.code_eleve)) || c.nom === e.prenom);
         return {
           id: e.id,
+          nom: e.nom || "",
           prenom: e.prenom,
-          date_naissance: e.date_naissance,
+          date_naissance: e.date_naissance || "",
           code_eleve: e.code_eleve,
           note: copie ? copie.note : null,
           total: copie ? copie.total : 20,

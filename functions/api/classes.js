@@ -87,6 +87,7 @@ export async function onRequestPost(context) {
 
       for (let idx = 0; idx < body.eleves.length; idx++) {
         const el = body.eleves[idx];
+        const n = (el.nom || "").trim().toUpperCase();
         const p = (el.prenom || "").trim();
         const d = (el.date_naissance || "").trim();
         const codePerso = (el.code_eleve || genCode()).trim().toUpperCase();
@@ -95,17 +96,19 @@ export async function onRequestPost(context) {
         if (!p) continue;
 
         const eleveExist = await env.DB.prepare(
-          "SELECT id FROM eleves WHERE classe_id = ? AND prenom = ?"
-        ).bind(classeId, p).first();
+          n 
+            ? "SELECT id FROM eleves WHERE classe_id = ? AND nom = ? AND prenom = ?"
+            : "SELECT id FROM eleves WHERE classe_id = ? AND prenom = ?"
+        ).bind(...(n ? [classeId, n, p] : [classeId, p])).first();
 
         if (!eleveExist) {
           await env.DB.prepare(
-            "INSERT INTO eleves (classe_id, prenom, date_naissance, code_eleve, est_pap, ordre) VALUES (?, ?, ?, ?, ?, ?)"
-          ).bind(classeId, p, d || null, codePerso, estPap, numOrdre).run();
+            "INSERT INTO eleves (classe_id, nom, prenom, date_naissance, code_eleve, est_pap, ordre) VALUES (?, ?, ?, ?, ?, ?, ?)"
+          ).bind(classeId, n || null, p, d || null, codePerso, estPap, numOrdre).run();
         } else {
           await env.DB.prepare(
-            "UPDATE eleves SET date_naissance = COALESCE(?, date_naissance), est_pap = ?, ordre = ? WHERE id = ?"
-          ).bind(d || null, estPap, numOrdre, eleveExist.id).run();
+            "UPDATE eleves SET nom = COALESCE(?, nom), date_naissance = COALESCE(?, date_naissance), est_pap = ?, ordre = ? WHERE id = ?"
+          ).bind(n || null, d || null, estPap, numOrdre, eleveExist.id).run();
         }
       }
     }
