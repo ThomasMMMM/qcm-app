@@ -2321,9 +2321,10 @@
         return;
       }
 
-      // Deuxième sécurité pour éviter un clic accidentel
-      if (!confirm("Dernière confirmation : voulez-vous vraiment envoyer votre copie incomplète ?")) {
-        return;
+      const btn = document.getElementById('btnRendreCopieAnticipee');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Clôture en cours...';
       }
 
       // Clôture immédiate et calcul de la note
@@ -2391,6 +2392,7 @@
 
         try {
           fetch('/api/soumettre', {
+            keepalive: true,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
