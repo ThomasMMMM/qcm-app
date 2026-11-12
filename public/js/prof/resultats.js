@@ -46,7 +46,7 @@ function filtrerResultats() {
 
   document.getElementById('statCopiesText').innerText = `${filtrees.length} copie(s) ${filtrees.length > 0 ? `(Moyenne : ${moyenne}/20)` : ''}`;
   const tbody = document.getElementById('tableNotesBody');
-  tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='7' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
+  tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='8' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
     filtrees.map(n => {
       const nbS = n.nb_sorties || 0;
       const durS = parseInt(n.duree_sorties) || 0;
@@ -72,22 +72,20 @@ function filtrerResultats() {
           <td><strong>${n.nom}</strong> ${n.prenom}</td>
           <td><span class="badge">${n.classe_nom || n.classe || '-'}</span></td>
           <td><span class="badge-session">${n.code_session || n.session_code || '-'}</span></td>
+          <td><strong style="color:var(--pronote-blue); font-size:1rem;">${n.note} / ${n.total}</strong></td>
           <td>
-            <div style="display:flex; flex-direction:column; gap:3px;">
-              <div>
-                <strong style="color:var(--pronote-blue); font-size:1rem;">${n.note} / ${n.total}</strong>
-                <span style="font-size:0.72rem; color:#64748b;">(Brute)</span>
-              </div>
-              ${(n.questions_traitees !== null && n.questions_totales !== null && n.questions_traitees < n.questions_totales)
-                ? `<div style="font-size:0.78rem; background:#fef3c7; color:#92400e; padding:3px 6px; border-radius:4px; border:1px solid #fde68a; display:inline-block;">
-                     <strong>${(n.note_proportionnelle !== null ? Number(n.note_proportionnelle).toFixed(2) : '0.00')} / 20</strong> sur faites
-                     <span style="display:block; font-size:0.7rem; color:#b45309;">⚠️ Rendu anticipé (${n.questions_traitees}/${n.questions_totales} Q.)</span>
-                   </div>`
-                : (n.questions_traitees !== null && n.questions_totales !== null)
-                  ? `<span style="font-size:0.72rem; color:#15803d;">✓ ${n.questions_traitees}/${n.questions_totales} Q.</span>`
-                  : ''
-              }
-            </div>
+            ${(n.questions_traitees !== null && n.questions_totales !== null)
+              ? (n.questions_traitees < n.questions_totales
+                  ? `<div style="display:inline-block; background:#fef3c7; color:#92400e; padding:3px 7px; border-radius:5px; border:1px solid #fde68a; font-size:0.85rem;">
+                       <strong>${(n.note_proportionnelle !== null ? Number(n.note_proportionnelle).toFixed(2) : '0.00')} / 20</strong>
+                       <span style="display:block; font-size:0.72rem; color:#b45309;">⚠️ ${n.questions_traitees}/${n.questions_totales} Q. faites</span>
+                     </div>`
+                  : `<div>
+                       <strong style="color:#15803d; font-size:0.95rem;">${(n.note_proportionnelle !== null ? Number(n.note_proportionnelle).toFixed(2) : Number(n.note).toFixed(2))} / 20</strong>
+                       <span style="display:block; font-size:0.72rem; color:#64748b;">✓ ${n.questions_traitees}/${n.questions_totales} Q.</span>
+                     </div>`)
+              : `<span style="color:#94a3b8; font-size:0.8rem;">— (avant maj)</span>`
+            }
           </td>
           <td>
             ${(nbS > 0)
