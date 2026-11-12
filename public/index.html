@@ -497,7 +497,7 @@
         </button>
       </div>
       <div style="margin-top:10px;">
-        <button type="button" id="btnRendreCopieAnticipee" class="btn" style="width:100%; justify-content:center; padding:9px; font-size:0.85rem; background-color:#b91c1c; color:white; border:none; opacity:0.9;" onclick="confirmerEnvoiAnticipe()">
+        <button type="button" id="btnRendreCopieAnticipee" class="btn" style="width:100%; justify-content:center; padding:12px; font-size:0.9rem; background-color:#b91c1c; color:white; border:none; opacity:0.95; touch-action:manipulation; cursor:pointer;" onclick="confirmerEnvoiAnticipe()">
           <i class="fa-solid fa-triangle-exclamation"></i> Rendre ma copie maintenant (incomplète)
         </button>
       </div>
@@ -776,6 +776,24 @@
   <!-- MODALS                                     -->
   <!-- ========================================== -->
 
+    <!-- MODAL CONFIRMATION REMISE ANTICIPÉE (100% COMPATIBLE MOBILE/WEBVIEW) -->
+  <div id="modalConfirmEnvoiAnticipe" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.75); z-index:10050; justify-content:center; align-items:center; padding:16px; box-sizing:border-box;">
+    <div style="background:white; border-radius:12px; max-width:420px; width:100%; padding:20px; box-sizing:border-box; box-shadow:0 10px 30px rgba(0,0,0,0.35); text-align:left;">
+      <h3 style="margin:0 0 12px 0; color:#b91c1c; font-size:1.15rem; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Rendre votre copie maintenant ?
+      </h3>
+      <p id="texteModalEnvoiAnticipe" style="color:#334155; font-size:0.95rem; line-height:1.5; margin-bottom:18px;"></p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button type="button" id="btnValiderEnvoiAnticipeModal" onclick="executerEnvoiAnticipeDefinitif()" style="width:100%; padding:13px; border-radius:8px; border:none; background:#b91c1c; color:white; font-weight:bold; font-size:0.95rem; cursor:pointer; touch-action:manipulation;">
+          Oui, rendre ma copie définitivement
+        </button>
+        <button type="button" onclick="fermerModalEnvoiAnticipe()" style="width:100%; padding:12px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:600; font-size:0.9rem; cursor:pointer; touch-action:manipulation;">
+          Annuler et continuer le QCM
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DOCUMENT RESSOURCE ÉLÈVE -->
   <div id="modalDocRessourceEleve" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10000; justify-content:center; align-items:center; padding:10px; box-sizing:border-box;">
     <div style="background:white; border-radius:8px; max-width:850px; width:100%; height:92vh; display:flex; flex-direction:column; padding:16px; box-sizing:border-box; box-shadow:0 6px 24px rgba(0,0,0,0.3);">
@@ -1012,7 +1030,7 @@
     }
 
     let currentQuestionIndex = 0;
-    let totalScoreObtenu = 0;
+    let totalScoreObtenu = 0; window.questionsValideesSet = new Set();
     let totalScorePossible = 0;
     let currentDocumentHtml = null;
     let isModeSimulation = false;
@@ -2278,6 +2296,8 @@
 
       scoreQuestion = parseFloat(scoreQuestion) || 0;
       totalScoreObtenu = (parseFloat(totalScoreObtenu) || 0) + scoreQuestion;
+      if (!window.questionsValideesSet) window.questionsValideesSet = new Set();
+      window.questionsValideesSet.add(currentQuestionIndex);
 
       console.log(`🎯 [Points validés] Question ${currentQuestionIndex + 1} : +${scoreQuestion.toFixed(2)} pt(s) | Cumul total : ${totalScoreObtenu.toFixed(2)} / ${totalScorePossible}`);
 
@@ -2309,25 +2329,42 @@
     }
 
     
-    async function confirmerEnvoiAnticipe() {
-      const restantes = currentQuestions.length - currentQuestionIndex;
-      const messageAlerte = "ATTENTION : Vous êtes sur le point de rendre votre copie AVANT la fin de l'épreuve !\n\n" +
-        "• Il vous reste " + restantes + " question(s) non traitée(s).\n" +
-        "• Les questions restantes compteront pour 0 point.\n" +
-        "• Cette action est définitive : AUCUN RETOUR EN ARRIÈRE N'EST POSSIBLE.\n\n" +
-        "Êtes-vous certain de vouloir clôturer et enregistrer votre note maintenant ?";
+    function confirmerEnvoiAnticipe() {
+      const totalQ = (Array.isArray(currentQuestions) && currentQuestions.length > 0) ? currentQuestions.length : 0;
+      const idx = (typeof currentQuestionIndex === 'number' && currentQuestionIndex >= 0) ? currentQuestionIndex : 0;
+      const restantes = Math.max(0, totalQ - idx);
 
-      if (!confirm(messageAlerte)) {
-        return;
+      const texteEl = document.getElementById('texteModalEnvoiAnticipe');
+      if (texteEl) {
+        texteEl.innerHTML =
+          "Attention : vous êtes sur le point de clôturer votre épreuve <strong>avant la fin</strong>.<br><br>" +
+          (restantes > 0
+            ? "• Il vous reste <strong>" + restantes + " question(s) non traitée(s)</strong> (qui vaudront 0 point sur la note globale).<br>"
+            : "") +
+          "• Cette action est <strong>définitive</strong> : aucun retour en arrière n'est possible.";
       }
 
+      const modal = document.getElementById('modalConfirmEnvoiAnticipe');
+      if (modal) {
+        modal.style.display = 'flex';
+      } else {
+        // Repli de sécurité absolu si la modale est introuvable
+        executerEnvoiAnticipeDefinitif();
+      }
+    }
+
+    function fermerModalEnvoiAnticipe() {
+      const modal = document.getElementById('modalConfirmEnvoiAnticipe');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executerEnvoiAnticipeDefinitif() {
+      fermerModalEnvoiAnticipe();
       const btn = document.getElementById('btnRendreCopieAnticipee');
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Clôture en cours...';
       }
-
-      // Clôture immédiate et calcul de la note
       await terminerEvaluation();
     }
 
@@ -2354,6 +2391,31 @@
       if (possibleFinal <= 0) possibleFinal = 1;
 
       const note20 = ((scoreFinal / possibleFinal) * 20).toFixed(2);
+
+      const questionsTotales = (Array.isArray(currentQuestions) && currentQuestions.length > 0) ? currentQuestions.length : 0;
+      const setValidees = window.questionsValideesSet || new Set();
+      // Si l'élève a validé des questions, on prend le nombre exact ; sinon en reprise d'état on prend l'index atteint
+      const questionsTraitees = setValidees.size > 0
+        ? setValidees.size
+        : Math.min(questionsTotales, (typeof currentQuestionIndex === 'number' ? currentQuestionIndex : 0));
+
+      let possibleTraite = 0;
+      if (questionsTotales > 0 && questionsTraitees > 0) {
+        if (setValidees.size > 0) {
+          setValidees.forEach(idxQ => {
+            if (currentQuestions[idxQ]) {
+              possibleTraite += (parseFloat(currentQuestions[idxQ].points) || 1);
+            }
+          });
+        } else {
+          for (let i = 0; i < questionsTraitees; i++) {
+            possibleTraite += (parseFloat(currentQuestions[i].points) || 1);
+          }
+        }
+      }
+      const noteProp20 = (possibleTraite > 0)
+        ? ((scoreFinal / possibleTraite) * 20).toFixed(2)
+        : "0.00";
       console.log(`📊 [Calcul final] Score : ${scoreFinal} / ${possibleFinal} => Note transmise : ${note20} / 20`);
 
       // 2. Basculement immédiat de l'affichage (priorité absolue à l'interface)

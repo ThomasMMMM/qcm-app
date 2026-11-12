@@ -62,7 +62,7 @@
 
     // LISTING CLASSIQUE DES COPIES
     let queryNotes = `
-      SELECT r.id, r.nom, r.prenom, r.classe, r.qcm_titre, r.note, r.total, r.session_code, r.seance_id, r.date_soumission, r.nb_sorties, COALESCE(r.duree_sorties, 0) AS duree_sorties,
+      SELECT r.id, r.nom, r.prenom, r.classe, r.qcm_titre, r.note, r.total, r.session_code, r.seance_id, r.date_soumission, r.nb_sorties, COALESCE(r.duree_sorties, 0) AS duree_sorties, r.questions_traitees, r.questions_totales, r.note_proportionnelle,
              s.code_session, c.nom AS classe_nom, q.titre AS qcm_nom
       FROM resultats_qcm r
       LEFT JOIN seances s ON r.seance_id = s.id

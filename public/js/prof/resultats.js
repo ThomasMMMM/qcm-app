@@ -72,7 +72,23 @@ function filtrerResultats() {
           <td><strong>${n.nom}</strong> ${n.prenom}</td>
           <td><span class="badge">${n.classe_nom || n.classe || '-'}</span></td>
           <td><span class="badge-session">${n.code_session || n.session_code || '-'}</span></td>
-          <td><strong style="color:var(--pronote-blue); font-size:1rem;">${n.note} / ${n.total}</strong></td>
+          <td>
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <div>
+                <strong style="color:var(--pronote-blue); font-size:1rem;">${n.note} / ${n.total}</strong>
+                <span style="font-size:0.72rem; color:#64748b;">(Brute)</span>
+              </div>
+              ${(n.questions_traitees !== null && n.questions_totales !== null && n.questions_traitees < n.questions_totales)
+                ? `<div style="font-size:0.78rem; background:#fef3c7; color:#92400e; padding:3px 6px; border-radius:4px; border:1px solid #fde68a; display:inline-block;">
+                     <strong>${(n.note_proportionnelle !== null ? Number(n.note_proportionnelle).toFixed(2) : '0.00')} / 20</strong> sur faites
+                     <span style="display:block; font-size:0.7rem; color:#b45309;">⚠️ Rendu anticipé (${n.questions_traitees}/${n.questions_totales} Q.)</span>
+                   </div>`
+                : (n.questions_traitees !== null && n.questions_totales !== null)
+                  ? `<span style="font-size:0.72rem; color:#15803d;">✓ ${n.questions_traitees}/${n.questions_totales} Q.</span>`
+                  : ''
+              }
+            </div>
+          </td>
           <td>
             ${(nbS > 0)
               ? `<span class="badge" style="background:#fee2e2; color:#b91c1c;">⚠️ ${nbS} sortie${nbS > 1 ? 's' : ''}</span>`
