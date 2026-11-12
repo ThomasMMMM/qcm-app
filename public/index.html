@@ -2481,7 +2481,10 @@
               nb_sorties: compteurSortiesEleve || 0,
               duree_sorties: dureeCumuleeSortiesSec || 0,
               note: parseFloat(note20),
-              total: 20
+              total: 20,
+              questions_traitees: questionsTraitees,
+              questions_totales: questionsTotales,
+              note_proportionnelle: parseFloat(noteProp20)
             })
           });
         } catch (err) {
