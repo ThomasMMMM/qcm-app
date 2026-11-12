@@ -65,7 +65,7 @@ function telechargerCsvPronote() {
   let csvContent = "\uFEFFNom;Prenom;Date_naissance;Note\r\n";
 
   elevesClassePourExport.forEach(el => {
-    const nomEleve = (el.nom || "").trim().toUpperCase();
+    const nomEleve = (el.nom || el.prenom || "").trim().toUpperCase();
     const prenomEleve = (el.prenom || "").trim();
     const dateNais = (el.date_naissance || "").trim();
 

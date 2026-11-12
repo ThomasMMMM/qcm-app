@@ -28,11 +28,16 @@ function analyserCsvPronote(input) {
       if (!nomComplet) continue;
 
       const parts = nomComplet.split(/\s+/);
-      const prenomBrut = parts.length > 1 ? parts[parts.length - 1] : parts[0];
-      const init = parts.length > 1 ? parts[0].charAt(0).toUpperCase() + '.' : '';
+      // Dans un export Pronote "NOM Prénom", les mots en MAJUSCULES forment le Nom, le reste le Prénom
+      const motsMaj = parts.filter(w => w.length > 1 && w === w.toUpperCase() && /[A-ZÀ-Ÿ]/.test(w));
+      const motsPrenom = parts.filter(w => !motsMaj.includes(w));
+
+      const nomBrut = (motsMaj.length > 0 ? motsMaj.join(' ') : (parts.length > 1 ? parts[0] : '')).toUpperCase();
+      const prenomBrut = motsPrenom.length > 0 ? motsPrenom.join(' ') : (parts.length > 1 ? parts[parts.length - 1] : parts[0]);
+      const init = nomBrut ? nomBrut.charAt(0).toUpperCase() + '.' : '';
 
       counts[prenomBrut.toLowerCase()] = (counts[prenomBrut.toLowerCase()] || 0) + 1;
-      elevesBruts.push({ prenomBrut, init, dateNaissance: dateNais });
+      elevesBruts.push({ nomBrut, prenomBrut, init, dateNaissance: dateNais });
     }
 
     function genCode() {
@@ -46,6 +51,7 @@ function analyserCsvPronote(input) {
       const estDbl = counts[e.prenomBrut.toLowerCase()] > 1;
       return {
         ordre: idx + 1,
+        nom: e.nomBrut || null,
         prenom: estDbl && e.init ? (e.prenomBrut + ' ' + e.init) : e.prenomBrut,
         date_naissance: e.dateNaissance,
         code_eleve: genCode()
