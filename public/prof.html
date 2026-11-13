@@ -463,13 +463,17 @@
         <div class="card">
           <h3><i class="fa-solid fa-square-poll-vertical"></i> Copies & Résultats des Élèves</h3>
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
               <select id="filtreClasseSelect" class="input-field" style="margin-bottom:0;" onchange="onChangeFiltreClasseResultats()">
                 <option value="">Toutes les classes</option>
               </select>
               <select id="filtreSeanceSelect" class="input-field" style="margin-bottom:0;" onchange="filtrerResultats()">
                 <option value="">Toutes les séances</option>
               </select>
+              <label style="display:inline-flex; align-items:center; gap:6px; background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:7px 12px; border-radius:6px; font-size:0.84rem; font-weight:600; cursor:pointer; user-select:none;">
+                <input type="checkbox" id="filtreNonExporteesCheckbox" onchange="filtrerResultats()" style="width:15px; height:15px; cursor:pointer;">
+                Afficher seulement les copies non exportées
+              </label>
             </div>
             <div style="display:flex; gap:8px;">
               <button type="button" class="btn btn-pdf" onclick="ouvrirModalExportPronote()">
@@ -490,6 +494,7 @@
                 <th>Note / Q. faites</th>
                 <th>Alertes Sortie</th>
                 <th>Temps hors écran</th>
+                <th style="text-align:center;">Export Pronote</th>
               </tr>
             </thead>
             <tbody id="tableNotesBody"></tbody>
@@ -606,6 +611,13 @@
         L'ordre des lignes correspond scrupuleusement à l'ordre d'origine de votre fichier Pronote (tri alphabétique du Nom).
       </p>
       <div id="previewExportContainer" style="flex:1; overflow-y:auto; margin-bottom:12px;"></div>
+      <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:10px 12px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:700; color:#166534; font-size:0.9rem; cursor:pointer; margin:0;">
+          <input type="checkbox" id="checkboxImportPronoteFait" onchange="basculerStatutImportPronote(this.checked)" style="width:17px; height:17px; cursor:pointer;">
+          <span>Import Pronote fait</span>
+        </label>
+        <span id="statutSauvegardeExportPronote" style="font-size:0.78rem; color:#15803d;"></span>
+      </div>
       <div style="display:flex; gap:10px;">
         <button type="button" class="btn btn-success" style="flex:1; justify-content:center;" onclick="copierNotesPressePapier()">
           📋 Copier la colonne pour Pronote

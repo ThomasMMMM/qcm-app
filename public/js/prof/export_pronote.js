@@ -1,4 +1,5 @@
 let elevesClassePourExport = [];
+let copiesIdsDansExportCourant = [];
 
 function obtenirNoteRetenuePourExport(noteFound) {
   if (!noteFound) return null;
@@ -18,7 +19,6 @@ function obtenirNotesTrieesPourExport() {
     ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId)
     : [...memoireToutesLesNotes];
 
-  // Toujours privilégier la copie la plus récente (id ou date_soumission la plus élevée)
   return notesSelection.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
 }
 
@@ -49,6 +49,8 @@ function fermerModalExportPronote() {
 
 function afficherApercuExport() {
   const notesTriees = obtenirNotesTrieesPourExport();
+  copiesIdsDansExportCourant = [];
+  let copiesDejaExportees = 0;
 
   const htmlRows = elevesClassePourExport.map((el, idx) => {
     const nomComplet = [el.nom, el.prenom].filter(Boolean).join(' ');
@@ -56,6 +58,11 @@ function afficherApercuExport() {
 
     let noteStr = '<span style="color:#94a3b8; font-style:italic;">Absent / Non fait</span>';
     if (noteFound) {
+      copiesIdsDansExportCourant.push(noteFound.id);
+      if (Number(noteFound.exporte_pronote) === 1) {
+        copiesDejaExportees++;
+      }
+
       const noteExport = obtenirNoteRetenuePourExport(noteFound);
       const estProrata = (
         noteFound.note_proportionnelle !== null &&
@@ -70,12 +77,68 @@ function afficherApercuExport() {
     return `<tr><td style="text-align:center;">${idx + 1}</td><td><strong>${nomComplet || el.prenom}</strong></td><td style="text-align:center;">${noteStr}</td></tr>`;
   }).join('');
 
+  const cb = document.getElementById('checkboxImportPronoteFait');
+  const statutEl = document.getElementById('statutSauvegardeExportPronote');
+  if (cb) {
+    cb.disabled = (copiesIdsDansExportCourant.length === 0);
+    cb.checked = (copiesIdsDansExportCourant.length > 0 && copiesDejaExportees === copiesIdsDansExportCourant.length);
+  }
+  if (statutEl) {
+    if (copiesIdsDansExportCourant.length === 0) {
+      statutEl.innerText = "Aucune copie à marquer";
+    } else if (copiesDejaExportees === copiesIdsDansExportCourant.length) {
+      statutEl.innerText = `✓ ${copiesDejaExportees}/${copiesIdsDansExportCourant.length} marquée(s)`;
+    } else {
+      statutEl.innerText = `${copiesDejaExportees}/${copiesIdsDansExportCourant.length} déjà marquée(s)`;
+    }
+  }
+
   document.getElementById('previewExportContainer').innerHTML = `
     <table>
       <thead><tr><th style="width:40px; text-align:center;">N°</th><th>Élève</th><th style="text-align:center; width:150px;">Note exportée</th></tr></thead>
       <tbody>${htmlRows}</tbody>
     </table>
   `;
+}
+
+async function basculerStatutImportPronote(estFait) {
+  if (!copiesIdsDansExportCourant.length) return;
+  const statutEl = document.getElementById('statutSauvegardeExportPronote');
+  if (statutEl) statutEl.innerText = "Enregistrement...";
+
+  try {
+    const res = await fetch('/api/resultats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "marquer_export_pronote",
+        copie_ids: copiesIdsDansExportCourant,
+        exporte: estFait
+      })
+    });
+
+    if (res.ok) {
+      // Mise à jour immédiate en mémoire locale
+      memoireToutesLesNotes.forEach(n => {
+        if (copiesIdsDansExportCourant.includes(n.id)) {
+          n.exporte_pronote = estFait ? 1 : 0;
+        }
+      });
+
+      if (statutEl) {
+        statutEl.innerText = estFait
+          ? `✓ ${copiesIdsDansExportCourant.length} copie(s) marquée(s) comme exportée(s)`
+          : "Marquage retiré";
+      }
+
+      if (typeof filtrerResultats === 'function') filtrerResultats();
+      if (typeof actualiserCompteursTuiles === 'function') actualiserCompteursTuiles();
+    } else if (statutEl) {
+      statutEl.innerText = "Erreur lors de l'enregistrement";
+    }
+  } catch (e) {
+    if (statutEl) statutEl.innerText = "Erreur réseau";
+  }
 }
 
 function copierNotesPressePapier() {
@@ -88,14 +151,13 @@ function copierNotesPressePapier() {
   }).join('\r\n');
 
   navigator.clipboard.writeText(colonneTexte).then(() => {
-    alert("✓ Notes copiées dans le presse-papier !\n\nCollez directement dans la première case de la colonne Pronote avec Ctrl + V.");
+    alert("✓ Notes copiées dans le presse-papier !\n\nCollez directement dans la première case de la colonne Pronote avec Ctrl + V.\nPensez à cocher « Import Pronote fait » si l'import est terminé.");
   });
 }
 
 function telechargerCsvPronote() {
   const notesTriees = obtenirNotesTrieesPourExport();
 
-  // Format officiel PRONOTE : 4 colonnes distinctes avec UTF-8 BOM (\uFEFF)
   let csvContent = "\uFEFFNom;Prenom;Date_naissance;Note\r\n";
 
   elevesClassePourExport.forEach(el => {

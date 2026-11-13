@@ -176,16 +176,20 @@ function actualiserCompteursTuiles() {
   setText('navBadgeSeances', actives.length);
   setText('kpiSubSeances', `${seances.length} séance${seances.length > 1 ? 's' : ''} au total`);
 
-  // 5. Résultats & Copies
+  // 5. Résultats & Copies (avec compteur de copies à exporter vers Pronote)
   const notes = (typeof memoireToutesLesNotes !== 'undefined') ? memoireToutesLesNotes : [];
+  const nbAExporter = notes.filter(n => Number(n.exporte_pronote) !== 1).length;
   setText('kpiNbCopies', notes.length);
-  setText('navBadgeResultats', notes.length);
-  if (notes.length > 0) {
-    const notesValides = notes.map(n => Number(n.note)).filter(v => !isNaN(v));
-    const moy = notesValides.length ? (notesValides.reduce((a, b) => a + b, 0) / notesValides.length).toFixed(1) : '—';
-    setText('kpiSubCopies', `Moyenne globale : ${moy}/20`);
-  } else {
-    setText('kpiSubCopies', 'Aucune copie rendue');
+  setText('navBadgeResultats', nbAExporter > 0 ? `${nbAExporter} à exp.` : notes.length);
+  const elSubCopies = document.getElementById('kpiSubCopies');
+  if (elSubCopies) {
+    if (notes.length === 0) {
+      elSubCopies.innerText = 'Aucune copie rendue';
+    } else if (nbAExporter > 0) {
+      elSubCopies.innerHTML = `<strong style="color:#b45309;">${nbAExporter} copie${nbAExporter > 1 ? 's' : ''} à exporter vers Pronote</strong>`;
+    } else {
+      elSubCopies.innerHTML = `<span style="color:#15803d; font-weight:600;">✓ Toutes exportées vers Pronote</span>`;
+    }
   }
 
   // 6. Bloc résumé : Séances actives

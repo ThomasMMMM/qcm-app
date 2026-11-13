@@ -29,7 +29,6 @@ function mettreAJourOptionsSeancesSelonClasse() {
       return `<option value="${s.id}">${libelle}</option>`;
     }).join('');
 
-  // Conserver la séance sélectionnée uniquement si elle appartient toujours à la classe
   if (valeurActuelle && seancesDisponibles.some(s => String(s.id) === String(valeurActuelle))) {
     selSeance.value = valeurActuelle;
   } else {
@@ -50,6 +49,7 @@ async function chargerResultatsProf() {
     memoireToutesLesNotes = data.notes || [];
     mettreAJourOptionsSeancesSelonClasse();
     filtrerResultats();
+    if (typeof actualiserCompteursTuiles === 'function') actualiserCompteursTuiles();
 
     const sorties = data.sorties || [];
     const tbodySorties = document.getElementById('tableSortiesBody');
@@ -69,6 +69,8 @@ async function chargerResultatsProf() {
 function filtrerResultats() {
   const classeFiltreId = document.getElementById('filtreClasseSelect').value;
   const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
+  const cbNonExportees = document.getElementById('filtreNonExporteesCheckbox');
+  const seulementNonExportees = cbNonExportees ? cbNonExportees.checked : false;
 
   let filtrees = memoireToutesLesNotes;
   if (seanceFiltreId) {
@@ -80,6 +82,9 @@ function filtrerResultats() {
       filtrees = filtrees.filter(n => (n.classe_nom === cl.nom) || (n.classe === cl.nom));
     }
   }
+  if (seulementNonExportees) {
+    filtrees = filtrees.filter(n => Number(n.exporte_pronote) !== 1);
+  }
 
   let moyenne = 0;
   if (filtrees.length > 0) {
@@ -87,9 +92,11 @@ function filtrerResultats() {
     moyenne = (total / filtrees.length).toFixed(2);
   }
 
-  document.getElementById('statCopiesText').innerText = `${filtrees.length} copie(s) ${filtrees.length > 0 ? `(Moyenne : ${moyenne}/20)` : ''}`;
+  const nbNonExporteesSelection = filtrees.filter(n => Number(n.exporte_pronote) !== 1).length;
+  document.getElementById('statCopiesText').innerText = `${filtrees.length} copie(s) ${filtrees.length > 0 ? `(Moyenne : ${moyenne}/20 • ${nbNonExporteesSelection} à exporter)` : ''}`;
+
   const tbody = document.getElementById('tableNotesBody');
-  tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='8' style='text-align:center; color:#64748b; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
+  tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='9' style='text-align:center; color:#64748b; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
     filtrees.map(n => {
       const nbS = n.nb_sorties || 0;
       const durS = parseInt(n.duree_sorties) || 0;
@@ -108,6 +115,11 @@ function filtrerResultats() {
           renduTemps = '<span style="color:#b45309; font-size:0.8rem; font-style:italic;">Non mesuré</span>';
         }
       }
+
+      const estExporte = Number(n.exporte_pronote) === 1;
+      const badgeExport = estExporte
+        ? `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">✓ Exportée</span>`
+        : `<span class="badge" style="background:#fef3c7; color:#b45309; font-weight:700;">⏳ À exporter</span>`;
 
       return `
         <tr>
@@ -137,6 +149,7 @@ function filtrerResultats() {
             }
           </td>
           <td>${renduTemps}</td>
+          <td style="text-align:center;">${badgeExport}</td>
         </tr>
       `;
     }).join('');
