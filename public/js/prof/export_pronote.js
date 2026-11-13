@@ -12,6 +12,25 @@ function obtenirNoteRetenuePourExport(noteFound) {
   return estIncomplet ? Number(noteFound.note_proportionnelle) : Number(noteFound.note);
 }
 
+function obtenirNotesTrieesPourExport() {
+  const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
+  const notesSelection = seanceFiltreId
+    ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId)
+    : [...memoireToutesLesNotes];
+
+  // Toujours privilégier la copie la plus récente (id ou date_soumission la plus élevée)
+  return notesSelection.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+}
+
+function trouverCopieEleve(notesTriees, el) {
+  const nomEleve = (el.nom || el.prenom || "").trim().toUpperCase();
+  return notesTriees.find(n =>
+    (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) ||
+    (nomEleve && n.nom && n.nom.toUpperCase() === nomEleve) ||
+    (n.nom === el.prenom)
+  );
+}
+
 async function ouvrirModalExportPronote() {
   const classeFiltreId = document.getElementById('filtreClasseSelect').value;
   if (!classeFiltreId) {
@@ -29,16 +48,11 @@ function fermerModalExportPronote() {
 }
 
 function afficherApercuExport() {
-  const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
-  const notesSelection = seanceFiltreId ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId) : memoireToutesLesNotes;
+  const notesTriees = obtenirNotesTrieesPourExport();
 
   const htmlRows = elevesClassePourExport.map((el, idx) => {
     const nomComplet = [el.nom, el.prenom].filter(Boolean).join(' ');
-    const noteFound = notesSelection.find(n =>
-      (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) ||
-      (el.nom && n.nom && n.nom.toUpperCase() === el.nom.toUpperCase()) ||
-      (n.nom === el.prenom)
-    );
+    const noteFound = trouverCopieEleve(notesTriees, el);
 
     let noteStr = '<span style="color:#94a3b8; font-style:italic;">Absent / Non fait</span>';
     if (noteFound) {
@@ -65,15 +79,10 @@ function afficherApercuExport() {
 }
 
 function copierNotesPressePapier() {
-  const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
-  const notesSelection = seanceFiltreId ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId) : memoireToutesLesNotes;
+  const notesTriees = obtenirNotesTrieesPourExport();
 
   const colonneTexte = elevesClassePourExport.map(el => {
-    const noteFound = notesSelection.find(n =>
-      (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) ||
-      (el.nom && n.nom && n.nom.toUpperCase() === el.nom.toUpperCase()) ||
-      (n.nom === el.prenom)
-    );
+    const noteFound = trouverCopieEleve(notesTriees, el);
     const noteExport = obtenirNoteRetenuePourExport(noteFound);
     return (noteExport !== null && !isNaN(noteExport)) ? String(noteExport).replace('.', ',') : "";
   }).join('\r\n');
@@ -84,8 +93,7 @@ function copierNotesPressePapier() {
 }
 
 function telechargerCsvPronote() {
-  const seanceFiltreId = document.getElementById('filtreSeanceSelect').value;
-  const notesSelection = seanceFiltreId ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId) : memoireToutesLesNotes;
+  const notesTriees = obtenirNotesTrieesPourExport();
 
   // Format officiel PRONOTE : 4 colonnes distinctes avec UTF-8 BOM (\uFEFF)
   let csvContent = "\uFEFFNom;Prenom;Date_naissance;Note\r\n";
@@ -95,11 +103,7 @@ function telechargerCsvPronote() {
     const prenomEleve = (el.prenom || "").trim();
     const dateNais = (el.date_naissance || "").trim();
 
-    const noteFound = notesSelection.find(n =>
-      (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) ||
-      (nomEleve && n.nom && n.nom.toUpperCase() === nomEleve) ||
-      (n.nom === el.prenom)
-    );
+    const noteFound = trouverCopieEleve(notesTriees, el);
 
     let noteStr = "";
     const noteExport = obtenirNoteRetenuePourExport(noteFound);
