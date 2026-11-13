@@ -1,4 +1,4 @@
-﻿let listeSeancesMemoire = [];
+let listeSeancesMemoire = [];
 let offsetSemaine = 0;
 
 async function creerNouvelleSeance() {
@@ -56,7 +56,7 @@ async function supprimerSeance(seanceId, code) {
     } else {
       alert("Erreur lors de la suppression : " + (data.error || "Erreur serveur"));
     }
-  } catch(e) {}
+  } catch (e) {}
 }
 
 async function chargerSeancesProf() {
@@ -65,10 +65,14 @@ async function chargerSeancesProf() {
     const res = await fetch(`/api/seances?prof_id=${currentProf.id}`);
     listeSeancesMemoire = await res.json();
 
-    const selFiltre = document.getElementById('filtreSeanceSelect');
-    if (selFiltre) {
-      selFiltre.innerHTML = '<option value="">Toutes les séances</option>' +
-        listeSeancesMemoire.map(s => `<option value="${s.id}">${s.code_session} (${s.classe_nom})</option>`).join('');
+    if (typeof mettreAJourOptionsSeancesSelonClasse === 'function') {
+      mettreAJourOptionsSeancesSelonClasse();
+    } else {
+      const selFiltre = document.getElementById('filtreSeanceSelect');
+      if (selFiltre) {
+        selFiltre.innerHTML = '<option value="">Toutes les séances</option>' +
+          listeSeancesMemoire.map(s => `<option value="${s.id}">${s.code_session} (${s.classe_nom})</option>`).join('');
+      }
     }
 
     const tbody = document.getElementById('tableSeancesBody');
@@ -94,7 +98,7 @@ async function chargerSeancesProf() {
       `).join('');
 
     afficherPlanningSemaine();
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function changerSemainePlanning(delta) {
@@ -108,7 +112,7 @@ function getLundiSemaine(offset) {
   const diffToMonday = (day === 0 ? -6 : 1) - day;
   const monday = new Date(now);
   monday.setDate(now.getDate() + diffToMonday + (offset * 7));
-  monday.setHours(0,0,0,0);
+  monday.setHours(0, 0, 0, 0);
   return monday;
 }
 

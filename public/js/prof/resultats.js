@@ -1,4 +1,46 @@
-﻿let memoireToutesLesNotes = [];
+let memoireToutesLesNotes = [];
+
+function mettreAJourOptionsSeancesSelonClasse() {
+  const selClasse = document.getElementById('filtreClasseSelect');
+  const selSeance = document.getElementById('filtreSeanceSelect');
+  if (!selSeance) return;
+
+  const classeFiltreId = selClasse ? selClasse.value : "";
+  const valeurActuelle = selSeance.value;
+  const seances = (typeof listeSeancesMemoire !== 'undefined') ? listeSeancesMemoire : [];
+
+  let seancesDisponibles = seances;
+  if (classeFiltreId) {
+    const cl = (typeof listeClassesMemoire !== 'undefined')
+      ? listeClassesMemoire.find(c => String(c.id) === String(classeFiltreId))
+      : null;
+
+    seancesDisponibles = seances.filter(s =>
+      String(s.classe_id) === String(classeFiltreId) ||
+      (cl && s.classe_nom === cl.nom)
+    );
+  }
+
+  selSeance.innerHTML = '<option value="">Toutes les séances</option>' +
+    seancesDisponibles.map(s => {
+      const libelle = classeFiltreId
+        ? `${s.code_session}${s.qcm_titre ? ' — ' + s.qcm_titre : ''}`
+        : `${s.code_session} (${s.classe_nom})`;
+      return `<option value="${s.id}">${libelle}</option>`;
+    }).join('');
+
+  // Conserver la séance sélectionnée uniquement si elle appartient toujours à la classe
+  if (valeurActuelle && seancesDisponibles.some(s => String(s.id) === String(valeurActuelle))) {
+    selSeance.value = valeurActuelle;
+  } else {
+    selSeance.value = "";
+  }
+}
+
+function onChangeFiltreClasseResultats() {
+  mettreAJourOptionsSeancesSelonClasse();
+  filtrerResultats();
+}
 
 async function chargerResultatsProf() {
   if (!currentProf) return;
@@ -6,12 +48,13 @@ async function chargerResultatsProf() {
     const res = await fetch(`/api/resultats?prof_id=${currentProf.id}`);
     const data = await res.json();
     memoireToutesLesNotes = data.notes || [];
+    mettreAJourOptionsSeancesSelonClasse();
     filtrerResultats();
 
     const sorties = data.sorties || [];
     const tbodySorties = document.getElementById('tableSortiesBody');
     if (tbodySorties) {
-      tbodySorties.innerHTML = sorties.length === 0 ? "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:10px;'>Aucun incident consigné.</td></tr>" :
+      tbodySorties.innerHTML = sorties.length === 0 ? "<tr><td colspan='3' style='text-align:center; color:#64748b; padding:10px;'>Aucun incident consigné.</td></tr>" :
         sorties.map(s => `
           <tr>
             <td>${new Date(s.horodatage).toLocaleTimeString()}</td>
@@ -20,7 +63,7 @@ async function chargerResultatsProf() {
           </tr>
         `).join('');
     }
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function filtrerResultats() {
@@ -46,7 +89,7 @@ function filtrerResultats() {
 
   document.getElementById('statCopiesText').innerText = `${filtrees.length} copie(s) ${filtrees.length > 0 ? `(Moyenne : ${moyenne}/20)` : ''}`;
   const tbody = document.getElementById('tableNotesBody');
-  tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='8' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
+  tbody.innerHTML = filtrees.length === 0 ? "<tr><td colspan='8' style='text-align:center; color:#64748b; padding:14px;'>Aucune copie pour cette sélection.</td></tr>" :
     filtrees.map(n => {
       const nbS = n.nb_sorties || 0;
       const durS = parseInt(n.duree_sorties) || 0;
@@ -57,12 +100,12 @@ function filtrerResultats() {
         txtDuree = min > 0 ? (min + " min " + (sec > 0 ? sec + " s" : "")) : (sec + " s");
       }
 
-      let renduTemps = '<span style="color:#94a3b8;">0 s</span>';
+      let renduTemps = '<span style="color:#475569;">0 s</span>';
       if (nbS > 0) {
         if (durS > 0) {
           renduTemps = `<strong style="color:#b91c1c;">${txtDuree}</strong>`;
         } else {
-          renduTemps = '<span style="color:#d97706; font-size:0.8rem; font-style:italic;">Non mesuré</span>';
+          renduTemps = '<span style="color:#b45309; font-size:0.8rem; font-style:italic;">Non mesuré</span>';
         }
       }
 
@@ -82,9 +125,9 @@ function filtrerResultats() {
                      </div>`
                   : `<div>
                        <strong style="color:#15803d; font-size:0.95rem;">${(n.note_proportionnelle !== null ? Number(n.note_proportionnelle).toFixed(2) : Number(n.note).toFixed(2))} / 20</strong>
-                       <span style="display:block; font-size:0.72rem; color:#64748b;">✓ ${n.questions_traitees}/${n.questions_totales} Q.</span>
+                       <span style="display:block; font-size:0.72rem; color:#475569;">✓ ${n.questions_traitees}/${n.questions_totales} Q.</span>
                      </div>`)
-              : `<span style="color:#94a3b8; font-size:0.8rem;">— (avant maj)</span>`
+              : `<span style="color:#475569; font-size:0.8rem;">— (avant maj)</span>`
             }
           </td>
           <td>
@@ -106,7 +149,7 @@ async function purgerJournalAlertes() {
     const data = await res.json();
     if (res.ok) {
       const tbody = document.getElementById('tableSortiesBody');
-      if (tbody) tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:10px;'>Aucun incident consigné.</td></tr>";
+      if (tbody) tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#64748b; padding:10px;'>Aucun incident consigné.</td></tr>";
       alert("✓ Le journal des sorties d'écran et incidents a été purgé !");
       await chargerResultatsProf();
     } else {
