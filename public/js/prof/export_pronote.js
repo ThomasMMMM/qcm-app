@@ -1,4 +1,16 @@
-﻿let elevesClassePourExport = [];
+let elevesClassePourExport = [];
+
+function obtenirNoteRetenuePourExport(noteFound) {
+  if (!noteFound) return null;
+  const estIncomplet = (
+    noteFound.note_proportionnelle !== null &&
+    noteFound.note_proportionnelle !== undefined &&
+    noteFound.questions_traitees !== null &&
+    noteFound.questions_totales !== null &&
+    Number(noteFound.questions_traitees) < Number(noteFound.questions_totales)
+  );
+  return estIncomplet ? Number(noteFound.note_proportionnelle) : Number(noteFound.note);
+}
 
 async function ouvrirModalExportPronote() {
   const classeFiltreId = document.getElementById('filtreClasseSelect').value;
@@ -22,18 +34,31 @@ function afficherApercuExport() {
 
   const htmlRows = elevesClassePourExport.map((el, idx) => {
     const nomComplet = [el.nom, el.prenom].filter(Boolean).join(' ');
-    const noteFound = notesSelection.find(n => 
-      (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) || 
+    const noteFound = notesSelection.find(n =>
+      (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) ||
       (el.nom && n.nom && n.nom.toUpperCase() === el.nom.toUpperCase()) ||
       (n.nom === el.prenom)
     );
-    const noteStr = noteFound ? `${noteFound.note} / ${noteFound.total}` : '<span style="color:#94a3b8; font-style:italic;">Absent / Non fait</span>';
+
+    let noteStr = '<span style="color:#94a3b8; font-style:italic;">Absent / Non fait</span>';
+    if (noteFound) {
+      const noteExport = obtenirNoteRetenuePourExport(noteFound);
+      const estProrata = (
+        noteFound.note_proportionnelle !== null &&
+        noteFound.note_proportionnelle !== undefined &&
+        Number(noteFound.questions_traitees) < Number(noteFound.questions_totales)
+      );
+      noteStr = estProrata
+        ? `<strong>${noteExport} / ${noteFound.total}</strong> <span style="font-size:0.75rem; color:#b45309;">(${noteFound.questions_traitees}/${noteFound.questions_totales} Q.)</span>`
+        : `${noteExport} / ${noteFound.total}`;
+    }
+
     return `<tr><td style="text-align:center;">${idx + 1}</td><td><strong>${nomComplet || el.prenom}</strong></td><td style="text-align:center;">${noteStr}</td></tr>`;
   }).join('');
 
   document.getElementById('previewExportContainer').innerHTML = `
     <table>
-      <thead><tr><th style="width:40px; text-align:center;">N°</th><th>Élève</th><th style="text-align:center; width:120px;">Note</th></tr></thead>
+      <thead><tr><th style="width:40px; text-align:center;">N°</th><th>Élève</th><th style="text-align:center; width:150px;">Note exportée</th></tr></thead>
       <tbody>${htmlRows}</tbody>
     </table>
   `;
@@ -44,12 +69,13 @@ function copierNotesPressePapier() {
   const notesSelection = seanceFiltreId ? memoireToutesLesNotes.filter(n => n.seance_id == seanceFiltreId) : memoireToutesLesNotes;
 
   const colonneTexte = elevesClassePourExport.map(el => {
-    const noteFound = notesSelection.find(n => 
-      (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) || 
+    const noteFound = notesSelection.find(n =>
+      (el.code_eleve && n.prenom && n.prenom.includes(el.code_eleve)) ||
       (el.nom && n.nom && n.nom.toUpperCase() === el.nom.toUpperCase()) ||
       (n.nom === el.prenom)
     );
-    return noteFound ? String(noteFound.note).replace('.', ',') : "";
+    const noteExport = obtenirNoteRetenuePourExport(noteFound);
+    return (noteExport !== null && !isNaN(noteExport)) ? String(noteExport).replace('.', ',') : "";
   }).join('\r\n');
 
   navigator.clipboard.writeText(colonneTexte).then(() => {
@@ -76,8 +102,9 @@ function telechargerCsvPronote() {
     );
 
     let noteStr = "";
-    if (noteFound && noteFound.note !== undefined && noteFound.note !== null) {
-      noteStr = String(noteFound.note).replace('.', ',');
+    const noteExport = obtenirNoteRetenuePourExport(noteFound);
+    if (noteExport !== null && !isNaN(noteExport)) {
+      noteStr = String(noteExport).replace('.', ',');
     }
 
     csvContent += `${nomEleve};${prenomEleve};${dateNais};${noteStr}\r\n`;
