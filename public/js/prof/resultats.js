@@ -123,7 +123,10 @@ function filtrerResultats() {
 
       return `
         <tr>
-          <td>${new Date(n.date_soumission).toLocaleTimeString()}</td>
+          <td>
+            <div style="font-weight:600; color:#334155; font-size:0.84rem;">${new Date(n.date_soumission).toLocaleDateString('fr-FR')}</div>
+            <div style="font-size:0.78rem; color:#64748b;">${new Date(n.date_soumission).toLocaleTimeString('fr-FR')}</div>
+          </td>
           <td><strong>${n.nom}</strong> ${n.prenom}</td>
           <td><span class="badge">${n.classe_nom || n.classe || '-'}</span></td>
           <td><span class="badge-session">${n.code_session || n.session_code || '-'}</span></td>
