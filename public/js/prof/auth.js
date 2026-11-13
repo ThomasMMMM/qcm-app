@@ -1,4 +1,4 @@
-﻿let currentProf = null;
+let currentProf = null;
 let authMode = "login";
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -6,7 +6,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (savedProf) {
     try {
       currentProf = JSON.parse(savedProf);
-    } catch(e) {
+    } catch (e) {
       currentProf = null;
     }
   }
@@ -20,7 +20,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function afficherDashboard() {
   document.getElementById('viewProfAuth').style.display = 'none';
-  document.getElementById('viewProfDashboard').style.display = 'block';
+  document.getElementById('viewProfDashboard').style.display = 'flex';
   const label = document.getElementById('labelProfNom');
   if (label) label.innerText = currentProf.nom || currentProf.email || 'Enseignant';
   chargerToutesLesDonnees();
@@ -93,14 +93,36 @@ function chargerToutesLesDonnees() {
   if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
   if (typeof chargerResultatsProf === 'function') chargerResultatsProf();
   setTimeout(actualiserCompteursTuiles, 600);
+  setTimeout(actualiserCompteursTuiles, 1500);
 }
 
+// ================= NAVIGATION SIDEBAR & VUE D'ENSEMBLE =================
+function toggleSidebarProf() {
+  const sb = document.getElementById('profSidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  if (sb) sb.classList.toggle('open');
+  if (ov) ov.classList.toggle('open');
+}
 
-// ================= NAVIGATION PAR TUILES =================
+function fermerSidebarMobile() {
+  const sb = document.getElementById('profSidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  if (sb) sb.classList.remove('open');
+  if (ov) ov.classList.remove('open');
+}
+
+function marquerLienSidebarActif(targetId) {
+  document.querySelectorAll('.sidebar-link').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.target === targetId);
+  });
+}
+
 function retournerAuHubProf() {
   document.querySelectorAll('.rubrique-contenu-prof').forEach(el => el.style.display = 'none');
   const hub = document.getElementById('vueHubProf');
   if (hub) hub.style.display = 'block';
+  marquerLienSidebarActif('vueHubProf');
+  fermerSidebarMobile();
   actualiserCompteursTuiles();
 }
 
@@ -113,42 +135,125 @@ function ouvrirRubriqueProf(idRubrique) {
     cible.style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+  marquerLienSidebarActif(idRubrique);
+  fermerSidebarMobile();
+
+  if (idRubrique === 'rubriqueResultats' && typeof chargerResultatsProf === 'function') {
+    chargerResultatsProf();
+  }
 }
 
 function actualiserCompteursTuiles() {
-  // 1. Classes
-  const elClasses = document.getElementById('tuileInfoClasses');
-  if (elClasses && typeof listeClassesMemoire !== 'undefined') {
-    const nbC = listeClassesMemoire.length;
-    elClasses.innerText = nbC > 0 ? (nbC + ' classe' + (nbC > 1 ? 's configurées' : ' configurée')) : '0 classe enregistrée';
-  }
+  // 1. Banque QCM
+  const nbQ = (typeof listeBanqueQcmMemoire !== 'undefined') ? listeBanqueQcmMemoire.length : 0;
+  setText('kpiNbQcm', nbQ);
+  setText('navBadgeBanque', nbQ);
+  setText('kpiSubQcm', nbQ > 1 ? 'Questionnaires disponibles' : 'Questionnaire disponible');
 
-  // 2. Fiches & Matières
-  const elFiches = document.getElementById('tuileInfoFiches');
-  if (elFiches) {
-    const nbF = (typeof listeFichesMemoire !== 'undefined') ? listeFichesMemoire.length : 0;
-    const nbM = (typeof listeMatieresMemoire !== 'undefined') ? listeMatieresMemoire.length : 0;
-    elFiches.innerText = nbF + ' fiche' + (nbF > 1 ? 's' : '') + ' • ' + nbM + ' matière' + (nbM > 1 ? 's' : '');
+  // 2. Classes & Élèves
+  const nbC = (typeof listeClassesMemoire !== 'undefined') ? listeClassesMemoire.length : 0;
+  let totalEleves = 0;
+  if (typeof listeClassesMemoire !== 'undefined') {
+    listeClassesMemoire.forEach(c => {
+      totalEleves += Number(c.nb_eleves || (Array.isArray(c.eleves) ? c.eleves.length : 0));
+    });
   }
+  setText('kpiNbClasses', nbC);
+  setText('navBadgeClasses', nbC);
+  setText('kpiSubClasses', totalEleves > 0 ? `${totalEleves} élève${totalEleves > 1 ? 's' : ''} inscrit${totalEleves > 1 ? 's' : ''}` : 'Groupes configurés');
 
-  // 3. Banque QCM
-  const elBanque = document.getElementById('tuileInfoBanque');
-  if (elBanque && typeof listeBanqueQcmMemoire !== 'undefined') {
-    const nbQ = listeBanqueQcmMemoire.length;
-    elBanque.innerText = nbQ > 0 ? (nbQ + ' questionnaire' + (nbQ > 1 ? 's' : '')) : '0 questionnaire';
-  }
+  // 3. Fiches & Matières
+  const nbF = (typeof listeFichesMemoire !== 'undefined') ? listeFichesMemoire.length : 0;
+  const nbM = (typeof listeMatieresMemoire !== 'undefined') ? listeMatieresMemoire.length : 0;
+  setText('kpiNbFiches', nbF);
+  setText('navBadgeFiches', nbF);
+  setText('kpiSubFiches', `${nbM} matière${nbM > 1 ? 's' : ''}`);
 
   // 4. Séances
-  const elSeances = document.getElementById('tuileInfoSeances');
-  if (elSeances && typeof listeSeancesMemoire !== 'undefined') {
-    const actives = listeSeancesMemoire.filter(s => s.actif).length;
-    elSeances.innerText = actives > 0 ? (actives + ' active' + (actives > 1 ? 's' : '') + ' sur ' + listeSeancesMemoire.length) : '0 active (' + listeSeancesMemoire.length + ' clôturée' + (listeSeancesMemoire.length > 1 ? 's' : '') + ')';
-  }
+  const seances = (typeof listeSeancesMemoire !== 'undefined') ? listeSeancesMemoire : [];
+  const actives = seances.filter(s => s.actif);
+  setText('kpiNbSeances', actives.length);
+  setText('navBadgeSeances', actives.length);
+  setText('kpiSubSeances', `${seances.length} séance${seances.length > 1 ? 's' : ''} au total`);
 
   // 5. Résultats & Copies
-  const elResultats = document.getElementById('tuileInfoResultats');
-  if (elResultats && typeof memoireToutesLesNotes !== 'undefined') {
-    const nbNotes = memoireToutesLesNotes.length;
-    elResultats.innerText = nbNotes > 0 ? (nbNotes + ' copie' + (nbNotes > 1 ? 's enregistrées' : ' enregistrée')) : '0 copie';
+  const notes = (typeof memoireToutesLesNotes !== 'undefined') ? memoireToutesLesNotes : [];
+  setText('kpiNbCopies', notes.length);
+  setText('navBadgeResultats', notes.length);
+  if (notes.length > 0) {
+    const notesValides = notes.map(n => Number(n.note)).filter(v => !isNaN(v));
+    const moy = notesValides.length ? (notesValides.reduce((a, b) => a + b, 0) / notesValides.length).toFixed(1) : '—';
+    setText('kpiSubCopies', `Moyenne globale : ${moy}/20`);
+  } else {
+    setText('kpiSubCopies', 'Aucune copie rendue');
   }
+
+  // 6. Bloc résumé : Séances actives
+  const boxSeances = document.getElementById('resumeSeancesActives');
+  if (boxSeances) {
+    if (actives.length === 0) {
+      boxSeances.innerHTML = `<p style="color:#64748b; font-size:0.86rem; margin:0;">Aucune séance active actuellement. Cliquez sur <strong>Lancer une séance</strong> pour démarrer une évaluation.</p>`;
+    } else {
+      boxSeances.innerHTML = actives.slice(0, 5).map(s => `
+        <div class="resume-list-item">
+          <div style="min-width:0;">
+            <div style="font-weight:700; color:var(--pronote-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${escapeHtmlSimple(s.qcm_titre || 'QCM')}
+            </div>
+            <div style="font-size:0.78rem; color:#64748b;">
+              Classe : <strong>${escapeHtmlSimple(s.classe_nom || s.classe || '—')}</strong> • Code : <code style="background:#e2e8f0; padding:1px 5px; border-radius:4px; font-weight:bold;">${escapeHtmlSimple(s.code_session || '')}</code>
+            </div>
+          </div>
+          <span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.75rem; padding:3px 8px; border-radius:999px; font-weight:700;">Active</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 7. Bloc résumé : Dernières copies soumises
+  const boxCopies = document.getElementById('resumeDernieresCopies');
+  if (boxCopies) {
+    if (notes.length === 0) {
+      boxCopies.innerHTML = `<p style="color:#64748b; font-size:0.86rem; margin:0;">Aucune copie enregistrée pour le moment.</p>`;
+    } else {
+      boxCopies.innerHTML = notes.slice(0, 5).map(n => {
+        const noteAffichee = (n.note_proportionnelle !== null && n.note_proportionnelle !== undefined && n.questions_traitees < n.questions_totales)
+          ? `${Number(n.note_proportionnelle).toFixed(1)}/20 <span style="font-size:0.72rem; color:#b45309;">(prop.)</span>`
+          : `${Number(n.note || 0).toFixed(1)}/20`;
+        const alerteBadge = (Number(n.nb_sorties || 0) > 0)
+          ? `<span style="background:#fee2e2; color:#dc2626; font-size:0.72rem; padding:2px 6px; border-radius:4px; font-weight:700;">⚠️ ${n.nb_sorties} sortie${n.nb_sorties > 1 ? 's' : ''}</span>`
+          : '';
+        return `
+          <div class="resume-list-item">
+            <div style="min-width:0;">
+              <div style="font-weight:700; color:var(--text-color);">
+                ${escapeHtmlSimple((n.nom || '') + ' ' + (n.prenom || ''))}
+                <span style="font-weight:500; color:#64748b; font-size:0.78rem;">(${escapeHtmlSimple(n.classe || '—')})</span>
+              </div>
+              <div style="font-size:0.78rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${escapeHtmlSimple(n.qcm_titre || 'Évaluation')}
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+              ${alerteBadge}
+              <strong style="color:var(--pronote-blue); font-size:0.92rem;">${noteAffichee}</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.innerText = val;
+}
+
+function escapeHtmlSimple(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }

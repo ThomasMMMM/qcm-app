@@ -13,10 +13,15 @@
 <body>
 
   <!-- EN-TÊTE -->
-  <header>
-    <div class="header-title">
-      <i class="fa-solid fa-graduation-cap"></i>
-      <span>Plateforme QCM — Espace Enseignant</span>
+  <header class="prof-topbar">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <button type="button" id="btnToggleSidebar" class="btn-burger" onclick="toggleSidebarProf()" title="Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="header-title">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>Plateforme QCM — Espace Enseignant</span>
+      </div>
     </div>
     <div>
       <a href="/" class="btn btn-simu" style="font-size:0.85rem; padding:6px 14px;">
@@ -25,10 +30,9 @@
     </div>
   </header>
 
-  <div class="container">
-
-    <!-- 1. AUTHENTIFICATION PROFESSEUR -->
-    <div id="viewProfAuth" class="card" style="display:none; max-width:420px; margin:40px auto;">
+  <!-- 1. AUTHENTIFICATION PROFESSEUR -->
+  <div id="viewProfAuth" class="container" style="display:none;">
+    <div class="card" style="max-width:420px; margin:40px auto;">
       <h3 id="authTitle"><i class="fa-solid fa-lock"></i> Connexion Enseignant</h3>
       <div id="nomRegisterGroup" style="display:none; margin-bottom:12px;">
         <label style="font-size:0.85rem; font-weight:bold;">Nom et prénom :</label>
@@ -50,109 +54,174 @@
         <a href="javascript:void(0)" id="authToggleLink" style="color:var(--pronote-blue); font-weight:bold; text-decoration:none;" onclick="toggleAuthMode()">Créer un compte</a>
       </div>
     </div>
+  </div>
 
-    <!-- 2. TABLEAU DE BORD PROFESSEUR -->
-    <div id="viewProfDashboard" style="display:none;">
+  <!-- 2. TABLEAU DE BORD PROFESSEUR AVEC MENU LATÉRAL -->
+  <div id="viewProfDashboard" class="prof-layout" style="display:none;">
 
-      <!-- BANDEAU UTILISATEUR -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; background:white; padding:10px 16px; border-radius:8px; border:1px solid var(--border-color);">
-        <div>
-          <span style="font-size:0.9rem; color:#64748b;">Connecté en tant que :</span>
-          <strong id="labelProfNom" style="color:var(--pronote-blue); margin-left:6px;">Enseignant</strong>
+    <!-- OVERLAY MOBILE -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="fermerSidebarMobile()"></div>
+
+    <!-- MENU LATÉRAL (SIDEBAR) -->
+    <aside id="profSidebar" class="prof-sidebar">
+      <div class="sidebar-user-box">
+        <div class="sidebar-avatar"><i class="fa-solid fa-chalkboard-user"></i></div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-role">Enseignant</div>
+          <div id="labelProfNom" class="sidebar-user-name">Enseignant</div>
         </div>
-        <button type="button" class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="deconnecterProf()">
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">PILOTAGE</div>
+        <button type="button" class="sidebar-link active" data-target="vueHubProf" onclick="retournerAuHubProf()">
+          <i class="fa-solid fa-house"></i>
+          <span>Accueil & Résumé</span>
+        </button>
+        <button type="button" class="sidebar-link" data-target="rubriquePlanning" onclick="ouvrirRubriqueProf('rubriquePlanning')">
+          <i class="fa-solid fa-calendar-week"></i>
+          <span>Planning</span>
+        </button>
+
+        <div class="sidebar-section-label">CONTENUS & GROUPES</div>
+        <button type="button" class="sidebar-link" data-target="rubriqueBanque" onclick="ouvrirRubriqueProf('rubriqueBanque')">
+          <i class="fa-solid fa-box-archive"></i>
+          <span>Banque QCM</span>
+          <span class="sidebar-badge" id="navBadgeBanque">0</span>
+        </button>
+        <button type="button" class="sidebar-link" data-target="rubriqueFiches" onclick="ouvrirRubriqueProf('rubriqueFiches')">
+          <i class="fa-solid fa-book-open"></i>
+          <span>Fiches Synthèse</span>
+          <span class="sidebar-badge" id="navBadgeFiches">0</span>
+        </button>
+        <button type="button" class="sidebar-link" data-target="rubriqueClasses" onclick="ouvrirRubriqueProf('rubriqueClasses')">
+          <i class="fa-solid fa-users"></i>
+          <span>Classes & Élèves</span>
+          <span class="sidebar-badge" id="navBadgeClasses">0</span>
+        </button>
+
+        <div class="sidebar-section-label">ÉVALUATIONS</div>
+        <button type="button" class="sidebar-link" data-target="rubriqueSeances" onclick="ouvrirRubriqueProf('rubriqueSeances')">
+          <i class="fa-solid fa-play"></i>
+          <span>Séances</span>
+          <span class="sidebar-badge badge-green" id="navBadgeSeances">0</span>
+        </button>
+        <button type="button" class="sidebar-link" data-target="rubriqueResultats" onclick="ouvrirRubriqueProf('rubriqueResultats')">
+          <i class="fa-solid fa-square-poll-vertical"></i>
+          <span>Résultats & Copies</span>
+          <span class="sidebar-badge" id="navBadgeResultats">0</span>
+        </button>
+        <button type="button" class="sidebar-link" data-target="rubriqueAlertes" onclick="ouvrirRubriqueProf('rubriqueAlertes')">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Alertes & Incidents</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button type="button" class="btn btn-danger" style="width:100%; justify-content:center; padding:8px 12px; font-size:0.85rem;" onclick="deconnecterProf()">
           <i class="fa-solid fa-power-off"></i> Déconnexion
         </button>
       </div>
+    </aside>
 
-      <!-- ACCUEIL PAR TUILES (DASHBOARD HUB) -->
+    <!-- ZONE DE CONTENU PRINCIPAL -->
+    <main class="prof-main-content">
+
+      <!-- ACCUEIL : VUE D'ENSEMBLE & RÉSUMÉ -->
       <div id="vueHubProf">
-        <div style="margin-bottom:18px;">
-          <h2 style="margin:0 0 4px 0; font-size:1.35rem; color:var(--pronote-dark);">Tableau de bord enseignant</h2>
-          <p style="margin:0; font-size:0.88rem; color:#64748b;">Sélectionnez une rubrique pour gérer vos cours, élèves et devoirs.</p>
+        <div class="dashboard-welcome-header">
+          <div>
+            <h2 style="margin:0 0 4px 0; font-size:1.4rem; color:var(--pronote-dark);">Vue d'ensemble</h2>
+            <p style="margin:0; font-size:0.88rem; color:#64748b;">Synthèse de vos ressources pédagogiques, classes et évaluations en cours.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-success" style="font-size:0.85rem; padding:8px 14px;" onclick="ouvrirRubriqueProf('rubriqueSeances')">
+              <i class="fa-solid fa-play"></i> Lancer une séance
+            </button>
+            <button type="button" class="btn" style="font-size:0.85rem; padding:8px 14px;" onclick="ouvrirRubriqueProf('rubriqueBanque')">
+              <i class="fa-solid fa-file-import"></i> Importer un QCM
+            </button>
+          </div>
         </div>
 
-        <div class="tuiles-grid">
-          <!-- Tuile 1 : Planning -->
-          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriquePlanning')">
-            <div class="tuile-icon icon-planning"><i class="fa-solid fa-calendar-week"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Planning</div>
-              <div class="tuile-info" id="tuileInfoPlanning">Cahier de texte semaine</div>
+        <!-- CARTES KPI -->
+        <div class="kpi-grid">
+          <div class="kpi-card" onclick="ouvrirRubriqueProf('rubriqueBanque')">
+            <div class="kpi-icon icon-banque"><i class="fa-solid fa-box-archive"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiNbQcm">0</div>
+              <div class="kpi-label">QCM en banque</div>
+              <div class="kpi-sub" id="kpiSubQcm">Questionnaires prêts</div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
 
-          <!-- Tuile 2 : Fiches Synthèse -->
-          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueFiches')">
-            <div class="tuile-icon icon-fiches"><i class="fa-solid fa-book-open"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Fiches Synthèse</div>
-              <div class="tuile-info" id="tuileInfoFiches">0 fiche • 0 matière</div>
+          <div class="kpi-card" onclick="ouvrirRubriqueProf('rubriqueClasses')">
+            <div class="kpi-icon icon-classes"><i class="fa-solid fa-users"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiNbClasses">0</div>
+              <div class="kpi-label">Classes configurées</div>
+              <div class="kpi-sub" id="kpiSubClasses">0 élève inscrit</div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
 
-          <!-- Tuile 3 : Classes -->
-          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueClasses')">
-            <div class="tuile-icon icon-classes"><i class="fa-solid fa-users"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Classes</div>
-              <div class="tuile-info" id="tuileInfoClasses">0 classe enregistrée</div>
+          <div class="kpi-card" onclick="ouvrirRubriqueProf('rubriqueFiches')">
+            <div class="kpi-icon icon-fiches"><i class="fa-solid fa-book-open"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiNbFiches">0</div>
+              <div class="kpi-label">Fiches synthèse</div>
+              <div class="kpi-sub" id="kpiSubFiches">0 matière</div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
 
-          <!-- Tuile 4 : Banque QCM -->
-          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueBanque')">
-            <div class="tuile-icon icon-banque"><i class="fa-solid fa-box-archive"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Banque QCM</div>
-              <div class="tuile-info" id="tuileInfoBanque">0 questionnaire</div>
+          <div class="kpi-card" onclick="ouvrirRubriqueProf('rubriqueSeances')">
+            <div class="kpi-icon icon-seances"><i class="fa-solid fa-tower-broadcast"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiNbSeances">0</div>
+              <div class="kpi-label">Séances actives</div>
+              <div class="kpi-sub" id="kpiSubSeances">0 séance au total</div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
 
-          <!-- Tuile 5 : Séances -->
-          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueSeances')">
-            <div class="tuile-icon icon-seances"><i class="fa-solid fa-play"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Séances</div>
-              <div class="tuile-info" id="tuileInfoSeances">0 séance active</div>
+          <div class="kpi-card" onclick="ouvrirRubriqueProf('rubriqueResultats')">
+            <div class="kpi-icon icon-resultats"><i class="fa-solid fa-square-poll-vertical"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiNbCopies">0</div>
+              <div class="kpi-label">Copies rendues</div>
+              <div class="kpi-sub" id="kpiSubCopies">Moyenne : —</div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+        </div>
+
+        <!-- DEUX COLONNES : SÉANCES ACTIVES + DERNIÈRES COPIES -->
+        <div class="dashboard-split-grid">
+          <div class="card" style="margin-bottom:0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h3 style="margin:0; border:none; padding:0; font-size:1.05rem;">
+                <i class="fa-solid fa-play" style="color:#16a34a;"></i> Séances actives en cours
+              </h3>
+              <a href="javascript:void(0)" onclick="ouvrirRubriqueProf('rubriqueSeances')" style="font-size:0.82rem; color:var(--pronote-blue); font-weight:600; text-decoration:none;">Tout gérer →</a>
+            </div>
+            <div id="resumeSeancesActives">
+              <p style="color:#64748b; font-size:0.88rem;">Chargement des séances...</p>
+            </div>
           </div>
 
-          <!-- Tuile 6 : Résultats -->
-          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueResultats')">
-            <div class="tuile-icon icon-resultats"><i class="fa-solid fa-square-poll-vertical"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Résultats</div>
-              <div class="tuile-info" id="tuileInfoResultats">0 copie disponible</div>
+          <div class="card" style="margin-bottom:0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h3 style="margin:0; border:none; padding:0; font-size:1.05rem;">
+                <i class="fa-solid fa-clock-rotate-left" style="color:var(--pronote-blue);"></i> Dernières copies soumises
+              </h3>
+              <a href="javascript:void(0)" onclick="ouvrirRubriqueProf('rubriqueResultats')" style="font-size:0.82rem; color:var(--pronote-blue); font-weight:600; text-decoration:none;">Voir tout →</a>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
-          </div>
-
-          <!-- Tuile 7 : Alertes -->
-          <div class="tuile-card" onclick="ouvrirRubriqueProf('rubriqueAlertes')">
-            <div class="tuile-icon icon-alertes"><i class="fa-solid fa-shield-halved"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Alertes & Incidents</div>
-              <div class="tuile-info" id="tuileInfoAlertes">Sorties d'écran</div>
+            <div id="resumeDernieresCopies">
+              <p style="color:#64748b; font-size:0.88rem;">Chargement des résultats...</p>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
         </div>
       </div>
 
       <!-- RUBRIQUE 1 : PLANNING -->
       <div id="rubriquePlanning" class="rubrique-contenu-prof" style="display:none;">
-        <div class="rubrique-header-bar">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-calendar-week"></i> Planning</span>
-        </div>
         <div class="card">
           <h3><i class="fa-solid fa-calendar-week"></i> Cahier de Texte & Planning de la Semaine</h3>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -166,12 +235,6 @@
 
       <!-- RUBRIQUE 2 : FICHES SYNTHÈSE -->
       <div id="rubriqueFiches" class="rubrique-contenu-prof" style="display:none;">
-        <div class="rubrique-header-bar">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-book-open"></i> Fiches Synthèse</span>
-        </div>
         <div class="card">
           <h3><i class="fa-solid fa-book-open"></i> Fiches Synthèse & Dossiers Ressources</h3>
           <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
@@ -256,12 +319,6 @@
 
       <!-- RUBRIQUE 3 : CLASSES -->
       <div id="rubriqueClasses" class="rubrique-contenu-prof" style="display:none;">
-        <div class="rubrique-header-bar">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-users"></i> Classes</span>
-        </div>
         <div class="card">
           <h3><i class="fa-solid fa-users"></i> Gestion des Classes & Aménagements PAP</h3>
           <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; margin-bottom:14px;">
@@ -296,12 +353,6 @@
 
       <!-- RUBRIQUE 4 : BANQUE DE QCM -->
       <div id="rubriqueBanque" class="rubrique-contenu-prof" style="display:none;">
-        <div class="rubrique-header-bar">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-box-archive"></i> Banque QCM</span>
-        </div>
         <div class="card">
           <h3><i class="fa-solid fa-box-archive"></i> Banque de QCM (Questionnaires réutilisables)</h3>
           <p style="color:#64748b; font-size:0.88rem; margin-bottom:12px;">
@@ -362,12 +413,6 @@
 
       <!-- RUBRIQUE 5 : SÉANCES -->
       <div id="rubriqueSeances" class="rubrique-contenu-prof" style="display:none;">
-        <div class="rubrique-header-bar">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-play"></i> Séances</span>
-        </div>
         <div class="card">
           <h3><i class="fa-solid fa-play"></i> Programmer & Activer une Séance d'Évaluation</h3>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
@@ -415,12 +460,6 @@
 
       <!-- RUBRIQUE 6 : RÉSULTATS -->
       <div id="rubriqueResultats" class="rubrique-contenu-prof" style="display:none;">
-        <div class="rubrique-header-bar">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-square-poll-vertical"></i> Résultats & Copies</span>
-        </div>
         <div class="card">
           <h3><i class="fa-solid fa-square-poll-vertical"></i> Copies & Résultats des Élèves</h3>
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
@@ -460,12 +499,6 @@
 
       <!-- RUBRIQUE 7 : ALERTES -->
       <div id="rubriqueAlertes" class="rubrique-contenu-prof" style="display:none;">
-        <div class="rubrique-header-bar">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubProf()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir au tableau de bord
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-shield-halved"></i> Journal des Alertes</span>
-        </div>
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--pronote-light); padding-bottom:8px; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
             <h3 style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> Journal des Sorties d'Écran et Incidents</h3>
@@ -486,10 +519,12 @@
         </div>
       </div>
 
-    </div>
+    </main>
+  </div>
 
-    <!-- 3. SIMULATEUR PROF -->
-    <div id="viewSimulateurProf" class="card" style="display:none;">
+  <!-- 3. SIMULATEUR PROF -->
+  <div id="viewSimulateurProf" class="container" style="display:none;">
+    <div class="card">
       <div style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
         <span><strong>🔍 Mode Test Professeur :</strong> Les réponses ne sont pas enregistrées.</span>
         <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="quitterSimulation()">Quitter le test</button>
@@ -521,9 +556,11 @@
         </button>
       </div>
     </div>
+  </div>
 
-    <!-- 4. FIN SIMULATION -->
-    <div id="viewSimulateurFin" class="card" style="display:none; max-width:480px; margin:40px auto; text-align:center;">
+  <!-- 4. FIN SIMULATION -->
+  <div id="viewSimulateurFin" class="container" style="display:none;">
+    <div class="card" style="max-width:480px; margin:40px auto; text-align:center;">
       <h3 style="justify-content:center; color:var(--success-green);"><i class="fa-solid fa-circle-check"></i> Fin du test professeur</h3>
       <p style="color:#64748b; font-size:0.95rem;">Simulation réalisée sans enregistrement de note.</p>
       <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin:20px 0;">
@@ -534,11 +571,9 @@
         Retourner au tableau de bord Enseignant
       </button>
     </div>
-
   </div>
 
   <!-- MODALES -->
-  <!-- Modale Matières de la Classe -->
   <div id="modalGestionMatieresClasse" class="modal-overlay">
     <div class="modal-content" style="max-width:550px;">
       <div class="modal-header">
@@ -550,7 +585,6 @@
     </div>
   </div>
 
-  <!-- Modale Élèves PAP -->
   <div id="modalGestionEleves" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header">
@@ -562,7 +596,6 @@
     </div>
   </div>
 
-  <!-- Modale Export Pronote -->
   <div id="modalExportPronote" class="modal-overlay">
     <div class="modal-content" style="max-width:600px;">
       <div class="modal-header">
@@ -584,7 +617,6 @@
     </div>
   </div>
 
-  <!-- Modale Aperçu Fiche Synthèse -->
   <div id="modalApercuFiche" class="modal-overlay">
     <div class="modal-content" style="max-width:850px; height:92vh;">
       <div class="modal-header">
@@ -596,7 +628,6 @@
     </div>
   </div>
 
-  <!-- Modale Doc Ressource Simu -->
   <div id="modalDocRessourceSimu" class="modal-overlay">
     <div class="modal-content" style="max-width:850px; height:92vh;">
       <div class="modal-header">
