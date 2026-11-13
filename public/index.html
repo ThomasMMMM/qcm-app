@@ -2429,8 +2429,13 @@
           }
         }
       }
-      const noteProp20 = (possibleTraite > 0)
-        ? ((scoreFinal / possibleTraite) * 20).toFixed(2)
+      // Sécurité anti-F5 : le total de points possibles traités ne peut pas être inférieur au score déjà obtenu
+      const effectiveTraite = Math.max(possibleTraite, scoreFinal);
+      const questionsTraiteesCorrigees = (effectiveTraite > possibleTraite && questionsTotales > 0)
+        ? Math.max(questionsTraitees, Math.min(questionsTotales, Math.ceil(effectiveTraite)))
+        : questionsTraitees;
+      const noteProp20 = (effectiveTraite > 0)
+        ? Math.min(20, (scoreFinal / effectiveTraite) * 20).toFixed(2)
         : "0.00";
       console.log(`📊 [Calcul final] Score : ${scoreFinal} / ${possibleFinal} => Note transmise : ${note20} / 20`);
 
@@ -2482,7 +2487,7 @@
               duree_sorties: dureeCumuleeSortiesSec || 0,
               note: parseFloat(note20),
               total: 20,
-              questions_traitees: questionsTraitees,
+              questions_traitees: questionsTraiteesCorrigees,
               questions_totales: questionsTotales,
               note_proportionnelle: parseFloat(noteProp20)
             })
