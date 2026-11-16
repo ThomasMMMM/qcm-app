@@ -3022,14 +3022,14 @@
         } else if (q.type === "matching" && Array.isArray(q.subquestions)) {
           q.subquestions.forEach((sub, sIdx) => {
             const sel = document.querySelector(`select[name="matching_sel_${sIdx}"]`);
-            repEleveList.push(`${sub.text} → ${sel ? sel.value : ""}`);
-            bonnesRepList.push(`${sub.text} → ${sub.answer}`);
+            repEleveList.push(`${sub.question || sub.text} → ${sel ? sel.value : ""}`);
+            bonnesRepList.push(`${sub.question || sub.text} → ${sub.answer}`);
           });
         }
 
         const detailItem = {
           index: currentQuestionIndex,
-          question: q.text || q.question || `Question ${currentQuestionIndex + 1}`,
+          question: q.enonce || q.text || q.question || `Question ${currentQuestionIndex + 1}`,
           type: q.type || "multichoice",
           points: Number(q.points || 1),
           score: Number(scoreQuestion.toFixed(2)),
@@ -3423,6 +3423,7 @@
                 </div>
                 <div style="flex-shrink:0;">${badgeScore}</div>
               </div>
+              ${item.image ? `<img src="data:image/png;base64,${item.image}" style="max-width:100%; max-height:160px; border-radius:6px; margin-top:8px;">` : ""}
               ${repEleveBloc}
               ${bonneRepBloc}
               ${explicationBloc}
@@ -3439,6 +3440,16 @@
             </div>
             ${data.has_document ? `<button type="button" class="btn" style="background:#0284c7; padding:5px 10px; font-size:0.78rem;" onclick="ouvrirSupportSeanceCahierTexte(${data.qcm_id})">📖 Revoir le document support</button>` : ""}
           </div>
+          ${(data.intro_situation || data.document_html) ? `
+            <details open style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:10px 14px; margin-bottom:12px;">
+              <summary style="font-weight:700; color:#0369a1; cursor:pointer; font-size:0.9rem;">
+                📋 Situation / Texte d'introduction de l'évaluation
+              </summary>
+              <div style="margin-top:8px; font-size:0.88rem; color:#1e293b; line-height:1.5; max-height:220px; overflow-y:auto;">
+                ${data.intro_situation || data.document_html}
+              </div>
+            </details>
+          ` : ""}
           ${questionsHtml || "<p style='color:#64748b;'>Aucun détail de question disponible pour cette copie.</p>"}
         `;
       } catch (err) {
