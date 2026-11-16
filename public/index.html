@@ -1574,83 +1574,229 @@
     function genererBadgeGarminSvg(codeComp, niveau) {
       const configs = {
         0: { main: "#94a3b8", light: "#f1f5f9", pct: "0%", nivTxt: "VERROUILLÉ", arc: 0, glow: "none" },
-        1: { main: "#dc2626", light: "#fef2f2", pct: "15%", nivTxt: "NIVEAU 1", arc: 52, glow: "drop-shadow(0 0 6px rgba(220,38,38,0.28))" },
-        2: { main: "#ea580c", light: "#fff7ed", pct: "45%", nivTxt: "NIVEAU 2", arc: 155, glow: "drop-shadow(0 0 6px rgba(234,88,12,0.28))" },
-        3: { main: "#0284c7", light: "#f0f9ff", pct: "75%", nivTxt: "NIVEAU 3", arc: 260, glow: "drop-shadow(0 0 6px rgba(2,132,199,0.28))" },
-        4: { main: "#16a34a", light: "#f0fdf4", pct: "100%", nivTxt: "NIVEAU 4", arc: 345, glow: "drop-shadow(0 0 8px rgba(22,163,74,0.35))" }
+        1: { main: "#dc2626", light: "#fef2f2", pct: "15%", nivTxt: "NIVEAU 1", arc: 54, glow: "drop-shadow(0 0 6px rgba(220,38,38,0.26))" },
+        2: { main: "#ea580c", light: "#fff7ed", pct: "45%", nivTxt: "NIVEAU 2", arc: 162, glow: "drop-shadow(0 0 6px rgba(234,88,12,0.26))" },
+        3: { main: "#0284c7", light: "#f0f9ff", pct: "75%", nivTxt: "NIVEAU 3", arc: 270, glow: "drop-shadow(0 0 7px rgba(2,132,199,0.28))" },
+        4: { main: "#16a34a", light: "#f0fdf4", pct: "100%", nivTxt: "NIVEAU 4", arc: 352, glow: "drop-shadow(0 0 9px rgba(22,163,74,0.36))" }
       };
       const cfg = configs[niveau] || configs[0];
+      const codeNorm = String(codeComp || "C1").trim().toUpperCase();
+      const codeTexte = codeNorm.slice(0, 5);
+
       const r = 55;
       const circ = 2 * Math.PI * r;
       const dashLen = (cfg.arc / 360) * circ;
 
-      // Icône centrale évolutive selon le niveau
+      // Motif d'anneau extérieur distinct par compétence
+      const dashAnneaux = {
+        "C1": "18 6 4 6",
+        "C2": "8 4 8 4",
+        "C3": "24 5 2 5",
+        "C4": "12 4 3 4 3 4",
+        "C5": "16 6 16 6"
+      };
+      const dashPattern = dashAnneaux[codeNorm] || "14 5 4 5";
+
+      // Emblème central spécifique à chacune des 5 compétences + évolution sur 4 niveaux
       let iconeCentre = "";
-      if (niveau === 0) {
-        iconeCentre = `
-          <rect x="61" y="54" width="26" height="34" rx="3" fill="none" stroke="${cfg.main}" stroke-width="2.2"/>
-          <line x1="66" y1="63" x2="81" y2="63" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="66" y1="70" x2="81" y2="70" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="66" y1="77" x2="75" y2="77" stroke="${cfg.main}" stroke-width="2"/>
-        `;
-      } else if (niveau === 1) {
-        // Document + triangle d'alerte
-        iconeCentre = `
-          <path d="M58 53 h18 l7 7 v26 h-25 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
-          <line x1="63" y1="63" x2="76" y2="63" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="63" y1="70" x2="74" y2="70" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="63" y1="77" x2="71" y2="77" stroke="${cfg.main}" stroke-width="2"/>
-          <polygon points="84,71 95,89 73,89" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2" stroke-linejoin="round"/>
-          <line x1="84" y1="77" x2="84" y2="83" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="84" cy="86" r="1.2" fill="${cfg.main}"/>
-        `;
-      } else if (niveau === 2) {
-        // Document + loupe d'analyse
-        iconeCentre = `
-          <path d="M57 52 h19 l7 7 v27 h-26 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
-          <line x1="62" y1="62" x2="76" y2="62" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="62" y1="69" x2="72" y2="69" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="62" y1="76" x2="70" y2="76" stroke="${cfg.main}" stroke-width="2"/>
-          <circle cx="81" cy="76" r="9.5" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.6"/>
-          <line x1="88" y1="83" x2="96" y2="91" stroke="${cfg.main}" stroke-width="3.2" stroke-linecap="round"/>
-        `;
-      } else if (niveau === 3) {
-        // Documents connectés + engrenage technique
-        iconeCentre = `
-          <rect x="65" y="49" width="24" height="30" rx="2" fill="#ffffff" stroke="${cfg.main}" stroke-width="2"/>
-          <rect x="57" y="55" width="24" height="30" rx="2" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
-          <line x1="62" y1="63" x2="75" y2="63" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="62" y1="69" x2="72" y2="69" stroke="${cfg.main}" stroke-width="2"/>
-          <circle cx="82" cy="78" r="9" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.4"/>
-          <circle cx="82" cy="78" r="3.5" fill="none" stroke="${cfg.main}" stroke-width="2"/>
-          <path d="M82 66 v3 M82 87 v3 M70 78 h3 M91 78 h3 M73.5 69.5 l2 2 M88.5 84.5 l2 2 M88.5 69.5 l-2 2 M73.5 84.5 l-2 2" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
-        `;
+
+      if (codeNorm === "C1") {
+        // C1 : TRAITER L'INFORMATION (Documents, extraction de données, synthèse)
+        if (niveau <= 1) {
+          iconeCentre = `
+            <path d="M58 52 h18 l7 7 v27 h-25 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+            <line x1="63" y1="62" x2="76" y2="62" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="63" y1="69" x2="73" y2="69" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="63" y1="76" x2="70" y2="76" stroke="${cfg.main}" stroke-width="2"/>
+            ${niveau === 1 ? `<polygon points="84,71 95,89 73,89" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.1" stroke-linejoin="round"/><line x1="84" y1="77" x2="84" y2="83" stroke="${cfg.main}" stroke-width="2"/><circle cx="84" cy="86" r="1.2" fill="${cfg.main}"/>` : ""}
+          `;
+        } else if (niveau === 2) {
+          iconeCentre = `
+            <path d="M56 51 h19 l7 7 v28 h-26 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+            <line x1="61" y1="61" x2="75" y2="61" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="61" y1="68" x2="71" y2="68" stroke="${cfg.main}" stroke-width="2"/>
+            <circle cx="81" cy="76" r="9.5" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.5"/>
+            <line x1="88" y1="83" x2="96" y2="91" stroke="${cfg.main}" stroke-width="3" stroke-linecap="round"/>
+          `;
+        } else if (niveau === 3) {
+          iconeCentre = `
+            <rect x="65" y="49" width="24" height="30" rx="2" fill="#ffffff" stroke="${cfg.main}" stroke-width="2"/>
+            <rect x="57" y="55" width="24" height="30" rx="2" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+            <line x1="62" y1="63" x2="75" y2="63" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="62" y1="69" x2="72" y2="69" stroke="${cfg.main}" stroke-width="2"/>
+            <polyline points="62,78 67,82 76,73" fill="none" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="87" cy="79" r="6" fill="#ffffff" stroke="${cfg.main}" stroke-width="2"/>
+          `;
+        } else {
+          iconeCentre = `
+            <path d="M49 61 q-4 13 4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M101 61 q4 13 -4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <rect x="61" y="51" width="28" height="35" rx="3" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+            <polygon points="75,55 76.8,59 81,59.5 78,62.3 78.8,66.5 75,64.4 71.2,66.5 72,62.3 69,59.5 73.2,59" fill="${cfg.main}"/>
+            <line x1="67" y1="72" x2="83" y2="72" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="67" y1="78" x2="79" y2="78" stroke="${cfg.main}" stroke-width="2"/>
+          `;
+        }
+      } else if (codeNorm === "C2") {
+        // C2 : APPLIQUER UNE DÉMARCHE D'ANALYSE (Cible, radar d'investigation, diagramme de causes)
+        if (niveau <= 1) {
+          iconeCentre = `
+            <circle cx="75" cy="70" r="16" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+            <circle cx="75" cy="70" r="7" fill="none" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="75" y1="50" x2="75" y2="57" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="75" y1="83" x2="75" y2="90" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="55" y1="70" x2="62" y2="70" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="88" y1="70" x2="95" y2="70" stroke="${cfg.main}" stroke-width="2"/>
+          `;
+        } else if (niveau === 2) {
+          iconeCentre = `
+            <circle cx="72" cy="68" r="14" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.4"/>
+            <circle cx="72" cy="68" r="5" fill="${cfg.light}" stroke="${cfg.main}" stroke-width="1.8"/>
+            <line x1="82" y1="78" x2="94" y2="90" stroke="${cfg.main}" stroke-width="3.2" stroke-linecap="round"/>
+            <path d="M54 54 h6 v6 M90 54 h-6 v6 M54 84 h6 v-6" fill="none" stroke="${cfg.main}" stroke-width="1.8"/>
+          `;
+        } else if (niveau === 3) {
+          iconeCentre = `
+            <circle cx="75" cy="70" r="16" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+            <circle cx="75" cy="70" r="9" fill="none" stroke="${cfg.main}" stroke-width="1.8" stroke-dasharray="4 3"/>
+            <circle cx="75" cy="70" r="3" fill="${cfg.main}"/>
+            <line x1="75" y1="70" x2="87" y2="58" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+            <circle cx="87" cy="58" r="2.5" fill="${cfg.main}"/>
+            <path d="M53 53 h7 v7 M97 53 h-7 v7 M53 87 h7 v-7 M97 87 h-7 v-7" fill="none" stroke="${cfg.main}" stroke-width="2"/>
+          `;
+        } else {
+          iconeCentre = `
+            <path d="M49 61 q-4 13 4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M101 61 q4 13 -4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <circle cx="75" cy="70" r="16" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.4"/>
+            <circle cx="75" cy="70" r="9" fill="none" stroke="${cfg.main}" stroke-width="1.8"/>
+            <polyline points="69,70 73.5,74.5 82,65" fill="none" stroke="${cfg.main}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <polygon points="75,47 76.5,50.5 80,51 77.5,53.3 78,56.8 75,55 72,56.8 72.5,53.3 70,51 73.5,50.5" fill="${cfg.main}"/>
+          `;
+        }
+      } else if (codeNorm === "C3") {
+        // C3 : EXPLIQUER UN PHÉNOMÈNE / ENJEU DE PRÉVENTION (Bouclier prévention + signal vital)
+        if (niveau <= 1) {
+          iconeCentre = `
+            <path d="M75 50 L91 57 V70 C91 81 84 88 75 92 C66 88 59 81 59 70 V57 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2" stroke-linejoin="round"/>
+            <line x1="75" y1="63" x2="75" y2="74" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+            <circle cx="75" cy="80" r="1.6" fill="${cfg.main}"/>
+          `;
+        } else if (niveau === 2) {
+          iconeCentre = `
+            <path d="M75 50 L91 57 V70 C91 81 84 88 75 92 C66 88 59 81 59 70 V57 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2" stroke-linejoin="round"/>
+            <polyline points="63,71 69,71 72,64 77,78 80,71 87,71" fill="none" stroke="${cfg.main}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          `;
+        } else if (niveau === 3) {
+          iconeCentre = `
+            <path d="M75 49 L92 56 V70 C92 82 84 89 75 93 C66 89 58 82 58 70 V56 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.4" stroke-linejoin="round"/>
+            <path d="M75 55 L86 60 V70 C86 78 81 83 75 86 C69 83 64 78 64 70 V60 Z" fill="${cfg.light}" stroke="${cfg.main}" stroke-width="1.4"/>
+            <line x1="75" y1="64" x2="75" y2="76" stroke="${cfg.main}" stroke-width="3" stroke-linecap="round"/>
+            <line x1="69" y1="70" x2="81" y2="70" stroke="${cfg.main}" stroke-width="3" stroke-linecap="round"/>
+          `;
+        } else {
+          iconeCentre = `
+            <path d="M49 61 q-4 13 4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M101 61 q4 13 -4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M75 49 L92 56 V70 C92 82 84 89 75 93 C66 89 58 82 58 70 V56 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.4" stroke-linejoin="round"/>
+            <polyline points="67,71 72.5,76.5 84,64" fill="none" stroke="${cfg.main}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          `;
+        }
+      } else if (codeNorm === "C4") {
+        // C4 : PROPOSER UNE SOLUTION POUR RÉSOUDRE UN PROBLÈME (Engrenage & ampoule d'action)
+        if (niveau <= 1) {
+          iconeCentre = `
+            <circle cx="75" cy="70" r="11" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.4"/>
+            <circle cx="75" cy="70" r="4" fill="none" stroke="${cfg.main}" stroke-width="2"/>
+            <path d="M75 54 v4 M75 82 v4 M59 70 h4 M87 70 h4 M64 59 l3 3 M83 78 l3 3 M86 59 l-3 3 M67 78 l-3 3" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+          `;
+        } else if (niveau === 2) {
+          iconeCentre = `
+            <path d="M67 75 C63 72 62 65 66 60 C70 55 80 55 84 60 C88 65 87 72 83 75 L81 81 H69 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2" stroke-linejoin="round"/>
+            <line x1="70" y1="85" x2="80" y2="85" stroke="${cfg.main}" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="72" y1="89" x2="78" y2="89" stroke="${cfg.main}" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="75" y1="49" x2="75" y2="53" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
+            <line x1="57" y1="64" x2="61" y2="65" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
+            <line x1="93" y1="64" x2="89" y2="65" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
+          `;
+        } else if (niveau === 3) {
+          iconeCentre = `
+            <circle cx="68" cy="67" r="9.5" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.3"/>
+            <circle cx="68" cy="67" r="3.5" fill="none" stroke="${cfg.main}" stroke-width="1.8"/>
+            <path d="M68 54 v3 M68 77 v3 M55 67 h3 M78 67 h3 M59 58 l2.5 2.5 M74.5 73.5 l2.5 2.5 M77 58 l-2.5 2.5 M61.5 73.5 l-2.5 2.5" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="85" cy="78" r="7" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+            <circle cx="85" cy="78" r="2.5" fill="${cfg.main}"/>
+            <path d="M85 68 v2.5 M85 85.5 v2.5 M75 78 h2.5 M92.5 78 h2.5" stroke="${cfg.main}" stroke-width="1.8" stroke-linecap="round"/>
+          `;
+        } else {
+          iconeCentre = `
+            <path d="M49 61 q-4 13 4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M101 61 q4 13 -4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M67 74 C63 71 62 64 66 59 C70 54 80 54 84 59 C88 64 87 71 83 74 L81 80 H69 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2" stroke-linejoin="round"/>
+            <polyline points="70,66 74,70 81,62" fill="none" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="70" y1="84" x2="80" y2="84" stroke="${cfg.main}" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="72" y1="88" x2="78" y2="88" stroke="${cfg.main}" stroke-width="2.2" stroke-linecap="round"/>
+          `;
+        }
+      } else if (codeNorm === "C5") {
+        // C5 : ARGUMENTER UN CHOIX (Balance de décision & bulle d'argumentation)
+        if (niveau <= 1) {
+          iconeCentre = `
+            <line x1="75" y1="52" x2="75" y2="87" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+            <line x1="65" y1="87" x2="85" y2="87" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+            <line x1="57" y1="62" x2="93" y2="57" stroke="${cfg.main}" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M52 73 Q57 78 62 73 Z" fill="${cfg.light}" stroke="${cfg.main}" stroke-width="1.8"/>
+            <path d="M88 68 Q93 73 98 68 Z" fill="${cfg.light}" stroke="${cfg.main}" stroke-width="1.8"/>
+            <line x1="57" y1="62" x2="52" y2="73" stroke="${cfg.main}" stroke-width="1.5"/>
+            <line x1="57" y1="62" x2="62" y2="73" stroke="${cfg.main}" stroke-width="1.5"/>
+            <line x1="93" y1="57" x2="88" y2="68" stroke="${cfg.main}" stroke-width="1.5"/>
+            <line x1="93" y1="57" x2="98" y2="68" stroke="${cfg.main}" stroke-width="1.5"/>
+          `;
+        } else if (niveau === 2) {
+          iconeCentre = `
+            <path d="M56 54 h38 a4 4 0 0 1 4 4 v18 a4 4 0 0 1 -4 4 h-22 l-8 8 v-8 h-8 a4 4 0 0 1 -4 -4 v-18 a4 4 0 0 1 4 -4 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2" stroke-linejoin="round"/>
+            <line x1="63" y1="63" x2="87" y2="63" stroke="${cfg.main}" stroke-width="2"/>
+            <line x1="63" y1="70" x2="80" y2="70" stroke="${cfg.main}" stroke-width="2"/>
+          `;
+        } else if (niveau === 3) {
+          iconeCentre = `
+            <line x1="75" y1="51" x2="75" y2="87" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+            <line x1="64" y1="87" x2="86" y2="87" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+            <line x1="56" y1="59" x2="94" y2="59" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M51 71 Q56 76 61 71 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="1.9"/>
+            <path d="M89 71 Q94 76 99 71 Z" fill="#ffffff" stroke="${cfg.main}" stroke-width="1.9"/>
+            <line x1="56" y1="59" x2="51" y2="71" stroke="${cfg.main}" stroke-width="1.5"/>
+            <line x1="56" y1="59" x2="61" y2="71" stroke="${cfg.main}" stroke-width="1.5"/>
+            <line x1="94" y1="59" x2="89" y2="71" stroke="${cfg.main}" stroke-width="1.5"/>
+            <line x1="94" y1="59" x2="99" y2="71" stroke="${cfg.main}" stroke-width="1.5"/>
+            <circle cx="75" cy="51" r="2.8" fill="${cfg.main}"/>
+          `;
+        } else {
+          iconeCentre = `
+            <path d="M49 61 q-4 13 4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M101 61 q4 13 -4 23" fill="none" stroke="${cfg.main}" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M57 53 h36 a4 4 0 0 1 4 4 v18 a4 4 0 0 1 -4 4 h-20 l-8 8 v-8 h-8 a4 4 0 0 1 -4 -4 v-18 a4 4 0 0 1 4 -4 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.3" stroke-linejoin="round"/>
+            <polyline points="67,66 73,72 84,60" fill="none" stroke="${cfg.main}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          `;
+        }
       } else {
-        // Diplôme / document maîtrisé + lauriers et étoiles
+        // Fallback générique pour toute autre compétence personnalisée
         iconeCentre = `
-          <path d="M49 62 q-4 12 4 22" fill="none" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="M101 62 q4 12 -4 22" fill="none" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
-          <rect x="61" y="52" width="28" height="34" rx="3" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
-          <polygon points="75,56 76.8,60 81,60.5 78,63.3 78.8,67.5 75,65.4 71.2,67.5 72,63.3 69,60.5 73.2,60" fill="${cfg.main}"/>
-          <line x1="67" y1="72" x2="83" y2="72" stroke="${cfg.main}" stroke-width="2"/>
-          <line x1="67" y1="78" x2="79" y2="78" stroke="${cfg.main}" stroke-width="2"/>
-          <circle cx="98" cy="49" r="2" fill="${cfg.main}"/>
-          <circle cx="52" cy="49" r="1.8" fill="${cfg.main}"/>
+          <polygon points="75,50 91,60 91,78 75,88 59,78 59,60" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.3"/>
+          <polyline points="68,69 73,74 83,63" fill="none" stroke="${cfg.main}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         `;
       }
-
-      const codeTexte = (codeComp || "C1").slice(0, 5);
 
       return `
         <svg viewBox="0 0 150 144" style="width:128px; height:124px; display:block; margin:0 auto; filter:${cfg.glow};">
           <!-- Anneau extérieur segmenté façon Garmin -->
           <circle cx="75" cy="72" r="63" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.6"/>
-          <circle cx="75" cy="72" r="59" fill="none" stroke="${cfg.main}" stroke-width="1.2" stroke-dasharray="18 6 4 6" opacity="0.75"/>
+          <circle cx="75" cy="72" r="59" fill="none" stroke="${cfg.main}" stroke-width="1.2" stroke-dasharray="${dashPattern}" opacity="0.78"/>
           <circle cx="75" cy="72" r="55" fill="${cfg.light}" stroke="#e2e8f0" stroke-width="5"/>
           ${cfg.arc > 0 ? `<circle cx="75" cy="72" r="55" fill="none" stroke="${cfg.main}" stroke-width="5.2" stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round" transform="rotate(-90 75 72)"/>` : ""}
           <circle cx="75" cy="72" r="46" fill="#ffffff" stroke="${cfg.main}" stroke-width="1.2" opacity="0.85"/>
 
-          <!-- Pastille octogonale haute (Code compétence : C1, C2...) -->
+          <!-- Pastille octogonale haute (Code compétence : C1..C5) -->
           <polygon points="62,6 88,6 93,12 93,23 88,29 62,29 57,23 57,12" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
           <text x="75" y="22" text-anchor="middle" font-size="13" font-weight="800" font-family="system-ui, sans-serif" fill="#1e293b">${codeTexte}</text>
 
@@ -1658,7 +1804,7 @@
           <rect x="108" y="64" width="26" height="15" rx="4" fill="#ffffff" stroke="${cfg.main}" stroke-width="1.2"/>
           <text x="121" y="74.5" text-anchor="middle" font-size="8.5" font-weight="800" font-family="system-ui, sans-serif" fill="${cfg.main}">${cfg.pct}</text>
 
-          <!-- Illustration centrale -->
+          <!-- Illustration centrale spécifique à la compétence et au niveau -->
           ${iconeCentre}
 
           <!-- Cartouche bas (Niveau 1 à 4) -->
