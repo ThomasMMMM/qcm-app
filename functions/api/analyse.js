@@ -1,3 +1,11 @@
+const COMPETENCES_PSE_DEFAUT = [
+  { code: "C1", libelle: "Traiter l'information" },
+  { code: "C2", libelle: "Appliquer une démarche d'analyse" },
+  { code: "C3", libelle: "Expliquer un phénomène / enjeu en lien avec la prévention" },
+  { code: "C4", libelle: "Proposer une solution pour résoudre un problème" },
+  { code: "C5", libelle: "Argumenter un choix" }
+];
+
 export async function onRequestGet(context) {
   try {
     const { request, env } = context;
@@ -8,7 +16,7 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({ error: "prof_id requis" }), { status: 400 });
     }
 
-    // 1. Classes accessibles par l'enseignant (propriétaire ou partagées)
+    // 1. Classes accessibles par l'enseignant
     const { results: classes } = await env.DB.prepare(`
       SELECT DISTINCT c.id, c.nom
       FROM classes c
@@ -17,15 +25,49 @@ export async function onRequestGet(context) {
       ORDER BY c.nom ASC
     `).bind(profId, profId).all();
 
-    // 2. Matières de l'enseignant
-    const { results: matieres } = await env.DB.prepare(`
-      SELECT id, nom
+    // 2. Matières de l'enseignant avec leur référentiel de compétences
+    const { results: matieresRaw } = await env.DB.prepare(`
+      SELECT id, nom, competences_json
       FROM matieres
       WHERE prof_id = ?
       ORDER BY nom ASC
     `).bind(profId).all();
 
-    // 3. Copies soumises sur les séances de l'enseignant (ou classes partagées)
+    const matieres = (matieresRaw || []).map(m => {
+      let comps = COMPETENCES_PSE_DEFAUT;
+      if (m.competences_json) {
+        try {
+          const parsed = JSON.parse(m.competences_json);
+          if (Array.isArray(parsed) && parsed.length > 0) comps = parsed;
+        } catch (e) {}
+      }
+      return {
+        id: m.id,
+        nom: m.nom,
+        competences: comps
+      };
+    });
+
+    // 3. Associations classes <-> matières
+    const { results: classesMatieres } = await env.DB.prepare(`
+      SELECT cm.classe_id, cm.matiere_id
+      FROM classes_matieres cm
+      INNER JOIN classes c ON cm.classe_id = c.id
+      LEFT JOIN professeurs_classes pc ON c.id = pc.classe_id
+      WHERE c.prof_id = ? OR pc.prof_id = ?
+    `).bind(profId, profId).all();
+
+    // 4. Élèves des classes de l'enseignant (pour la matrice Élèves × Compétences et le suivi PAP)
+    const { results: eleves } = await env.DB.prepare(`
+      SELECT DISTINCT e.id, e.classe_id, e.nom, e.prenom, e.code_eleve, COALESCE(e.est_pap, 0) AS est_pap, e.ordre
+      FROM eleves e
+      INNER JOIN classes c ON e.classe_id = c.id
+      LEFT JOIN professeurs_classes pc ON c.id = pc.classe_id
+      WHERE c.prof_id = ? OR pc.prof_id = ?
+      ORDER BY e.ordre ASC, e.nom ASC, e.prenom ASC
+    `).bind(profId, profId).all();
+
+    // 5. Copies soumises sur les séances de l'enseignant
     const { results: copiesBrutes } = await env.DB.prepare(`
       SELECT r.id, r.nom, r.prenom, r.classe, r.qcm_titre,
              r.note, r.total, r.note_proportionnelle, r.questions_traitees, r.questions_totales,
@@ -44,7 +86,6 @@ export async function onRequestGet(context) {
       ORDER BY r.date_soumission DESC
     `).bind(profId, profId, profId).all();
 
-    // Déduplication éventuelle si jointure multiple
     const dejaVus = new Set();
     const copies = [];
     for (const row of (copiesBrutes || [])) {
@@ -73,7 +114,7 @@ export async function onRequestGet(context) {
         seance_id: row.seance_id,
         code_session: row.code_session || "",
         qcm_titre: row.qcm_titre || "",
-        competence_code: row.competence_code || "",
+        competence_code: (row.competence_code || "").toUpperCase(),
         note_brute: Number(noteBrute.toFixed(2)),
         note_retenue: Number(noteRetenue.toFixed(2)),
         est_incomplet: estIncomplet,
@@ -86,7 +127,9 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({
       success: true,
       classes: classes || [],
-      matieres: matieres || [],
+      matieres,
+      classes_matieres: classesMatieres || [],
+      eleves: eleves || [],
       copies
     }), {
       headers: {
