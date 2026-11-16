@@ -598,6 +598,11 @@
             <span class="eleve-nav-left"><i class="fa-solid fa-trophy" style="color:#ca8a04;"></i> <span>Compétences</span></span>
             <span class="eleve-nav-badge" id="navBadgeEleveCompetences">0/0</span>
           </button>
+
+          <button type="button" class="eleve-nav-item" data-rubrique="rubriqueEleveCahierTexte" onclick="ouvrirRubriqueEleve('rubriqueEleveCahierTexte')">
+            <span class="eleve-nav-left"><i class="fa-solid fa-calendar-days" style="color:#0284c7;"></i> <span>Cahier de texte</span></span>
+            <span class="eleve-nav-badge" id="navBadgeEleveCahierTexte">0</span>
+          </button>
         </nav>
 
         <!-- ZONE DE CONTENU PRINCIPALE -->
@@ -638,6 +643,22 @@
                 Voici les matières enseignées dans ta classe et leurs compétences. Chaque QCM réussi débloque progressivement 4 niveaux de badges : <strong>Bronze</strong>, <strong>Argent</strong>, <strong>Or</strong> et <strong>Diamant</strong>.
               </p>
               <div id="conteneurArbreCompetencesEleve"></div>
+            </div>
+          </div>
+
+          <!-- RUBRIQUE 5 : CAHIER DE TEXTE (PLANNING & ACTIVITÉS RÉALISÉES) -->
+          <div id="rubriqueEleveCahierTexte" class="rubrique-contenu-eleve" style="display:none;">
+            <div class="card" style="margin-top:0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <h3 style="margin:0;"><i class="fa-solid fa-calendar-days" style="color:#0284c7;"></i> Cahier de texte de la classe</h3>
+                <select id="filtreMatiereCahierTexte" class="input-field" style="margin:0; width:auto; min-width:190px; font-size:0.85rem;" onchange="afficherCahierTexteEleve()">
+                  <option value="">Toutes les matières</option>
+                </select>
+              </div>
+              <p style="color:#64748b; font-size:0.86rem; margin-top:0; margin-bottom:14px;">
+                Retrouve l'historique chronologique des séances réalisées en classe, tes résultats et les supports associés.
+              </p>
+              <div id="conteneurCahierTexteEleve"></div>
             </div>
           </div>
 
@@ -1426,6 +1447,125 @@
       }
     }
 
+    async function ouvrirSupportSeanceCahierTexte(qcmId) {
+      try {
+        const res = await fetch(`/api/banque?qcm_id=${qcmId}`);
+        const qcm = await res.json();
+        if (!qcm || !qcm.document_html) {
+          alert("Aucun document support disponible pour cette séance.");
+          return;
+        }
+        currentDocumentHtml = `
+          <h2 style="color:var(--pronote-blue); border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:0;">${qcm.titre}</h2>
+          ${qcm.document_html}
+        `;
+        ouvrirDocRessourceEleve();
+      } catch (e) {
+        alert("Impossible de charger le document support.");
+      }
+    }
+
+    function afficherCahierTexteEleve() {
+      const cont = document.getElementById('conteneurCahierTexteEleve');
+      const badgeNav = document.getElementById('navBadgeEleveCahierTexte');
+      const selMatiere = document.getElementById('filtreMatiereCahierTexte');
+      const entries = (sessionEleve && Array.isArray(sessionEleve.cahier_texte)) ? sessionEleve.cahier_texte : [];
+
+      if (badgeNav) badgeNav.innerText = entries.length;
+
+      // Alimenter le filtre des matières présentes dans le cahier de texte
+      if (selMatiere) {
+        const valActuelle = selMatiere.value;
+        const matieresUniques = [...new Set(entries.map(e => e.matiere_nom).filter(Boolean))];
+        selMatiere.innerHTML = '<option value="">Toutes les matières</option>' +
+          matieresUniques.map(m => `<option value="${m}">${m}</option>`).join('');
+        if (valActuelle && matieresUniques.includes(valActuelle)) selMatiere.value = valActuelle;
+      }
+
+      if (!cont) return;
+      const filtreMat = selMatiere ? selMatiere.value : "";
+      const listeFiltree = filtreMat ? entries.filter(e => e.matiere_nom === filtreMat) : entries;
+
+      if (listeFiltree.length === 0) {
+        cont.innerHTML = "<p style='color:#64748b; font-style:italic;'>Aucune séance enregistrée dans le cahier de texte pour le moment.</p>";
+        return;
+      }
+
+      cont.innerHTML = listeFiltree.map(item => {
+        let dateFormatee = "Séance planifiée";
+        if (item.date_seance) {
+          const d = new Date(item.date_seance + "T12:00:00");
+          if (!isNaN(d.getTime())) {
+            const jourSemaine = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            dateFormatee = jourSemaine.charAt(0).toUpperCase() + jourSemaine.slice(1);
+          } else {
+            dateFormatee = item.date_seance;
+          }
+        }
+        const horaireTxt = item.horaire_seance ? ` • ${item.horaire_seance}` : "";
+
+        let badgeStatut = "";
+        let detailDroite = "";
+        let bordureGauche = "#cbd5e1";
+
+        if (item.statut === "fait") {
+          bordureGauche = "#16a34a";
+          const estIncomplet = (
+            item.note_proportionnelle !== null &&
+            item.note_proportionnelle !== undefined &&
+            item.questions_traitees !== null &&
+            item.questions_totales !== null &&
+            Number(item.questions_traitees) < Number(item.questions_totales)
+          );
+          const noteAffichee = estIncomplet ? Number(item.note_proportionnelle).toFixed(2) : item.note;
+          badgeStatut = `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">✓ Fait</span>`;
+          detailDroite = `
+            <div style="text-align:right;">
+              <div style="font-size:1.05rem; font-weight:800; color:var(--pronote-blue);">${noteAffichee} / ${item.total || 20}</div>
+              ${estIncomplet ? `<div style="font-size:0.72rem; color:#b45309;">Note prop. (${item.questions_traitees}/${item.questions_totales} Q.)</div>` : ''}
+            </div>
+          `;
+        } else if (item.statut === "a_faire") {
+          bordureGauche = "#d97706";
+          badgeStatut = `<span class="badge" style="background:#fef3c7; color:#b45309; font-weight:700;">⏳ À faire</span>`;
+          detailDroite = `
+            <button type="button" class="btn btn-success" style="padding:6px 12px; font-size:0.82rem;" onclick="demarrerQuizDepuisEspace('${item.code_session}')">
+              Commencer →
+            </button>
+          `;
+        } else {
+          bordureGauche = "#94a3b8";
+          badgeStatut = `<span class="badge" style="background:#f1f5f9; color:#475569; font-weight:600;">Séance clôturée (non fait)</span>`;
+        }
+
+        return `
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid ${bordureGauche}; border-radius:8px; padding:12px 14px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+              <span style="font-size:0.82rem; font-weight:700; color:#334155;">
+                <i class="fa-regular fa-calendar" style="color:#0284c7;"></i> ${dateFormatee}${horaireTxt}
+              </span>
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                <span class="badge" style="background:#e0f2fe; color:#0369a1;">${item.matiere_nom}</span>
+                ${item.competence_code ? `<span class="badge" style="background:#fef9c3; color:#854d0e; font-weight:700;">🎯 ${item.competence_code}</span>` : ''}
+                ${badgeStatut}
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:700; color:#1e293b; font-size:0.96rem;">${item.qcm_titre}</div>
+                ${item.has_document ? `
+                  <button type="button" class="btn btn-simu" style="margin-top:6px; padding:4px 10px; font-size:0.78rem;" onclick="ouvrirSupportSeanceCahierTexte(${item.qcm_id})">
+                    📖 Revoir le document support
+                  </button>
+                ` : ''}
+              </div>
+              ${detailDroite}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function afficherArbreCompetencesEleve() {
       const cont = document.getElementById('conteneurArbreCompetencesEleve');
       const elTuileComp = document.getElementById('navBadgeEleveCompetences');
@@ -1517,6 +1657,7 @@
       retournerAuHubEleve();
       chargerFichesSyntheseEleve();
       afficherArbreCompetencesEleve();
+      afficherCahierTexteEleve();
 
       const el = sessionEleve.eleve;
       document.getElementById('dashElevePrenom').innerText = el.prenom;

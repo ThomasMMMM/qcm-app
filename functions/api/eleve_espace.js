@@ -86,16 +86,53 @@ export async function onRequestPost(context) {
       seanceIdsPassees = [];
     }
 
-    // 3. Séances actives à faire
-    const seancesActives = await env.DB.prepare(`
-      SELECT s.id AS seance_id, s.code_session, s.date_seance, s.horaire_seance, q.titre AS qcm_titre, q.competence_code
+    // 3. Toutes les séances de la classe (pour "À faire" ET "Cahier de texte")
+    const resToutesSeances = await env.DB.prepare(`
+      SELECT s.id AS seance_id, s.code_session, s.date_seance, s.horaire_seance, s.date_creation,
+             COALESCE(s.actif, 1) AS actif,
+             q.id AS qcm_id, q.titre AS qcm_titre, q.matiere_id, q.competence_code,
+             CASE WHEN q.document_html IS NOT NULL AND TRIM(q.document_html) != '' THEN 1 ELSE 0 END AS has_document,
+             m.nom AS matiere_nom
       FROM seances s
       INNER JOIN qcm_banque q ON s.qcm_id = q.id
-      WHERE s.classe_id = ? AND (s.actif = 1 OR s.actif IS NULL OR s.actif = '1')
-      ORDER BY s.id DESC
+      LEFT JOIN matieres m ON q.matiere_id = m.id
+      WHERE s.classe_id = ?
+      ORDER BY COALESCE(s.date_seance, substr(s.date_creation, 1, 10)) DESC, s.id DESC
     `).bind(eleve.classe_id).all();
 
-    const aFaire = (seancesActives.results || []).filter(s => !seanceIdsPassees.includes(s.seance_id));
+    const toutesSeances = resToutesSeances.results || [];
+
+    const aFaire = toutesSeances.filter(s =>
+      (s.actif == 1 || s.actif === '1') && !seanceIdsPassees.includes(s.seance_id)
+    );
+
+    const cahierTexte = toutesSeances.map(s => {
+      const copie = passes.find(p => Number(p.seance_id) === Number(s.seance_id));
+      const estActif = (s.actif == 1 || s.actif === '1');
+      let statut = "cloture";
+      if (copie) statut = "fait";
+      else if (estActif) statut = "a_faire";
+
+      return {
+        seance_id: s.seance_id,
+        qcm_id: s.qcm_id,
+        code_session: s.code_session,
+        date_seance: s.date_seance || (s.date_creation ? String(s.date_creation).slice(0, 10) : ""),
+        horaire_seance: s.horaire_seance || "",
+        qcm_titre: s.qcm_titre,
+        matiere_id: s.matiere_id,
+        matiere_nom: s.matiere_nom || "Enseignement",
+        competence_code: s.competence_code || "",
+        has_document: s.has_document === 1,
+        statut,
+        note: copie ? copie.note : null,
+        total: copie ? copie.total : 20,
+        note_proportionnelle: copie ? copie.note_proportionnelle : null,
+        questions_traitees: copie ? copie.questions_traitees : null,
+        questions_totales: copie ? copie.questions_totales : null,
+        date_soumission: copie ? copie.date_soumission : null
+      };
+    });
 
     // 4. Construction de l'arbre de compétences : STRICTEMENT les matières associées à la classe de l'élève
     let arbreCompetences = [];
@@ -172,6 +209,7 @@ export async function onRequestPost(context) {
       },
       a_faire: aFaire,
       passes: passes,
+      cahier_texte: cahierTexte,
       arbre_competences: arbreCompetences
     }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
