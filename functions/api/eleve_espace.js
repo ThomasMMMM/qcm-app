@@ -44,7 +44,7 @@ export async function onRequestPost(context) {
 
     const queryEleve = `
       SELECT e.id, e.prenom, e.date_naissance, e.code_eleve, e.classe_id, COALESCE(e.est_pap, 0) AS est_pap,
-             c.nom AS classe_nom, c.prof_id AS classe_prof_id
+             c.nom AS classe_nom
       FROM eleves e
       INNER JOIN classes c ON e.classe_id = c.id
       WHERE UPPER(e.code_eleve) = ? AND LOWER(e.prenom) LIKE ?
@@ -97,11 +97,10 @@ export async function onRequestPost(context) {
 
     const aFaire = (seancesActives.results || []).filter(s => !seanceIdsPassees.includes(s.seance_id));
 
-    // 4. Construction de l'arbre de compétences (toujours visible même sans QCM évalué)
+    // 4. Construction de l'arbre de compétences : STRICTEMENT les matières associées à la classe de l'élève
     let arbreCompetences = [];
     try {
-      // D'abord les matières explicitement liées à la classe
-      let { results: matieresClasse } = await env.DB.prepare(`
+      const { results: matieresClasse } = await env.DB.prepare(`
         SELECT m.id, m.nom, m.competences_json
         FROM matieres m
         INNER JOIN classes_matieres cm ON m.id = cm.matiere_id
@@ -109,27 +108,7 @@ export async function onRequestPost(context) {
         ORDER BY m.nom ASC
       `).bind(eleve.classe_id).all();
 
-      // Repli 1 : Si aucune matière cochée pour la classe, afficher toutes les matières du prof de la classe
-      if ((!matieresClasse || matieresClasse.length === 0) && eleve.classe_prof_id) {
-        const resProfMat = await env.DB.prepare(`
-          SELECT id, nom, competences_json
-          FROM matieres
-          WHERE prof_id = ?
-          ORDER BY nom ASC
-        `).bind(eleve.classe_prof_id).all();
-        matieresClasse = resProfMat.results || [];
-      }
-
-      // Repli 2 : Si le prof n'a encore créé aucune matière, afficher le référentiel PSE par défaut
-      if (!matieresClasse || matieresClasse.length === 0) {
-        matieresClasse = [{
-          id: 0,
-          nom: "Prévention Santé Environnement (PSE)",
-          competences_json: JSON.stringify(COMPETENCES_PSE_DEFAUT)
-        }];
-      }
-
-      arbreCompetences = matieresClasse.map(mat => {
+      arbreCompetences = (matieresClasse || []).map(mat => {
         let listeComps = COMPETENCES_PSE_DEFAUT;
         if (mat.competences_json) {
           try {
@@ -140,7 +119,7 @@ export async function onRequestPost(context) {
 
         const branches = listeComps.map(comp => {
           const copiesComp = passes.filter(p =>
-            (Number(mat.id) === 0 || Number(p.matiere_id) === Number(mat.id)) &&
+            Number(p.matiere_id) === Number(mat.id) &&
             String(p.competence_code || "").toUpperCase() === String(comp.code || "").toUpperCase()
           );
 
