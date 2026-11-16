@@ -120,6 +120,8 @@ export async function onRequestGet(context) {
         est_incomplet: estIncomplet,
         questions_traitees: row.questions_traitees,
         questions_totales: row.questions_totales,
+        nb_sorties: Number(row.nb_sorties || 0),
+        duree_sorties: Number(row.duree_sorties || 0),
         date_soumission: row.date_soumission
       });
     }

@@ -331,6 +331,288 @@ function construireSectionCompetences(copiesFiltrees, classeIdFiltre, matiereIdF
   }).join("");
 }
 
+function construireCourbeSvgEleve(copiesChrono) {
+  if (!copiesChrono || copiesChrono.length === 0) {
+    return `<p style="color:#64748b; font-size:0.86rem; font-style:italic;">Aucune copie enregistrée pour cet élève.</p>`;
+  }
+
+  const w = 680;
+  const h = 210;
+  const padL = 42;
+  const padR = 24;
+  const padT = 22;
+  const padB = 46;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  const n = copiesChrono.length;
+  const getX = (idx) => n === 1 ? padL + plotW / 2 : padL + (idx / (n - 1)) * plotW;
+  const getY = (note) => padT + plotH - (Math.max(0, Math.min(20, Number(note || 0))) / 20) * plotH;
+
+  // Lignes horizontales de repère (0, 5, 10, 15, 20)
+  const grilles = [0, 5, 10, 15, 20].map(val => {
+    const y = getY(val);
+    const estSeuil = val === 10;
+    return `
+      <line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}"
+            stroke="${estSeuil ? '#f59e0b' : '#e2e8f0'}"
+            stroke-width="${estSeuil ? '1.5' : '1'}"
+            ${estSeuil ? 'stroke-dasharray="5,4"' : ''} />
+      <text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="${estSeuil ? '#b45309' : '#64748b'}" font-weight="${estSeuil ? '700' : '400'}">${val}</text>
+    `;
+  }).join("");
+
+  // Points et polyligne (note retenue)
+  const pointsRetenue = copiesChrono.map((c, i) => `${getX(i)},${getY(c.note_retenue)}`).join(" ");
+  const pointsBrute = copiesChrono.map((c, i) => `${getX(i)},${getY(c.note_brute)}`).join(" ");
+
+  const cerclesHtml = copiesChrono.map((c, i) => {
+    const cx = getX(i);
+    const cy = getY(c.note_retenue);
+    const col = c.note_retenue >= 14 ? "#16a34a" : (c.note_retenue >= 10 ? "#0284c7" : "#dc2626");
+    const dateCourte = c.date_soumission
+      ? new Date(c.date_soumission).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })
+      : `#${i + 1}`;
+    const titreCourt = (c.qcm_titre || "").length > 18 ? (c.qcm_titre || "").slice(0, 18) + "…" : (c.qcm_titre || "");
+
+    return `
+      <g>
+        <circle cx="${cx}" cy="${cy}" r="5.5" fill="${col}" stroke="#ffffff" stroke-width="2" />
+        <text x="${cx}" y="${cy - 9}" text-anchor="middle" font-size="11" font-weight="700" fill="${col}">${Number(c.note_retenue).toFixed(1)}</text>
+        <text x="${cx}" y="${h - 24}" text-anchor="middle" font-size="10" fill="#475569" font-weight="600">${dateCourte}</text>
+        <text x="${cx}" y="${h - 10}" text-anchor="middle" font-size="9" fill="#64748b">${titreCourt}</text>
+      </g>
+    `;
+  }).join("");
+
+  return `
+    <div style="overflow-x:auto;">
+      <svg viewBox="0 0 ${w} ${h}" style="width:100%; max-width:740px; height:auto; display:block; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+        ${grilles}
+        ${n > 1 ? `<polyline fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,3" points="${pointsBrute}" />` : ""}
+        ${n > 1 ? `<polyline fill="none" stroke="#0284c7" stroke-width="2.5" points="${pointsRetenue}" />` : ""}
+        ${cerclesHtml}
+      </svg>
+    </div>
+    <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:0.76rem; color:#64748b; margin-top:6px;">
+      <span><strong style="color:#0284c7;">━━</strong> Note retenue (/20)</span>
+      <span><strong style="color:#94a3b8;">┄┄</strong> Note brute (/20)</span>
+      <span><strong style="color:#b45309;">┄┄</strong> Seuil de validation (10/20)</span>
+    </div>
+  `;
+}
+
+function afficherCourbeEleveSelectionne() {
+  const sel = document.getElementById("selectAnalyseEleveCourbe");
+  const zone = document.getElementById("zoneCourbeIndividuelleEleve");
+  if (!sel || !zone) return;
+
+  const eleveId = sel.value;
+  const eleve = donneesAnalyseCache.eleves.find(e => String(e.id) === String(eleveId));
+  if (!eleve) {
+    zone.innerHTML = "";
+    return;
+  }
+
+  const matiereIdFiltre = document.getElementById("filtreAnalyseMatiere")?.value || "";
+  const copiesEleve = donneesAnalyseCache.copies
+    .filter(c => copieAppartientAEleve(c, eleve) && (!matiereIdFiltre || String(c.matiere_id) === String(matiereIdFiltre)))
+    .sort((a, b) => new Date(a.date_soumission || 0) - new Date(b.date_soumission || 0));
+
+  if (copiesEleve.length === 0) {
+    zone.innerHTML = `<p style="color:#64748b; font-size:0.86rem; font-style:italic; margin:8px 0 0 0;">Cet élève n'a pas encore passé d'évaluation sur cette sélection.</p>`;
+    return;
+  }
+
+  const moy = copiesEleve.reduce((s, c) => s + Number(c.note_retenue || 0), 0) / copiesEleve.length;
+  const copiesAvecRatio = copiesEleve.filter(c => Number(c.questions_totales) > 0);
+  const ratioMoyen = copiesAvecRatio.length > 0
+    ? (copiesAvecRatio.reduce((s, c) => s + (Number(c.questions_traitees || 0) / Number(c.questions_totales)), 0) / copiesAvecRatio.length) * 100
+    : 100;
+
+  zone.innerHTML = `
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin:10px 0 12px 0; font-size:0.83rem;">
+      <span class="badge" style="background:#eff6ff; color:var(--pronote-blue); font-weight:700;">Moyenne : ${moy.toFixed(2)} / 20</span>
+      <span class="badge" style="background:#f1f5f9; color:#334155;">${copiesEleve.length} QCM passé(s)</span>
+      <span class="badge" style="background:${ratioMoyen < 75 ? '#fef3c7' : '#dcfce7'}; color:${ratioMoyen < 75 ? '#b45309' : '#15803d'};">
+        Achèvement moyen : ${ratioMoyen.toFixed(0)} % des questions
+      </span>
+      ${Number(eleve.est_pap) === 1 ? `<span class="badge" style="background:#fdf4ff; color:#7e22ce; font-weight:700;">Aménagement PAP actif</span>` : ""}
+    </div>
+    ${construireCourbeSvgEleve(copiesEleve)}
+  `;
+}
+
+function construireSectionSuiviLongitudinal(copiesFiltrees, classeIdFiltre) {
+  if (!classeIdFiltre) {
+    return `
+      <div style="margin-top:22px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:14px; font-size:0.84rem; color:#64748b;">
+        <i class="fa-solid fa-user-chart" style="color:var(--pronote-blue);"></i> Sélectionnez une <strong>classe</strong> en haut pour activer le <strong>suivi longitudinal individuel</strong> (courbes d'évolution, détection de décrochage, vitesse d'achèvement et sorties d'écran).
+      </div>
+    `;
+  }
+
+  const elevesClasse = donneesAnalyseCache.eleves.filter(e => String(e.classe_id) === String(classeIdFiltre));
+  if (elevesClasse.length === 0) return "";
+
+  const bilansEleves = elevesClasse.map(el => {
+    const copiesEl = copiesFiltrees
+      .filter(c => copieAppartientAEleve(c, el))
+      .sort((a, b) => new Date(a.date_soumission || 0) - new Date(b.date_soumission || 0));
+
+    const nb = copiesEl.length;
+    const moy = nb > 0 ? copiesEl.reduce((s, c) => s + Number(c.note_retenue || 0), 0) / nb : null;
+
+    // Calcul de tendance entre l'avant-dernier et le dernier QCM
+    let deltaTendance = null;
+    if (nb >= 2) {
+      deltaTendance = Number(copiesEl[nb - 1].note_retenue) - Number(copiesEl[nb - 2].note_retenue);
+    }
+
+    // Ratio moyen de questions traitées
+    const avecTot = copiesEl.filter(c => Number(c.questions_totales) > 0);
+    const ratioAch = avecTot.length > 0
+      ? (avecTot.reduce((s, c) => s + (Number(c.questions_traitees || 0) / Number(c.questions_totales)), 0) / avecTot.length) * 100
+      : null;
+
+    // Sorties d'écran cumulées
+    const totalSorties = copiesEl.reduce((s, c) => s + Number(c.nb_sorties || 0), 0);
+    const totalDureeSorties = copiesEl.reduce((s, c) => s + Number(c.duree_sorties || 0), 0);
+
+    // Génération des alertes pédagogiques
+    const alertes = [];
+    if (deltaTendance !== null && deltaTendance <= -3) {
+      alertes.push({ type: "chute", label: `📉 Chute (${deltaTendance.toFixed(1)} pts)`, bg: "#fee2e2", col: "#b91c1c" });
+    } else if (moy !== null && moy < 10) {
+      alertes.push({ type: "fragile", label: "⚠️ Moyenne < 10", bg: "#fef2f2", col: "#dc2626" });
+    }
+    if (ratioAch !== null && ratioAch < 75) {
+      alertes.push({
+        type: "lenteur",
+        label: Number(el.est_pap) === 1 ? `🐢 Lent (${ratioAch.toFixed(0)}% - PAP)` : `🐢 Lent (${ratioAch.toFixed(0)}% - envisager PAP)`,
+        bg: "#fef3c7",
+        col: "#b45309"
+      });
+    }
+    if (totalSorties >= 3 || totalDureeSorties >= 30) {
+      alertes.push({
+        type: "sorties",
+        label: `👁️ ${totalSorties} sortie(s) (${totalDureeSorties}s)`,
+        bg: "#f3e8ff",
+        col: "#7e22ce"
+      });
+    }
+
+    return {
+      eleve: el,
+      nb,
+      moy,
+      deltaTendance,
+      ratioAch,
+      totalSorties,
+      totalDureeSorties,
+      alertes
+    };
+  });
+
+  const nbElevesEnAlerte = bilansEleves.filter(b => b.alertes.length > 0).length;
+
+  return `
+    <div style="margin-top:22px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <div>
+          <h4 style="margin:0; color:var(--pronote-blue); font-size:1.02rem;">
+            <i class="fa-solid fa-chart-line"></i> Suivi Longitudinal & Détection de Décrochage
+          </h4>
+          <p style="margin:3px 0 0 0; font-size:0.82rem; color:#64748b;">
+            Analyse de l'évolution des notes, du rythme d'achèvement des questions et des sorties d'écran.
+          </p>
+        </div>
+        <span class="badge" style="background:${nbElevesEnAlerte > 0 ? '#fef3c7' : '#dcfce7'}; color:${nbElevesEnAlerte > 0 ? '#92400e' : '#15803d'}; font-weight:700;">
+          ${nbElevesEnAlerte} élève(s) à surveiller
+        </span>
+      </div>
+
+      <!-- Sélecteur de courbe individuelle -->
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label for="selectAnalyseEleveCourbe" style="font-size:0.85rem; font-weight:700; color:#1e293b;">
+            <i class="fa-solid fa-user-graduate" style="color:var(--pronote-blue);"></i> Courbe d'évolution individuelle :
+          </label>
+          <select id="selectAnalyseEleveCourbe" class="input-field" style="margin:0; max-width:280px; font-size:0.86rem;" onchange="afficherCourbeEleveSelectionne()">
+            <option value="">-- Choisir un élève de la classe --</option>
+            ${bilansEleves.map(b => {
+              const nomComplet = `${(b.eleve.nom || "").toUpperCase()} ${b.eleve.prenom || ""}`.trim();
+              return `<option value="${b.eleve.id}">${nomComplet} (${b.nb} QCM)</option>`;
+            }).join("")}
+          </select>
+        </div>
+        <div id="zoneCourbeIndividuelleEleve"></div>
+      </div>
+
+      <!-- Tableau récapitulatif des indicateurs individuels & alertes -->
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Élève</th>
+              <th style="text-align:center;">QCM faits</th>
+              <th style="text-align:center;">Moyenne /20</th>
+              <th style="text-align:center;">Tendance</th>
+              <th style="text-align:center;">Questions faites</th>
+              <th style="text-align:center;">Sorties écran</th>
+              <th>Alertes & Préconisations</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bilansEleves.map(b => {
+              const el = b.eleve;
+              const nomComplet = `${(el.nom || "").toUpperCase()} ${el.prenom || ""}`.trim();
+              const badgePap = Number(el.est_pap) === 1
+                ? `<span class="badge" style="background:#fdf4ff; color:#7e22ce; font-size:0.7rem; margin-left:4px;">PAP</span>`
+                : "";
+
+              let tendanceHtml = `<span style="color:#94a3b8;">—</span>`;
+              if (b.deltaTendance !== null) {
+                if (b.deltaTendance >= 1.5) tendanceHtml = `<span style="color:#16a34a; font-weight:700;">↗ +${b.deltaTendance.toFixed(1)}</span>`;
+                else if (b.deltaTendance <= -1.5) tendanceHtml = `<span style="color:#dc2626; font-weight:700;">↘ ${b.deltaTendance.toFixed(1)}</span>`;
+                else tendanceHtml = `<span style="color:#475569; font-weight:600;">→ ${b.deltaTendance >= 0 ? "+" : ""}${b.deltaTendance.toFixed(1)}</span>`;
+              }
+
+              const alertesHtml = b.alertes.length > 0
+                ? b.alertes.map(a => `<span class="badge" style="background:${a.bg}; color:${a.col}; font-weight:700; margin-right:4px; margin-bottom:2px; display:inline-block;">${a.label}</span>`).join("")
+                : (b.nb > 0 ? `<span style="color:#16a34a; font-size:0.8rem; font-weight:600;">✓ Parcours régulier</span>` : `<span style="color:#94a3b8; font-size:0.8rem;">Aucune copie</span>`);
+
+              return `
+                <tr>
+                  <td>
+                    <a href="javascript:void(0)" style="color:#1e293b; font-weight:700; text-decoration:none;"
+                       onclick="document.getElementById('selectAnalyseEleveCourbe').value='${el.id}'; afficherCourbeEleveSelectionne(); document.getElementById('selectAnalyseEleveCourbe').scrollIntoView({behavior:'smooth', block:'center'});">
+                      ${nomComplet}
+                    </a>${badgePap}
+                  </td>
+                  <td style="text-align:center;">${b.nb}</td>
+                  <td style="text-align:center;">
+                    ${b.moy !== null ? `<strong style="color:var(--pronote-blue);">${b.moy.toFixed(2)}</strong>` : "—"}
+                  </td>
+                  <td style="text-align:center;">${tendanceHtml}</td>
+                  <td style="text-align:center;">
+                    ${b.ratioAch !== null ? `<span style="font-weight:600; color:${b.ratioAch < 75 ? '#b45309' : '#334155'};">${b.ratioAch.toFixed(0)} %</span>` : "—"}
+                  </td>
+                  <td style="text-align:center; font-size:0.82rem; color:${b.totalSorties >= 3 ? '#7e22ce' : '#475569'};">
+                    ${b.nb > 0 ? `${b.totalSorties} (${b.totalDureeSorties}s)` : "—"}
+                  </td>
+                  <td>${alertesHtml}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 function actualiserVueAnalyseMacro() {
   const zoneContenu = document.getElementById("zoneContenuAnalyseMacro");
   if (!zoneContenu) return;
@@ -379,6 +661,7 @@ function actualiserVueAnalyseMacro() {
     .sort((a, b) => a.classe_nom.localeCompare(b.classe_nom) || a.matiere_nom.localeCompare(b.matiere_nom));
 
   const sectionCompetencesHtml = construireSectionCompetences(copiesFiltrees, classeIdFiltre, matiereIdFiltre);
+  const sectionLongitudinalHtml = construireSectionSuiviLongitudinal(copiesFiltrees, classeIdFiltre);
 
   zoneContenu.innerHTML = `
     <!-- 1. CARTES KPI SYNTHÉTIQUES -->
@@ -494,5 +777,8 @@ function actualiserVueAnalyseMacro() {
 
     <!-- 4. POINT 2 : MATRICE DE MAÎTRISE DES COMPÉTENCES & REMÉDIATION -->
     ${sectionCompetencesHtml}
+
+    <!-- 5. POINT 3 : SUIVI LONGITUDINAL & DÉTECTION DE DÉCROCHAGE -->
+    ${sectionLongitudinalHtml}
   `;
 }
