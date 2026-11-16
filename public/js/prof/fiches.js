@@ -54,6 +54,9 @@ async function chargerMatieresProf() {
     if (typeof afficherTableauBanqueQcm === 'function') {
       afficherTableauBanqueQcm();
     }
+    if (typeof afficherTableauFiches === 'function') {
+      afficherTableauFiches();
+    }
   } catch (e) {}
 }
 
@@ -212,7 +215,21 @@ function afficherTableauFiches() {
     ? "<tr><td colspan='5' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune fiche synthèse enregistrée.</td></tr>"
     : fiches.map(f => {
       const mat = listeMatieresMemoire.find(m => Number(m.id) === Number(f.matiere_id));
-      const comps = (mat && Array.isArray(mat.competences)) ? mat.competences : [];
+      let comps = [];
+      if (mat && Array.isArray(mat.competences)) {
+        comps = mat.competences;
+      } else if (mat && mat.competences_json) {
+        try { comps = JSON.parse(mat.competences_json); } catch (e) {}
+      }
+      if (comps.length === 0 && /pr[ée]vention|pse/i.test(f.matiere_nom || "")) {
+        comps = [
+          { code: "C1", libelle: "Traiter l'information" },
+          { code: "C2", libelle: "Appliquer une démarche d'analyse" },
+          { code: "C3", libelle: "Expliquer un phénomène / enjeu en lien avec la prévention" },
+          { code: "C4", libelle: "Proposer une solution pour résoudre un problème" },
+          { code: "C5", libelle: "Argumenter un choix" }
+        ];
+      }
       const codeActuel = String(f.competence_code || "").toUpperCase();
       const optionsComp = `<option value="">— Générale —</option>` +
         comps.map(c => `<option value="${c.code}" ${String(c.code).toUpperCase() === codeActuel ? 'selected' : ''}>🎯 ${c.code} — ${c.libelle}</option>`).join('');
