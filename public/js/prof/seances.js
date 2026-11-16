@@ -87,13 +87,13 @@ async function chargerSeancesProf() {
             <span class="${s.actif ? 'badge-active' : 'badge-closed'}">${s.actif ? 'Active' : 'Clôturée'}</span>
           </td>
           <td style="text-align:center;">${s.nb_copies || 0}</td>
-          <td style="display:flex; gap:4px; align-items:center; justify-content:center;">
-            <button type="button" class="btn" style="background:#0284c7; padding:4px 8px; font-size:0.75rem; margin:0;" onclick="ouvrirSuiviDirectSeance(${s.id})">📡 En direct</button>
-            <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationSeance(${s.id})">🔍 Tester</button>
-            <button type="button" class="btn btn-pdf" style="background:${s.actif ? '#eab308' : '#16a34a'}; padding:4px 8px; font-size:0.75rem;" onclick="toggleEtatSeance(${s.id}, ${s.actif})">
-              ${s.actif ? 'Fermer' : 'Rouvrir'}
-            </button>
-            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerSeance(${s.id}, '${s.code_session}')">Suppr</button>
+          <td style="white-space:nowrap; text-align:center;">
+            <div style="display:inline-flex; gap:5px; align-items:center; justify-content:center; flex-wrap:nowrap;">
+              <button type="button" class="btn" style="background:#0284c7; margin:0; padding:5px 9px; font-size:0.75rem; line-height:1.2; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; height:28px;" onclick="ouvrirSuiviDirectSeance(${s.id})">📡 Direct</button>
+              <button type="button" class="btn btn-simu" style="margin:0; padding:5px 9px; font-size:0.75rem; line-height:1.2; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; height:28px;" onclick="lancerSimulationSeance(${s.id})">🔍 Tester</button>
+              <button type="button" class="btn btn-pdf" style="background:${s.actif ? '#eab308' : '#16a34a'}; margin:0; padding:5px 9px; font-size:0.75rem; line-height:1.2; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; height:28px;" onclick="toggleEtatSeance(${s.id}, ${s.actif})">${s.actif ? '🔒 Fermer' : '🔓 Rouvrir'}</button>
+              <button type="button" class="btn btn-danger" style="margin:0; padding:5px 9px; font-size:0.75rem; line-height:1.2; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; height:28px;" onclick="supprimerSeance(${s.id}, '${s.code_session}')">🗑️ Suppr</button>
+            </div>
           </td>
         </tr>
       `).join('');
