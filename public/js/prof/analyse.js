@@ -613,6 +613,220 @@ function construireSectionSuiviLongitudinal(copiesFiltrees, classeIdFiltre) {
   `;
 }
 
+function basculerDetailsSeancesQcm(qcmCleId) {
+  const row = document.getElementById(`detailsSeancesQcm_${qcmCleId}`);
+  if (!row) return;
+  row.style.display = (row.style.display === "none" || !row.style.display) ? "table-row" : "none";
+}
+
+function construireSectionPsychometrieQcm(copiesFiltrees) {
+  if (!copiesFiltrees || copiesFiltrees.length === 0) return "";
+
+  // Regroupement par QCM (qcm_id ou titre)
+  const mapQcms = new Map();
+  for (const c of copiesFiltrees) {
+    const cle = c.qcm_id ? `id_${c.qcm_id}` : `titre_${c.qcm_titre}`;
+    if (!mapQcms.has(cle)) {
+      mapQcms.set(cle, {
+        cle,
+        qcm_id: c.qcm_id,
+        qcm_titre: c.qcm_titre || "QCM sans titre",
+        matiere_nom: c.matiere_nom || "Non classée",
+        competence_code: c.competence_code || "",
+        copies: []
+      });
+    }
+    mapQcms.get(cle).copies.push(c);
+  }
+
+  const bilansQcms = Array.from(mapQcms.values()).map(q => {
+    const n = q.copies.length;
+    const moyRetenue = q.copies.reduce((s, c) => s + Number(c.note_retenue || 0), 0) / n;
+    const moyBrute = q.copies.reduce((s, c) => s + Number(c.note_brute || 0), 0) / n;
+    const nbReussis = q.copies.filter(c => Number(c.note_retenue || 0) >= 10).length;
+    const tauxReussite = (nbReussis / n) * 100;
+
+    // Nombre de questions et taux moyen d'achèvement
+    const copiesAvecTot = q.copies.filter(c => Number(c.questions_totales) > 0);
+    const nbQuestions = copiesAvecTot.length > 0 ? Number(copiesAvecTot[0].questions_totales) : null;
+    const tauxAchevement = copiesAvecTot.length > 0
+      ? (copiesAvecTot.reduce((s, c) => s + (Number(c.questions_traitees || 0) / Number(c.questions_totales)), 0) / copiesAvecTot.length) * 100
+      : null;
+
+    // Sous-regroupement par séance / classe pour comparaison inter-séances
+    const mapSeances = new Map();
+    for (const c of q.copies) {
+      const sCle = `${c.seance_id || c.code_session}_${c.classe_nom}`;
+      if (!mapSeances.has(sCle)) {
+        mapSeances.set(sCle, {
+          classe_nom: c.classe_nom,
+          code_session: c.code_session || "—",
+          copies: []
+        });
+      }
+      mapSeances.get(sCle).copies.push(c);
+    }
+
+    const seancesDetails = Array.from(mapSeances.values()).map(s => {
+      const sn = s.copies.length;
+      const sMoy = s.copies.reduce((acc, c) => acc + Number(c.note_retenue || 0), 0) / sn;
+      const sReussite = (s.copies.filter(c => Number(c.note_retenue || 0) >= 10).length / sn) * 100;
+      const sAvecTot = s.copies.filter(c => Number(c.questions_totales) > 0);
+      const sAch = sAvecTot.length > 0
+        ? (sAvecTot.reduce((acc, c) => acc + (Number(c.questions_traitees || 0) / Number(c.questions_totales)), 0) / sAvecTot.length) * 100
+        : null;
+      return {
+        classe_nom: s.classe_nom,
+        code_session: s.code_session,
+        effectif: sn,
+        moyenne: sMoy,
+        tauxReussite: sReussite,
+        tauxAchevement: sAch
+      };
+    }).sort((a, b) => a.classe_nom.localeCompare(b.classe_nom));
+
+    // Diagnostic automatique de calibration
+    let diagLabel = "✓ Bien calibré";
+    let diagBg = "#dcfce7";
+    let diagCol = "#15803d";
+
+    if (tauxAchevement !== null && tauxAchevement < 70) {
+      diagLabel = "⏱️ Trop long (achèvement faible)";
+      diagBg = "#fef3c7";
+      diagCol = "#b45309";
+    } else if (moyRetenue < 8.5) {
+      diagLabel = "⚠️ Difficile (prévoir version simplifiée)";
+      diagBg = "#fee2e2";
+      diagCol = "#b91c1c";
+    } else if (moyRetenue > 16.5 && (tauxAchevement === null || tauxAchevement >= 90)) {
+      diagLabel = "🟢 Très accessible";
+      diagBg = "#e0f2fe";
+      diagCol = "#0369a1";
+    }
+
+    return {
+      ...q,
+      effectif: n,
+      nbQuestions,
+      moyRetenue,
+      moyBrute,
+      tauxReussite,
+      tauxAchevement,
+      seancesDetails,
+      diagLabel,
+      diagBg,
+      diagCol
+    };
+  }).sort((a, b) => b.effectif - a.effectif);
+
+  return `
+    <div style="margin-top:22px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <div>
+          <h4 style="margin:0; color:var(--pronote-blue); font-size:1.02rem;">
+            <i class="fa-solid fa-sliders"></i> Analyse Psychométrique des QCM & Comparaison Inter-Séances
+          </h4>
+          <p style="margin:3px 0 0 0; font-size:0.82rem; color:#64748b;">
+            Évaluation de la difficulté, de la longueur (taux d'achèvement) et comparaison entre les classes ayant passé le même questionnaire.
+          </p>
+        </div>
+        <span class="badge" style="background:#e0f2fe; color:#0369a1;">${bilansQcms.length} QCM évalué(s)</span>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Questionnaire (QCM)</th>
+              <th style="text-align:center;">Questions</th>
+              <th style="text-align:center;">Copies</th>
+              <th style="text-align:center;">Moy. retenue /20</th>
+              <th style="text-align:center;">Achèvement</th>
+              <th style="text-align:center;">Réussite</th>
+              <th>Calibration</th>
+              <th style="text-align:center;">Séances</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bilansQcms.map((q, idx) => {
+              const achTxt = q.tauxAchevement !== null ? `${q.tauxAchevement.toFixed(0)} %` : "—";
+              const achCol = (q.tauxAchevement !== null && q.tauxAchevement < 75) ? "#b45309" : "#334155";
+              const diffBrute = Math.abs(q.moyRetenue - q.moyBrute) >= 0.2
+                ? `<div style="font-size:0.72rem; color:#64748b;">Brute : ${q.moyBrute.toFixed(1)}</div>`
+                : "";
+
+              const sousTableauSeances = `
+                <tr id="detailsSeancesQcm_${idx}" style="display:none; background:#f8fafc;">
+                  <td colspan="8" style="padding:10px 16px;">
+                    <div style="font-size:0.8rem; font-weight:700; color:#334155; margin-bottom:6px;">
+                      <i class="fa-solid fa-code-branch" style="color:var(--pronote-blue);"></i> Détail par séance / classe pour « ${q.qcm_titre} » :
+                    </div>
+                    <table style="background:#ffffff; border:1px solid #cbd5e1;">
+                      <thead>
+                        <tr>
+                          <th>Classe</th>
+                          <th>Code séance</th>
+                          <th style="text-align:center;">Copies</th>
+                          <th style="text-align:center;">Moyenne /20</th>
+                          <th style="text-align:center;">Achèvement</th>
+                          <th style="text-align:center;">Réussite (≥10)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${q.seancesDetails.map(sd => `
+                          <tr>
+                            <td><strong>${sd.classe_nom}</strong></td>
+                            <td><span class="badge badge-session">${sd.code_session}</span></td>
+                            <td style="text-align:center;">${sd.effectif}</td>
+                            <td style="text-align:center;"><strong style="color:var(--pronote-blue);">${sd.moyenne.toFixed(2)}</strong></td>
+                            <td style="text-align:center;">${sd.tauxAchevement !== null ? sd.tauxAchevement.toFixed(0) + " %" : "—"}</td>
+                            <td style="text-align:center;">${sd.tauxReussite.toFixed(0)} %</td>
+                          </tr>
+                        `).join("")}
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              `;
+
+              return `
+                <tr>
+                  <td>
+                    <div style="font-weight:700; color:#1e293b;">${q.qcm_titre}</div>
+                    <div style="margin-top:3px; display:flex; gap:5px; flex-wrap:wrap;">
+                      <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.72rem;">${q.matiere_nom}</span>
+                      ${q.competence_code ? `<span class="badge" style="background:#fef9c3; color:#854d0e; font-size:0.72rem;">🎯 ${q.competence_code}</span>` : ""}
+                    </div>
+                  </td>
+                  <td style="text-align:center; font-weight:600;">${q.nbQuestions !== null ? q.nbQuestions : "—"}</td>
+                  <td style="text-align:center;">${q.effectif}</td>
+                  <td style="text-align:center;">
+                    <strong style="color:var(--pronote-blue); font-size:0.96rem;">${q.moyRetenue.toFixed(2)}</strong>
+                    ${diffBrute}
+                  </td>
+                  <td style="text-align:center; font-weight:700; color:${achCol};">${achTxt}</td>
+                  <td style="text-align:center; font-weight:600;">${q.tauxReussite.toFixed(0)} %</td>
+                  <td>
+                    <span class="badge" style="background:${q.diagBg}; color:${q.diagCol}; font-weight:700;">
+                      ${q.diagLabel}
+                    </span>
+                  </td>
+                  <td style="text-align:center;">
+                    <button type="button" class="btn btn-pdf" style="padding:4px 9px; font-size:0.76rem;" onclick="basculerDetailsSeancesQcm(${idx})">
+                      ${q.seancesDetails.length} séance(s) ▾
+                    </button>
+                  </td>
+                </tr>
+                ${sousTableauSeances}
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 function actualiserVueAnalyseMacro() {
   const zoneContenu = document.getElementById("zoneContenuAnalyseMacro");
   if (!zoneContenu) return;
@@ -662,6 +876,7 @@ function actualiserVueAnalyseMacro() {
 
   const sectionCompetencesHtml = construireSectionCompetences(copiesFiltrees, classeIdFiltre, matiereIdFiltre);
   const sectionLongitudinalHtml = construireSectionSuiviLongitudinal(copiesFiltrees, classeIdFiltre);
+  const sectionPsychometrieHtml = construireSectionPsychometrieQcm(copiesFiltrees);
 
   zoneContenu.innerHTML = `
     <!-- 1. CARTES KPI SYNTHÉTIQUES -->

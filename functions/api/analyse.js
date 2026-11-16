@@ -112,6 +112,7 @@ export async function onRequestGet(context) {
         matiere_id: row.matiere_id || 0,
         matiere_nom: row.matiere_nom || "Non classée",
         seance_id: row.seance_id,
+        qcm_id: row.qcm_id,
         code_session: row.code_session || "",
         qcm_titre: row.qcm_titre || "",
         competence_code: (row.competence_code || "").toUpperCase(),
