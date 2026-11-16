@@ -3040,6 +3040,13 @@
             repEleveList.push(`${sub.question || sub.text} → ${sel ? sel.value : ""}`);
             bonnesRepList.push(`${sub.question || sub.text} → ${sub.answer}`);
           });
+        } else if (q.type === "cloze" && Array.isArray(q.etapes)) {
+          q.etapes.forEach((etape, eIdx) => {
+            const field = document.getElementById(`cloze_field_${eIdx}`);
+            const lbl = etape.label || `Étape ${eIdx + 1}`;
+            repEleveList.push(`${lbl} : ${field ? field.value : ""}`);
+            bonnesRepList.push(`${lbl} : ${etape.bonne_reponse}`);
+          });
         }
 
         const detailItem = {

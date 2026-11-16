@@ -120,8 +120,19 @@ export async function onRequestGet(context) {
         }
       }
 
-      const enonceComplet = (qSrc && (qSrc.enonce || qSrc.text || qSrc.question))
+      let enonceComplet = (qSrc && (qSrc.enonce || qSrc.text || qSrc.question))
         || (dSauv && dSauv.question && !/^Question \d+$/.test(dSauv.question) ? dSauv.question : `Question ${idx + 1}`);
+
+      if (qSrc && qSrc.type === "cloze" && Array.isArray(qSrc.etapes)) {
+        qSrc.etapes.forEach((et, eIdx) => {
+          enonceComplet = enonceComplet.replace(`[[CLOZE_STEP_${eIdx}]]`, `<span style="background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px; font-weight:700;">[ ${et.bonne_reponse} ]</span>`);
+        });
+        if (bonnesReponses.length === 0) {
+          qSrc.etapes.forEach((et, eIdx) => {
+            bonnesReponses.push(`${et.label || 'Étape ' + (eIdx + 1)} : ${et.bonne_reponse}`);
+          });
+        }
+      }
 
       const explicationsFinales = (dSauv && Array.isArray(dSauv.explications) && dSauv.explications.length > 0)
         ? dSauv.explications
