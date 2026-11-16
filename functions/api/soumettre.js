@@ -13,7 +13,8 @@ export async function onRequestPost(context) {
       total,
       questions_traitees,
       questions_totales,
-      note_proportionnelle
+      note_proportionnelle,
+      reponses_detaillees
     } = body;
 
     const noteFinale = parseFloat(note) || 0;
@@ -23,6 +24,7 @@ export async function onRequestPost(context) {
     const qTraitees = (questions_traitees !== undefined && questions_traitees !== null) ? parseInt(questions_traitees) : null;
     const qTotales = (questions_totales !== undefined && questions_totales !== null) ? parseInt(questions_totales) : null;
     const noteProp = (note_proportionnelle !== undefined && note_proportionnelle !== null) ? parseFloat(note_proportionnelle) : null;
+    const reponsesJsonStr = Array.isArray(reponses_detaillees) ? JSON.stringify(reponses_detaillees) : null;
 
     try {
       await env.DB.prepare(`
@@ -41,16 +43,21 @@ export async function onRequestPost(context) {
           questions_traitees INTEGER DEFAULT NULL,
           questions_totales INTEGER DEFAULT NULL,
           note_proportionnelle REAL DEFAULT NULL,
+          reponses_json TEXT DEFAULT NULL,
           date_soumission DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `).run();
 
+      try {
+        await env.DB.prepare(`ALTER TABLE resultats_qcm ADD COLUMN reponses_json TEXT DEFAULT NULL`).run();
+      } catch (eCol) {}
+
       await env.DB.prepare(`
         INSERT INTO resultats_qcm (
           seance_id, nom, prenom, session_code, note, total, nb_sorties, duree_sorties,
-          questions_traitees, questions_totales, note_proportionnelle
+          questions_traitees, questions_totales, note_proportionnelle, reponses_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         seance_id || null,
         nom || "",
@@ -62,7 +69,8 @@ export async function onRequestPost(context) {
         tempsSorties,
         qTraitees,
         qTotales,
-        noteProp
+        noteProp,
+        reponsesJsonStr
       ).run();
     } catch (e1) {
       console.error("Erreur insertion resultats_qcm :", e1);

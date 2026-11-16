@@ -71,7 +71,7 @@ export async function onRequestPost(context) {
     try {
       const resCopies = await env.DB.prepare(`
         SELECT r.id, r.seance_id, r.note, r.total, r.note_proportionnelle, r.questions_traitees, r.questions_totales, COALESCE(r.exporte_pronote, 0) AS exporte_pronote,
-               r.date_soumission, s.code_session, q.titre AS qcm_titre, q.matiere_id, q.competence_code
+               r.date_soumission, s.code_session, COALESCE(s.actif, 1) AS seance_actif, q.titre AS qcm_titre, q.matiere_id, q.competence_code
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
@@ -125,6 +125,8 @@ export async function onRequestPost(context) {
         competence_code: s.competence_code || "",
         has_document: s.has_document === 1,
         statut,
+        seance_actif: estActif,
+        resultat_id: copie ? copie.id : null,
         note: copie ? copie.note : null,
         total: copie ? copie.total : 20,
         note_proportionnelle: copie ? copie.note_proportionnelle : null,

@@ -1234,7 +1234,7 @@
     }
 
     let currentQuestionIndex = 0;
-    let totalScoreObtenu = 0; window.questionsValideesSet = new Set();
+    let totalScoreObtenu = 0; window.questionsValideesSet = new Set(); window.reponsesDetailleesEleve = [];
     let totalScorePossible = 0;
     let currentDocumentHtml = null;
     let isModeSimulation = false;
@@ -1527,7 +1527,7 @@
               <div style="font-size:1.05rem; font-weight:800; color:var(--pronote-blue);">${noteAffichee} / ${item.total || 20}</div>
               
               ${estIncomplet ? `<div style="font-size:0.72rem; color:#b45309;">Note prop. (${item.questions_traitees}/${item.questions_totales} Q.)</div>` : ''}
-              ${mentionPronote}
+              ${mentionPronote}<div style="margin-top:6px;"><button type="button" class="btn" style="background:#0284c7; padding:5px 10px; font-size:0.76rem;" onclick="ouvrirCopieCorrigeeEleve(${item.resultat_id || 'null'}, ${item.seance_id})">📝 ${item.seance_actif ? 'Corrigé (après clôture)' : 'Revoir ma copie'}</button></div>
             </div>
           `;
         } else if (item.statut === "a_faire") {
@@ -3001,8 +3001,48 @@
 
       scoreQuestion = parseFloat(scoreQuestion) || 0;
       totalScoreObtenu = (parseFloat(totalScoreObtenu) || 0) + scoreQuestion;
-      if (!window.questionsValideesSet) window.questionsValideesSet = new Set();
+      if (!window.questionsValideesSet) window.questionsValideesSet = new Set(); window.reponsesDetailleesEleve = [];
       window.questionsValideesSet.add(currentQuestionIndex);
+
+      // Enregistrement détaillé pour la consultation ultérieure de la copie corrigée
+      try {
+        if (!Array.isArray(window.reponsesDetailleesEleve)) window.reponsesDetailleesEleve = [];
+        let repEleveList = [];
+        let bonnesRepList = [];
+        if (q.type === "multichoice") {
+          const allInputs = document.querySelectorAll('input[name="current_q_ans"]');
+          allInputs.forEach((inp, iIdx) => {
+            const idx = !isNaN(parseInt(inp.value)) ? parseInt(inp.value) : iIdx;
+            const ans = (q.answers && q.answers[idx]) ? q.answers[idx] : ((q.answers && q.answers[iIdx]) ? q.answers[iIdx] : null);
+            if (!ans) return;
+            const frac = (typeof ans.fraction === 'number') ? ans.fraction : (parseFloat(ans.fraction) || 0);
+            if (inp.checked) repEleveList.push(ans.text || "");
+            if (frac > 0) bonnesRepList.push(ans.text || "");
+          });
+        } else if (q.type === "matching" && Array.isArray(q.subquestions)) {
+          q.subquestions.forEach((sub, sIdx) => {
+            const sel = document.querySelector(`select[name="matching_sel_${sIdx}"]`);
+            repEleveList.push(`${sub.text} → ${sel ? sel.value : ""}`);
+            bonnesRepList.push(`${sub.text} → ${sub.answer}`);
+          });
+        }
+
+        const detailItem = {
+          index: currentQuestionIndex,
+          question: q.text || q.question || `Question ${currentQuestionIndex + 1}`,
+          type: q.type || "multichoice",
+          points: Number(q.points || 1),
+          score: Number(scoreQuestion.toFixed(2)),
+          reponses_eleve: repEleveList,
+          bonnes_reponses: bonnesRepList,
+          general_feedback: q.generalFeedback || "",
+          explications: explications
+        };
+
+        const existingPos = window.reponsesDetailleesEleve.findIndex(item => item.index === currentQuestionIndex);
+        if (existingPos >= 0) window.reponsesDetailleesEleve[existingPos] = detailItem;
+        else window.reponsesDetailleesEleve.push(detailItem);
+      } catch (eCap) {}
 
       console.log(`🎯 [Points validés] Question ${currentQuestionIndex + 1} : +${scoreQuestion.toFixed(2)} pt(s) | Cumul total : ${totalScoreObtenu.toFixed(2)} / ${totalScorePossible}`);
 
@@ -3178,7 +3218,8 @@
               total: 20,
               questions_traitees: questionsTraiteesCorrigees,
               questions_totales: questionsTotales,
-              note_proportionnelle: parseFloat(noteProp20)
+              note_proportionnelle: parseFloat(noteProp20),
+              reponses_detaillees: Array.isArray(window.reponsesDetailleesEleve) ? window.reponsesDetailleesEleve : []
             })
           });
         } catch (err) {
@@ -3274,6 +3315,137 @@
       chargerClassesProf();
       chargerSeancesProf();
       chargerResultatsProf();
+    }
+  </script>
+  <!-- MODALE CONSULTATION COPIE CORRIGÉE ÉLÈVE -->
+  <div id="modalCopieCorrigeeEleve" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width:780px; max-height:90vh; display:flex; flex-direction:column;">
+      <div class="modal-header" style="border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:10px;">
+        <h3 id="titreModalCopieCorrigee" style="margin:0; font-size:1.08rem; color:var(--pronote-dark);">📝 Ma copie corrigée</h3>
+        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.84rem;" onclick="fermerModalCopieCorrigeeEleve()">✖ Fermer</button>
+      </div>
+      <div id="corpsModalCopieCorrigee" style="flex:1; overflow-y:auto; padding:4px 6px;"></div>
+      <button type="button" class="btn btn-success" style="margin-top:12px; justify-content:center; padding:10px;" onclick="fermerModalCopieCorrigeeEleve()">Fermer la correction</button>
+    </div>
+  </div>
+
+  <script>
+    function fermerModalCopieCorrigeeEleve() {
+      const m = document.getElementById('modalCopieCorrigeeEleve');
+      if (m) m.style.display = 'none';
+    }
+
+    async function ouvrirCopieCorrigeeEleve(resultatId, seanceId) {
+      const modal = document.getElementById('modalCopieCorrigeeEleve');
+      const titreEl = document.getElementById('titreModalCopieCorrigee');
+      const corpsEl = document.getElementById('corpsModalCopieCorrigee');
+      if (!modal || !corpsEl) return;
+
+      const codeEl = getCodeEleveEnCours();
+      modal.style.display = 'flex';
+      if (titreEl) titreEl.innerText = "📝 Chargement de la correction...";
+      corpsEl.innerHTML = `<p style="color:#64748b; padding:20px; text-align:center;">Récupération de ta copie et des explications...</p>`;
+
+      try {
+        const params = new URLSearchParams();
+        if (resultatId) params.set("resultat_id", resultatId);
+        if (seanceId) params.set("seance_id", seanceId);
+        params.set("code_eleve", codeEl);
+
+        const res = await fetch(`/api/eleve_copie?${params.toString()}`, { cache: "no-store" });
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.error || "Impossible d'afficher la copie.");
+        }
+
+        if (titreEl) titreEl.innerText = `📝 ${data.qcm_titre || "Ma copie corrigée"}`;
+
+        if (data.verrouille) {
+          corpsEl.innerHTML = `
+            <div style="background:#fffbeb; border:1px solid #fde68a; border-left:4px solid #d97706; border-radius:8px; padding:16px; color:#92400e; margin:10px 0;">
+              <div style="font-weight:800; font-size:0.98rem; margin-bottom:6px;">⏳ Correction en attente de clôture</div>
+              <p style="margin:0; font-size:0.9rem; line-height:1.5;">${data.message}</p>
+            </div>
+          `;
+          return;
+        }
+
+        const questionsHtml = (data.details || []).map((item, idx) => {
+          const estArchiveSansChoix = !!item.archive_sans_choix;
+          const estReussi = !estArchiveSansChoix && Number(item.score) >= Number(item.points);
+          const estPartiel = !estArchiveSansChoix && Number(item.score) > 0 && Number(item.score) < Number(item.points);
+
+          let bordure = "#cbd5e1";
+          let badgeScore = "";
+          if (!estArchiveSansChoix) {
+            if (estReussi) {
+              bordure = "#16a34a";
+              badgeScore = `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">✓ ${item.score} / ${item.points} pt</span>`;
+            } else if (estPartiel) {
+              bordure = "#d97706";
+              badgeScore = `<span class="badge" style="background:#fef3c7; color:#b45309; font-weight:700;">~ ${item.score} / ${item.points} pt</span>`;
+            } else {
+              bordure = "#dc2626";
+              badgeScore = `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:700;">✗ ${item.score} / ${item.points} pt</span>`;
+            }
+          }
+
+          const repEleveBloc = (!estArchiveSansChoix)
+            ? `<div style="margin-top:8px; font-size:0.86rem;">
+                 <strong style="color:#334155;">Ta réponse :</strong>
+                 ${(item.reponses_eleve && item.reponses_eleve.length > 0)
+                   ? `<span style="color:${estReussi ? '#15803d' : '#b91c1c'}; font-weight:600;">${item.reponses_eleve.join(" • ")}</span>`
+                   : `<span style="color:#64748b; font-style:italic;">Aucune réponse enregistrée</span>`}
+               </div>`
+            : "";
+
+          const bonneRepBloc = (item.bonnes_reponses && item.bonnes_reponses.length > 0)
+            ? `<div style="margin-top:5px; font-size:0.86rem;">
+                 <strong style="color:#15803d;">Bonne(s) réponse(s) :</strong>
+                 <span style="color:#166534; font-weight:700;">${item.bonnes_reponses.join(" • ")}</span>
+               </div>`
+            : "";
+
+          const hasExplication = (item.general_feedback && item.general_feedback.trim()) || (item.explications && item.explications.length > 0);
+          const explicationBloc = hasExplication
+            ? `<div style="margin-top:8px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:8px 10px; font-size:0.84rem; color:#0c4a6e; line-height:1.45;">
+                 ${item.general_feedback ? `<div>💡 <strong>Explication pédagogique :</strong> ${item.general_feedback}</div>` : ""}
+                 ${(item.explications && item.explications.length > 0) ? `<div style="margin-top:4px;">${item.explications.join("<br>")}</div>` : ""}
+               </div>`
+            : "";
+
+          return `
+            <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${bordure}; border-radius:8px; padding:12px 14px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                <div style="font-weight:700; font-size:0.92rem; color:#1e293b;">
+                  <span style="color:var(--pronote-blue);">Q${idx + 1}.</span> ${item.question}
+                </div>
+                <div style="flex-shrink:0;">${badgeScore}</div>
+              </div>
+              ${repEleveBloc}
+              ${bonneRepBloc}
+              ${explicationBloc}
+            </div>
+          `;
+        }).join("");
+
+        corpsEl.innerHTML = `
+          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <span style="font-size:0.84rem; color:#475569;">Note obtenue :</span>
+              <strong style="font-size:1.15rem; color:var(--pronote-blue); margin-left:4px;">${data.note_retenue} / 20</strong>
+              ${data.est_incomplet ? `<span style="font-size:0.78rem; color:#b45309; margin-left:6px;">(Note proportionnelle : ${data.questions_traitees}/${data.questions_totales} Q.)</span>` : ""}
+            </div>
+            ${data.has_document ? `<button type="button" class="btn" style="background:#0284c7; padding:5px 10px; font-size:0.78rem;" onclick="ouvrirSupportSeanceCahierTexte(${data.qcm_id})">📖 Revoir le document support</button>` : ""}
+          </div>
+          ${questionsHtml || "<p style='color:#64748b;'>Aucun détail de question disponible pour cette copie.</p>"}
+        `;
+      } catch (err) {
+        corpsEl.innerHTML = `<div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.88rem;">
+          ⚠️ ${err.message}
+        </div>`;
+      }
     }
   </script>
 </body>
