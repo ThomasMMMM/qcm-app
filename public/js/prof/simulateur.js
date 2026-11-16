@@ -1,9 +1,81 @@
-﻿let isModeSimulation = false;
+let isModeSimulation = false;
 let currentQuestions = [];
 let currentQuestionIndex = 0;
 let totalScoreObtenu = 0;
 let totalScorePossible = 0;
 let currentDocumentHtml = null;
+
+function preparerQuestionClozeSimu(q) {
+  if (!q || q.type !== "cloze") return q;
+  if (Array.isArray(q.etapes) && q.etapes.length > 0 && q.enonce_template) return q;
+
+  const sourceHtml = q.enonce || q.text || "";
+  const regexCloze = /\{(\d+)?\s*:\s*(MC|MCV|MCH|MULTICHOICE|MULTICHOICE_V|MULTICHOICE_H|SA|SHORTANSWER|MW|NUMERICAL|NM)\s*:\s*([^}]+)\}/gi;
+  const etapes = [];
+  let idx = 0;
+
+  const template = sourceHtml.replace(regexCloze, (fullMatch, poidsStr, subType, contenu) => {
+    const poids = poidsStr ? parseFloat(poidsStr) : 1;
+    const typeUpper = subType.toUpperCase();
+    const isShort = (typeUpper === "SA" || typeUpper === "SHORTANSWER" || typeUpper === "MW" || typeUpper === "NUMERICAL" || typeUpper === "NM");
+    const morceaux = contenu.split('~').map(s => s.trim()).filter(Boolean);
+    const options = [];
+    let bonneReponse = "";
+    let feedbackBonne = "";
+
+    morceaux.forEach(m => {
+      let estCorrect = false;
+      let texteOpt = m;
+      let fbOpt = "";
+
+      if (texteOpt.startsWith('=')) {
+        estCorrect = true;
+        texteOpt = texteOpt.slice(1).trim();
+      } else if (/^%100%/.test(texteOpt)) {
+        estCorrect = true;
+        texteOpt = texteOpt.replace(/^%100%/, '').trim();
+      } else if (/^%\d+%/.test(texteOpt)) {
+        texteOpt = texteOpt.replace(/^%\d+%/, '').trim();
+      }
+
+      if (texteOpt.includes('#')) {
+        const parts = texteOpt.split('#');
+        texteOpt = parts[0].trim();
+        fbOpt = parts.slice(1).join('#').trim();
+      }
+
+      if (estCorrect && !bonneReponse) {
+        bonneReponse = texteOpt;
+        feedbackBonne = fbOpt;
+      }
+      options.push({ text: texteOpt, correct: estCorrect, feedback: fbOpt });
+    });
+
+    if (!bonneReponse && options.length > 0) {
+      bonneReponse = options[0].text;
+      feedbackBonne = options[0].feedback || "";
+      options[0].correct = true;
+    }
+
+    const optionsMelangees = [...options].sort(() => Math.random() - 0.5);
+    const token = `[[CLOZE_STEP_${idx}]]`;
+    etapes.push({
+      index: idx,
+      label: `Étape ${idx + 1}`,
+      mode: isShort ? "text" : "select",
+      poids,
+      bonne_reponse: bonneReponse,
+      feedback: feedbackBonne,
+      options: optionsMelangees
+    });
+    idx++;
+    return token;
+  });
+
+  q.etapes = etapes;
+  q.enonce_template = template;
+  return q;
+}
 
 async function lancerSimulationBanque(qcmId) {
   try {
@@ -72,7 +144,7 @@ function fermerDocRessourceSimu() {
 }
 
 function afficherQuestionSimulateur() {
-  const q = currentQuestions[currentQuestionIndex];
+  const q = preparerQuestionClozeSimu(currentQuestions[currentQuestionIndex]);
   const totalQ = currentQuestions.length;
 
   document.getElementById('simuProgressionText').innerText = `Question ${currentQuestionIndex + 1} sur ${totalQ}`;
@@ -115,12 +187,33 @@ function afficherQuestionSimulateur() {
         </div>
       `;
     });
+  } else if (q.type === "cloze" && Array.isArray(q.etapes)) {
+    let htmlCloze = q.enonce_template || q.enonce || "";
+    q.etapes.forEach((etape, eIdx) => {
+      const token = `[[CLOZE_STEP_${eIdx}]]`;
+      let champHtml = "";
+      if (etape.mode === "text") {
+        champHtml = `<input type="text" name="simu_cloze_input_${eIdx}" id="simu_cloze_field_${eIdx}" placeholder="Votre réponse..." style="display:inline-block; padding:5px 10px; border:2px solid #0284c7; border-radius:6px; font-weight:700; font-size:0.92rem; color:#0f172a; background:#ffffff; margin:2px 4px; min-width:160px;">`;
+      } else {
+        const opts = Array.isArray(etape.options) ? etape.options : [];
+        champHtml = `
+          <select name="simu_cloze_input_${eIdx}" id="simu_cloze_field_${eIdx}" style="display:inline-block; max-width:100%; padding:6px 10px; border:2px solid #0284c7; border-radius:6px; font-weight:700; font-size:0.9rem; color:#0369a1; background:#f0f9ff; margin:3px 4px; cursor:pointer;">
+            <option value="">-- Choisir --</option>
+            ${opts.map(o => `<option value="${String(o.text).replace(/"/g, '&quot;')}">${o.text}</option>`).join('')}
+          </select>
+        `;
+      }
+      champHtml += `<span id="simu_cloze_corr_${eIdx}" style="display:none; font-size:0.84rem; font-weight:700; margin-left:6px;"></span>`;
+      htmlCloze = htmlCloze.replace(token, champHtml);
+    });
+    h = `<div class="question-enonce" style="line-height:1.65;">${htmlCloze}</div>`;
+    if (q.image) h += `<img class="img-qcm" style="max-width:100%; height:auto; border-radius:6px; margin:10px 0; border:1px solid #cbd5e1;" src="data:image/png;base64,${q.image}">`;
   }
   container.innerHTML = h;
 }
 
 function validerQuestionSimu() {
-  const q = currentQuestions[currentQuestionIndex];
+  const q = preparerQuestionClozeSimu(currentQuestions[currentQuestionIndex]);
   let scoreQuestion = 0;
   let explications = [];
 
@@ -174,6 +267,57 @@ function validerQuestionSimu() {
       }
     });
     scoreQuestion = q.points * (corrects / (q.subquestions.length || 1));
+  } else if (q.type === "cloze" && Array.isArray(q.etapes)) {
+    let toutRempli = true;
+    q.etapes.forEach((etape, eIdx) => {
+      const field = document.getElementById(`simu_cloze_field_${eIdx}`);
+      if (!field || !field.value.trim()) toutRempli = false;
+    });
+    if (!toutRempli) {
+      alert("Veuillez compléter toutes les étapes avant de valider.");
+      return;
+    }
+
+    let poidsTotal = 0;
+    let poidsObtenu = 0;
+
+    q.etapes.forEach((etape, eIdx) => {
+      const field = document.getElementById(`simu_cloze_field_${eIdx}`);
+      const corrSpan = document.getElementById(`simu_cloze_corr_${eIdx}`);
+      const poids = Number(etape.poids || 1);
+      poidsTotal += poids;
+      field.disabled = true;
+
+      const valEleve = field.value.trim();
+      const bonne = String(etape.bonne_reponse || "").trim();
+      const estJuste = valEleve.toLowerCase() === bonne.toLowerCase();
+
+      if (estJuste) {
+        poidsObtenu += poids;
+        field.style.borderColor = "#16a34a";
+        field.style.background = "#dcfce7";
+        field.style.color = "#15803d";
+        if (corrSpan) {
+          corrSpan.style.display = "inline-block";
+          corrSpan.style.color = "#15803d";
+          corrSpan.innerText = "✓";
+        }
+      } else {
+        field.style.borderColor = "#dc2626";
+        field.style.background = "#fee2e2";
+        field.style.color = "#b91c1c";
+        if (corrSpan) {
+          corrSpan.style.display = "inline-block";
+          corrSpan.style.color = "#15803d";
+          corrSpan.innerText = `→ Attendu : ${bonne}`;
+        }
+      }
+      if (etape.feedback) {
+        explications.push(`<strong>${etape.label || 'Étape ' + (eIdx + 1)} :</strong> ${etape.feedback}`);
+      }
+    });
+
+    scoreQuestion = q.points * (poidsObtenu / (poidsTotal || 1));
   }
 
   totalScoreObtenu += scoreQuestion;
