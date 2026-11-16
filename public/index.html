@@ -415,6 +415,96 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
+    /* ================= LAYOUT MENU LATÉRAL ÉLÈVE ================= */
+    .eleve-layout {
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+    }
+    .eleve-sidebar {
+      width: 245px;
+      flex-shrink: 0;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      position: sticky;
+      top: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .eleve-nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 12px;
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #334155;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+    .eleve-nav-item:last-child {
+      margin-bottom: 0;
+    }
+    .eleve-nav-item:hover {
+      background: #f1f5f9;
+      color: var(--pronote-blue);
+    }
+    .eleve-nav-item.active {
+      background: #eff6ff;
+      color: var(--pronote-blue);
+      border-color: #bfdbfe;
+      font-weight: 700;
+    }
+    .eleve-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .eleve-nav-badge {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .eleve-nav-item.active .eleve-nav-badge {
+      background: var(--pronote-blue);
+      color: #ffffff;
+    }
+    .eleve-main-content {
+      flex: 1;
+      min-width: 0;
+    }
+    @media (max-width: 780px) {
+      .eleve-layout {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .eleve-sidebar {
+        width: 100%;
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        padding: 8px;
+      }
+      .eleve-nav-item {
+        margin-bottom: 0;
+        padding: 9px 10px;
+        font-size: 0.82rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -471,10 +561,10 @@
     <div id="viewEleveDashboard" style="display:none;">
 
       <!-- Barre d'identité élève -->
-      <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:12px 18px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:18px; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:12px 18px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:16px; flex-wrap:wrap; gap:10px;">
         <div>
-          <div style="font-size:0.85rem; color:#64748b;">Espace Personnel Élève</div>
-          <h2 style="margin:2px 0; color:var(--pronote-blue); font-size:1.3rem;">
+          <div style="font-size:0.8rem; color:#64748b; text-transform:uppercase; letter-spacing:0.03em;">Espace Personnel Élève</div>
+          <h2 style="margin:2px 0; color:var(--pronote-blue); font-size:1.25rem;">
             Bonjour <span id="dashElevePrenom"></span> <span id="dashEleveBadgePap"></span>
           </h2>
           <div style="font-size:0.85rem; color:#475569;">Classe : <strong id="dashEleveClasse"></strong></div>
@@ -484,115 +574,73 @@
         </button>
       </div>
 
-      <!-- ACCUEIL PAR TUILES (DASHBOARD HUB ÉLÈVE) -->
-      <div id="vueHubEleve">
-        <div style="margin-bottom:16px;">
-          <h2 style="margin:0 0 4px 0; font-size:1.25rem; color:var(--pronote-dark);">Mon Espace de Travail</h2>
-          <p style="margin:0; font-size:0.88rem; color:#64748b;">Sélectionnez une rubrique pour accéder à vos évaluations, fiches ou résultats.</p>
-        </div>
+      <!-- Layout Menu Latéral + Contenu -->
+      <div class="eleve-layout">
 
-        <div class="tuiles-grid">
-          <!-- Tuile 1 : Évaluations -->
-          <div class="tuile-card" onclick="ouvrirRubriqueEleve('rubriqueEleveDevoirs')">
-            <div class="tuile-icon icon-seances"><i class="fa-solid fa-pen-to-square"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Mes Évaluations</div>
-              <div class="tuile-info" id="tuileInfoDevoirs">Évaluations à faire</div>
+        <!-- MENU LATÉRAL ÉLÈVE -->
+        <nav class="eleve-sidebar" aria-label="Navigation élève">
+          <button type="button" class="eleve-nav-item active" data-rubrique="rubriqueEleveDevoirs" onclick="ouvrirRubriqueEleve('rubriqueEleveDevoirs')">
+            <span class="eleve-nav-left"><i class="fa-solid fa-pen-to-square" style="color:#16a34a;"></i> <span>Évaluations</span></span>
+            <span class="eleve-nav-badge" id="navBadgeEleveDevoirs">0</span>
+          </button>
+
+          <button type="button" class="eleve-nav-item" data-rubrique="rubriqueEleveFiches" onclick="ouvrirRubriqueEleve('rubriqueEleveFiches')">
+            <span class="eleve-nav-left"><i class="fa-solid fa-book-open" style="color:#9333ea;"></i> <span>Fiches cours</span></span>
+            <span class="eleve-nav-badge" id="navBadgeEleveFiches">0</span>
+          </button>
+
+          <button type="button" class="eleve-nav-item" data-rubrique="rubriqueEleveHistorique" onclick="ouvrirRubriqueEleve('rubriqueEleveHistorique')">
+            <span class="eleve-nav-left"><i class="fa-solid fa-chart-simple" style="color:#dc2626;"></i> <span>Résultats</span></span>
+            <span class="eleve-nav-badge" id="navBadgeEleveHistorique">0</span>
+          </button>
+
+          <button type="button" class="eleve-nav-item" data-rubrique="rubriqueEleveCompetences" onclick="ouvrirRubriqueEleve('rubriqueEleveCompetences')">
+            <span class="eleve-nav-left"><i class="fa-solid fa-trophy" style="color:#ca8a04;"></i> <span>Compétences</span></span>
+            <span class="eleve-nav-badge" id="navBadgeEleveCompetences">0/0</span>
+          </button>
+        </nav>
+
+        <!-- ZONE DE CONTENU PRINCIPALE -->
+        <div class="eleve-main-content">
+
+          <!-- RUBRIQUE 1 : ÉVALUATIONS EN COURS & À FAIRE -->
+          <div id="rubriqueEleveDevoirs" class="rubrique-contenu-eleve" style="display:block;">
+            <div class="card" style="margin-top:0;">
+              <h3><i class="fa-solid fa-list-check"></i> Évaluations en cours (QCM à faire)</h3>
+              <div id="conteneurQcmAFaire"></div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
 
-          <!-- Tuile 2 : Fiches Synthèse -->
-          <div class="tuile-card" onclick="ouvrirRubriqueEleve('rubriqueEleveFiches')">
-            <div class="tuile-icon icon-fiches"><i class="fa-solid fa-book-open"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Fiches Synthèse</div>
-              <div class="tuile-info" id="tuileInfoFichesEleve">Consulter mes cours</div>
+          <!-- RUBRIQUE 2 : FICHES DE SYNTHÈSE -->
+          <div id="rubriqueEleveFiches" class="rubrique-contenu-eleve" style="display:none;">
+            <div class="card" style="margin-top:0;">
+              <h3><i class="fa-solid fa-book-bookmark"></i> Mes Fiches de Cours & Synthèses</h3>
+              <p style="color:#64748b; font-size:0.85rem; margin-top:0;">
+                Consultez vos fiches ressources classées par matière pour réviser et préparer vos évaluations.
+              </p>
+              <div id="conteneurFichesSyntheseEleve"></div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
 
-          <!-- Tuile 3 : Résultats -->
-          <div class="tuile-card" onclick="ouvrirRubriqueEleve('rubriqueEleveHistorique')">
-            <div class="tuile-icon icon-resultats"><i class="fa-solid fa-chart-simple"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Mes Résultats</div>
-              <div class="tuile-info" id="tuileInfoHistorique">Devoirs terminés</div>
+          <!-- RUBRIQUE 3 : HISTORIQUE ET RÉSULTATS -->
+          <div id="rubriqueEleveHistorique" class="rubrique-contenu-eleve" style="display:none;">
+            <div class="card" style="margin-top:0;">
+              <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
+              <div id="conteneurQcmPasses"></div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
 
-          <!-- Tuile 4 : Arbre de Compétences & Badges -->
-          <div class="tuile-card" onclick="ouvrirRubriqueEleve('rubriqueEleveCompetences')">
-            <div class="tuile-icon" style="background:#fef9c3; color:#ca8a04;"><i class="fa-solid fa-trophy"></i></div>
-            <div class="tuile-corps">
-              <div class="tuile-titre">Mes Compétences</div>
-              <div class="tuile-info" id="tuileInfoCompetencesEleve">0 badge débloqué</div>
+          <!-- RUBRIQUE 4 : ARBRE DE COMPÉTENCES & BADGES -->
+          <div id="rubriqueEleveCompetences" class="rubrique-contenu-eleve" style="display:none;">
+            <div class="card" style="margin-top:0;">
+              <h3><i class="fa-solid fa-trophy" style="color:#eab308;"></i> Mon Arbre de Compétences & Badges</h3>
+              <p style="color:#64748b; font-size:0.88rem; margin-bottom:14px;">
+                Voici les matières enseignées dans ta classe et leurs compétences. Chaque QCM réussi débloque progressivement 4 niveaux de badges : <strong>Bronze</strong>, <strong>Argent</strong>, <strong>Or</strong> et <strong>Diamant</strong>.
+              </p>
+              <div id="conteneurArbreCompetencesEleve"></div>
             </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
-        </div>
-      </div>
 
-      <!-- RUBRIQUE 1 : ÉVALUATIONS EN COURS & À FAIRE -->
-      <div id="rubriqueEleveDevoirs" class="rubrique-contenu-eleve" style="display:none;">
-        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Évaluations</span>
-        </div>
-        <div class="card">
-          <h3><i class="fa-solid fa-list-check"></i> Évaluations en cours (QCM à faire)</h3>
-          <div id="conteneurQcmAFaire"></div>
-        </div>
-      </div>
-
-      <!-- RUBRIQUE 2 : FICHES DE SYNTHÈSE -->
-      <div id="rubriqueEleveFiches" class="rubrique-contenu-eleve" style="display:none;">
-        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-book-open"></i> Fiches Synthèse</span>
-        </div>
-        <div class="card">
-          <h3><i class="fa-solid fa-book-bookmark"></i> Mes Fiches de Cours & Synthèses</h3>
-          <p style="color:#64748b; font-size:0.85rem; margin-top:0;">
-            Consultez vos fiches ressources classées par matière pour réviser et préparer vos évaluations.
-          </p>
-          <div id="conteneurFichesSyntheseEleve"></div>
-        </div>
-      </div>
-
-      <!-- RUBRIQUE 3 : HISTORIQUE ET RÉSULTATS -->
-      <div id="rubriqueEleveHistorique" class="rubrique-contenu-eleve" style="display:none;">
-        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-chart-simple"></i> Mes Résultats</span>
-        </div>
-        <div class="card">
-          <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
-          <div id="conteneurQcmPasses"></div>
-        </div>
-      </div>
-
-      <!-- RUBRIQUE 4 : ARBRE DE COMPÉTENCES & BADGES -->
-      <div id="rubriqueEleveCompetences" class="rubrique-contenu-eleve" style="display:none;">
-        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
-            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
-          </button>
-          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-award"></i> Arbre de Compétences</span>
-        </div>
-        <div class="card">
-          <h3><i class="fa-solid fa-trophy" style="color:#eab308;"></i> Mon Arbre de Compétences & Badges</h3>
-          <p style="color:#64748b; font-size:0.88rem; margin-bottom:14px;">
-            Voici les matières enseignées dans ta classe et leurs compétences. Chaque QCM réussi débloque progressivement 4 niveaux de badges : <strong>Bronze</strong>, <strong>Argent</strong>, <strong>Or</strong> et <strong>Diamant</strong>.
-          </p>
-          <div id="conteneurArbreCompetencesEleve"></div>
         </div>
       </div>
 
@@ -1340,9 +1388,47 @@
       }
     }
 
+    function ouvrirRubriqueEleve(idRubrique) {
+      const cibleId = idRubrique || 'rubriqueEleveDevoirs';
+      document.querySelectorAll('.rubrique-contenu-eleve').forEach(el => {
+        el.style.display = (el.id === cibleId) ? 'block' : 'none';
+      });
+      document.querySelectorAll('.eleve-nav-item').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-rubrique') === cibleId);
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function retournerAuHubEleve() {
+      const actif = document.querySelector('.eleve-nav-item.active');
+      const idActif = actif ? actif.getAttribute('data-rubrique') : 'rubriqueEleveDevoirs';
+      ouvrirRubriqueEleve(idActif);
+    }
+
+    function actualiserCompteursTuilesEleve() {
+      if (typeof sessionEleve === 'undefined' || !sessionEleve) return;
+
+      const elDevoirs = document.getElementById('navBadgeEleveDevoirs');
+      if (elDevoirs) {
+        const aFaire = sessionEleve.a_faire || [];
+        elDevoirs.innerText = aFaire.length;
+      }
+
+      const elFiches = document.getElementById('navBadgeEleveFiches');
+      if (elFiches && typeof fichesEleveMemoire !== 'undefined') {
+        elFiches.innerText = fichesEleveMemoire.length;
+      }
+
+      const elHistorique = document.getElementById('navBadgeEleveHistorique');
+      if (elHistorique) {
+        const passes = sessionEleve.passes || [];
+        elHistorique.innerText = passes.length;
+      }
+    }
+
     function afficherArbreCompetencesEleve() {
       const cont = document.getElementById('conteneurArbreCompetencesEleve');
-      const elTuileComp = document.getElementById('tuileInfoCompetencesEleve');
+      const elTuileComp = document.getElementById('navBadgeEleveCompetences');
       const arbre = (sessionEleve && Array.isArray(sessionEleve.arbre_competences)) ? sessionEleve.arbre_competences : [];
 
       let totalBadgesDebloques = 0;
@@ -1356,8 +1442,8 @@
 
       if (elTuileComp) {
         elTuileComp.innerText = totalBadgesPossibles > 0
-          ? `${totalBadgesDebloques} / ${totalBadgesPossibles} badge${totalBadgesDebloques > 1 ? 's' : ''} débloqué${totalBadgesDebloques > 1 ? 's' : ''}`
-          : 'Aucune matière associée';
+          ? `${totalBadgesDebloques}/${totalBadgesPossibles}`
+          : '0/0';
       }
 
       if (!cont) return;
