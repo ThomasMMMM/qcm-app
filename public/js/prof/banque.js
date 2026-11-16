@@ -1,30 +1,112 @@
 let listeBanqueQcmMemoire = [];
 
-async function chargerBanqueProf() {
-  if (!currentProf) return;
+function alimenterSelectMatieresBanque() {
+  const selMat = document.getElementById('selectBanqueMatiereImport');
+  if (!selMat) return;
+  const matieres = (typeof listeMatieresMemoire !== 'undefined') ? listeMatieresMemoire : [];
+  const valActuelle = selMat.value;
+  selMat.innerHTML = '<option value="">-- Aucune matière --</option>' +
+    matieres.map(m => `<option value="${m.id}">${m.nom}</option>`).join('');
+  if (valActuelle) selMat.value = valActuelle;
+  majSelectCompetencesImport();
+}
+
+function majSelectCompetencesImport() {
+  const selMat = document.getElementById('selectBanqueMatiereImport');
+  const selComp = document.getElementById('selectBanqueCompetenceImport');
+  if (!selMat || !selComp) return;
+
+  const matId = selMat.value;
+  if (!matId) {
+    selComp.innerHTML = '<option value="">-- Sélectionner une matière d\'abord --</option>';
+    return;
+  }
+
+  const matieres = (typeof listeMatieresMemoire !== 'undefined') ? listeMatieresMemoire : [];
+  const mat = matieres.find(m => String(m.id) === String(matId));
+  const comps = (mat && Array.isArray(mat.competences)) ? mat.competences : [];
+
+  selComp.innerHTML = '<option value="">-- Aucune compétence ciblée --</option>' +
+    comps.map(c => `<option value="${c.code}">${c.code} — ${c.libelle}</option>`).join('');
+}
+
+async function modifierCompetenceQcmInline(qcmId, nouvelleMatiereId, nouvelleCompCode) {
   try {
-    const res = await fetch('/api/banque?prof_id=' + currentProf.id);
-    listeBanqueQcmMemoire = await res.json();
+    await fetch('/api/banque', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "update_competence",
+        qcm_id: qcmId,
+        matiere_id: nouvelleMatiereId || null,
+        competence_code: nouvelleCompCode || null
+      })
+    });
+    const q = listeBanqueQcmMemoire.find(item => Number(item.id) === Number(qcmId));
+    if (q) {
+      q.matiere_id = nouvelleMatiereId ? parseInt(nouvelleMatiereId, 10) : null;
+      q.competence_code = nouvelleCompCode || null;
+    }
+    afficherTableauBanqueQcm();
+  } catch (e) {}
+}
 
-    const tbody = document.getElementById('tableBanqueQcmBody');
-    if (!tbody) return;
+function afficherTableauBanqueQcm() {
+  const tbody = document.getElementById('tableBanqueQcmBody');
+  if (!tbody) return;
 
-    tbody.innerHTML = listeBanqueQcmMemoire.length === 0
-      ? "<tr><td colspan='3' style='text-align:center; color:#94a3b8; padding:14px;'>Aucun QCM enregistré.</td></tr>"
-      : listeBanqueQcmMemoire.map(q => `
+  const matieres = (typeof listeMatieresMemoire !== 'undefined') ? listeMatieresMemoire : [];
+
+  tbody.innerHTML = listeBanqueQcmMemoire.length === 0
+    ? "<tr><td colspan='4' style='text-align:center; color:#94a3b8; padding:14px;'>Aucun QCM enregistré.</td></tr>"
+    : listeBanqueQcmMemoire.map(q => {
+      const mat = matieres.find(m => Number(m.id) === Number(q.matiere_id));
+      const comps = (mat && Array.isArray(mat.competences)) ? mat.competences : [];
+
+      const optionsMat = '<option value="">Matière...</option>' +
+        matieres.map(m => `<option value="${m.id}" ${Number(m.id) === Number(q.matiere_id) ? 'selected' : ''}>${m.nom}</option>`).join('');
+
+      const optionsComp = '<option value="">Compétence...</option>' +
+        comps.map(c => `<option value="${c.code}" ${String(c.code) === String(q.competence_code || '') ? 'selected' : ''}>${c.code} — ${c.libelle}</option>`).join('');
+
+      return `
         <tr>
-          <td><strong>${q.titre}</strong> ${q.document_html ? '<span class="badge" style="background:#e0f2fe; color:#0369a1;">📄 Doc inclus</span>' : ''}</td>
+          <td>
+            <strong>${q.titre}</strong>
+            ${q.document_html ? '<span class="badge" style="background:#e0f2fe; color:#0369a1; margin-left:4px;">📄 Doc inclus</span>' : ''}
+          </td>
+          <td>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:auto; max-width:125px;" onchange="modifierCompetenceQcmInline(${q.id}, this.value, '')">
+                ${optionsMat}
+              </select>
+              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:auto; max-width:165px;" ${!q.matiere_id ? 'disabled' : ''} onchange="modifierCompetenceQcmInline(${q.id}, '${q.matiere_id || ''}', this.value)">
+                ${optionsComp}
+              </select>
+            </div>
+          </td>
           <td style="text-align:center;">${new Date(q.date_creation).toLocaleDateString()}</td>
           <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
             <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
             <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerQcmBanque(${q.id})">Suppr</button>
           </td>
         </tr>
-      `).join('');
+      `;
+    }).join('');
+}
+
+async function chargerBanqueProf() {
+  if (!currentProf) return;
+  try {
+    const res = await fetch('/api/banque?prof_id=' + currentProf.id);
+    listeBanqueQcmMemoire = await res.json();
+
+    alimenterSelectMatieresBanque();
+    afficherTableauBanqueQcm();
 
     const selQcm = document.getElementById('selectSeanceQcm');
     if (selQcm) selQcm.innerHTML = listeBanqueQcmMemoire.map(q => '<option value="' + q.id + '">' + q.titre + '</option>').join('');
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function importerFichierHtmlDoc(input) {
@@ -40,7 +122,7 @@ function importerFichierHtmlDoc(input) {
       const bodyHtml = (doc.body && doc.body.innerHTML.trim().length > 0) ? doc.body.innerHTML.trim() : fullContent.trim();
       document.getElementById('documentHtmlInput').value = bodyHtml;
       alert('✓ Fichier "' + file.name + '" importé avec succès dans le document ressource !');
-    } catch(err) {
+    } catch (err) {
       document.getElementById('documentHtmlInput').value = fullContent.trim();
       alert('✓ Fichier "' + file.name + '" importé !');
     }
@@ -77,9 +159,16 @@ async function lierFicheAuQcm(select) {
     const f = await res.json();
     if (f && f.contenu_html) {
       document.getElementById('documentHtmlInput').value = f.contenu_html;
+      if (f.matiere_id) {
+        const selMat = document.getElementById('selectBanqueMatiereImport');
+        if (selMat) {
+          selMat.value = f.matiere_id;
+          majSelectCompetencesImport();
+        }
+      }
       alert('✓ Contenu de la fiche "' + f.titre + '" injecté en tant que Document Ressource du QCM !');
     }
-  } catch(e) {}
+  } catch (e) {}
 }
 
 async function importerDansBanque() {
@@ -147,6 +236,9 @@ async function importerDansBanque() {
   }
 
   const docHtml = document.getElementById('documentHtmlInput').value.trim() || null;
+  const matiereId = document.getElementById('selectBanqueMatiereImport')?.value || null;
+  const competenceCode = document.getElementById('selectBanqueCompetenceImport')?.value || null;
+
   const res = await fetch('/api/banque', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -154,7 +246,9 @@ async function importerDansBanque() {
       titre: titreQcm,
       questions,
       prof_id: currentProf.id,
-      document_html: docHtml
+      document_html: docHtml,
+      matiere_id: matiereId,
+      competence_code: competenceCode
     })
   });
 

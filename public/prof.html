@@ -359,14 +359,26 @@
             Importez vos fichiers XML Pronote pour constituer votre bibliothèque et testez-les directement.
           </p>
 
-          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
-            <div style="flex:1; min-width:260px;">
-              <label style="font-weight:bold; font-size:0.85rem;">Fichier XML Pronote :</label>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px; align-items:flex-end; margin-bottom:14px;">
+            <div>
+              <label style="font-weight:bold; font-size:0.85rem;">Fichier XML Pronote * :</label>
               <input type="file" id="xmlBanqueInput" accept=".xml" class="input-field" style="margin-bottom:0;">
             </div>
             <div>
-              <button type="button" class="btn" style="margin:0; padding:10px 18px;" onclick="importerDansBanque()">
-                Ajouter à ma banque
+              <label style="font-weight:bold; font-size:0.85rem;">Matière associée :</label>
+              <select id="selectBanqueMatiereImport" class="input-field" style="margin-bottom:0;" onchange="majSelectCompetencesImport()">
+                <option value="">-- Aucune matière --</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-weight:bold; font-size:0.85rem;">Compétence évaluée :</label>
+              <select id="selectBanqueCompetenceImport" class="input-field" style="margin-bottom:0;">
+                <option value="">-- Sélectionner une matière d'abord --</option>
+              </select>
+            </div>
+            <div>
+              <button type="button" class="btn" style="width:100%; justify-content:center; margin:0; padding:10px 18px;" onclick="importerDansBanque()">
+                <i class="fa-solid fa-plus"></i> Ajouter à ma banque
               </button>
             </div>
           </div>
@@ -401,8 +413,9 @@
               <thead>
                 <tr>
                   <th style="text-align:left;">Titre du QCM</th>
-                  <th style="text-align:center; width:120px;">Date</th>
-                  <th style="text-align:center; width:180px;">Actions</th>
+                  <th style="text-align:left; width:300px;">Matière & Compétence</th>
+                  <th style="text-align:center; width:110px;">Date</th>
+                  <th style="text-align:center; width:160px;">Actions</th>
                 </tr>
               </thead>
               <tbody id="tableBanqueQcmBody"></tbody>
@@ -660,5 +673,26 @@
   <script src="/js/prof/resultats.js"></script>
   <script src="/js/prof/export_pronote.js"></script>
   <script src="/js/prof/simulateur.js"></script>
+  <!-- Modale Compétences par Matière -->
+  <div id="modalCompetencesMatiere" class="modal-overlay">
+    <div class="modal-content" style="max-width:620px;">
+      <div class="modal-header">
+        <h3>🎯 Compétences — <span id="titreModalCompetencesMatiere"></span></h3>
+        <button type="button" class="btn btn-danger" style="margin:0; padding:4px 8px;" onclick="fermerModalCompetencesMatiere()">✖</button>
+      </div>
+      <p style="font-size:0.84rem; color:#64748b; margin-top:0;">
+        Définissez les compétences associées à cet enseignement. Elles apparaîtront dans le sélecteur de vos QCM et dans l'arbre de badges des élèves (4 niveaux : Bronze, Argent, Or, Diamant).
+      </p>
+      <div id="listeEditeurCompetences" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-pdf" style="padding:8px 12px; font-size:0.85rem;" onclick="ajouterLigneCompetenceEditeur()">
+          <i class="fa-solid fa-plus"></i> Ajouter une compétence
+        </button>
+        <button type="button" class="btn btn-success" style="flex:1; justify-content:center; padding:8px 14px;" onclick="sauvegarderCompetencesMatiere()">
+          <i class="fa-solid fa-floppy-disk"></i> Enregistrer les compétences
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

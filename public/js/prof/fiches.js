@@ -1,5 +1,6 @@
-﻿let listeMatieresMemoire = [];
+let listeMatieresMemoire = [];
 let listeFichesMemoire = [];
+let matiereEnCoursEditionCompId = null;
 
 async function chargerMatieresProf() {
   if (!currentProf) return;
@@ -7,7 +8,6 @@ async function chargerMatieresProf() {
     const res = await fetch(`/api/fiches?mode=matieres_only&prof_id=${currentProf.id}`);
     listeMatieresMemoire = await res.json();
 
-    // 1. Alimenter le select pour ajouter une fiche
     const selAjout = document.getElementById('selectMatiereFiche');
     if (selAjout) {
       if (listeMatieresMemoire.length === 0) {
@@ -18,40 +18,113 @@ async function chargerMatieresProf() {
       }
     }
 
-    // 2. Alimenter le filtre des fiches
     const selFiltre = document.getElementById('filtreMatiereFicheSelect');
     if (selFiltre) {
       selFiltre.innerHTML = '<option value="">Toutes les matières</option>' +
         listeMatieresMemoire.map(m => `<option value="${m.id}">${m.nom}</option>`).join('');
     }
 
-    // 3. Alimenter le select dans la banque QCM (pour lier une fiche en dossier ressource)
     const selDocQcm = document.getElementById('selectFichePourQcm');
     if (selDocQcm) {
       selDocQcm.innerHTML = '<option value="">-- Aucun ou HTML manuel ci-dessous --</option>' +
         listeFichesMemoire.map(f => `<option value="${f.id}">[${f.matiere_nom}] ${f.titre}</option>`).join('');
     }
 
-    // 4. Liste des badges/matières éditables
     const contMatieres = document.getElementById('listeBadgesMatieres');
     if (contMatieres) {
-      contMatieres.innerHTML = listeMatieresMemoire.length === 0 
+      contMatieres.innerHTML = listeMatieresMemoire.length === 0
         ? "<span style='color:#94a3b8; font-size:0.85rem; font-style:italic;'>Aucune matière créée pour l'instant.</span>"
-        : listeMatieresMemoire.map(m => `
-          <span class="badge" style="background:#e0f2fe; color:#0369a1; padding:5px 10px; font-size:0.85rem; display:inline-flex; align-items:center; gap:6px;">
-            ${m.nom}
-            <i class="fa-solid fa-xmark" style="cursor:pointer; color:#b91c1c;" onclick="supprimerMatiere(${m.id}, '${m.nom}')" title="Supprimer la matière"></i>
-          </span>
-        `).join(' ');
+        : listeMatieresMemoire.map(m => {
+          const nbComp = Array.isArray(m.competences) ? m.competences.length : 0;
+          return `
+            <span class="badge" style="background:#e0f2fe; color:#0369a1; padding:6px 10px; font-size:0.85rem; display:inline-flex; align-items:center; gap:8px;">
+              <strong>${m.nom}</strong>
+              <button type="button" onclick="ouvrirModalCompetencesMatiere(${m.id})" style="background:#0284c7; color:white; border:none; border-radius:4px; padding:2px 7px; font-size:0.75rem; cursor:pointer; font-weight:600;" title="Configurer les compétences">
+                🎯 ${nbComp} comp.
+              </button>
+              <i class="fa-solid fa-xmark" style="cursor:pointer; color:#b91c1c;" onclick="supprimerMatiere(${m.id}, '${m.nom.replace(/'/g, "\\'")}')" title="Supprimer la matière"></i>
+            </span>
+          `;
+        }).join(' ');
     }
-  } catch(e) {}
+
+    if (typeof alimenterSelectMatieresBanque === 'function') {
+      alimenterSelectMatieresBanque();
+    }
+    if (typeof afficherTableauBanqueQcm === 'function') {
+      afficherTableauBanqueQcm();
+    }
+  } catch (e) {}
+}
+
+function ouvrirModalCompetencesMatiere(matiereId) {
+  const mat = listeMatieresMemoire.find(m => Number(m.id) === Number(matiereId));
+  if (!mat) return;
+  matiereEnCoursEditionCompId = mat.id;
+  document.getElementById('titreModalCompetencesMatiere').innerText = mat.nom;
+
+  const cont = document.getElementById('listeEditeurCompetences');
+  const comps = Array.isArray(mat.competences) ? mat.competences : [];
+  cont.innerHTML = "";
+  comps.forEach(c => ajouterLigneCompetenceEditeur(c.code, c.libelle));
+  if (comps.length === 0) ajouterLigneCompetenceEditeur("C1", "");
+
+  document.getElementById('modalCompetencesMatiere').style.display = 'flex';
+}
+
+function fermerModalCompetencesMatiere() {
+  document.getElementById('modalCompetencesMatiere').style.display = 'none';
+  matiereEnCoursEditionCompId = null;
+}
+
+function ajouterLigneCompetenceEditeur(code = "", libelle = "") {
+  const cont = document.getElementById('listeEditeurCompetences');
+  if (!cont) return;
+  const idx = cont.children.length + 1;
+  const div = document.createElement('div');
+  div.className = "ligne-comp-editeur";
+  div.style.cssText = "display:flex; gap:8px; align-items:center;";
+  div.innerHTML = `
+    <input type="text" class="input-field comp-code-in" value="${code || 'C' + idx}" placeholder="Code (ex: C1)" style="width:75px; margin:0; font-weight:bold; text-transform:uppercase;">
+    <input type="text" class="input-field comp-lib-in" value="${String(libelle || '').replace(/"/g, '&quot;')}" placeholder="Intitulé de la compétence..." style="flex:1; margin:0;">
+    <button type="button" class="btn btn-danger" style="padding:7px 10px; margin:0;" onclick="this.parentElement.remove()" title="Retirer">✖</button>
+  `;
+  cont.appendChild(div);
+}
+
+async function sauvegarderCompetencesMatiere() {
+  if (!matiereEnCoursEditionCompId) return;
+  const lignes = document.querySelectorAll('#listeEditeurCompetences .ligne-comp-editeur');
+  const competences = [];
+  lignes.forEach(l => {
+    const code = l.querySelector('.comp-code-in').value.trim().toUpperCase();
+    const libelle = l.querySelector('.comp-lib-in').value.trim();
+    if (code && libelle) competences.push({ code, libelle });
+  });
+
+  const res = await fetch('/api/fiches', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: "update_competences_matiere",
+      matiere_id: matiereEnCoursEditionCompId,
+      competences
+    })
+  });
+
+  if (res.ok) {
+    fermerModalCompetencesMatiere();
+    await chargerMatieresProf();
+  } else {
+    alert("Erreur lors de l'enregistrement des compétences.");
+  }
 }
 
 async function creerNouvelleMatiere() {
   const input = document.getElementById('nouvelleMatiereInput');
   const nom = input.value.trim();
   if (!nom) {
-    alert("Veuillez indiquer le nom de la matière (ex: Microbiologie, SMS, Mathématiques).");
+    alert("Veuillez indiquer le nom de la matière (ex: PSE, Microbiologie, SMS).");
     return;
   }
 
@@ -84,13 +157,12 @@ async function chargerFichesProf() {
     listeFichesMemoire = await res.json();
     afficherTableauFiches();
 
-    // Actualiser le sélecteur dans le module banque QCM
     const selDocQcm = document.getElementById('selectFichePourQcm');
     if (selDocQcm) {
       selDocQcm.innerHTML = '<option value="">-- Aucun ou HTML manuel ci-dessous --</option>' +
         listeFichesMemoire.map(f => `<option value="${f.id}">[${f.matiere_nom}] ${f.titre}</option>`).join('');
     }
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function afficherTableauFiches() {
@@ -112,7 +184,7 @@ function afficherTableauFiches() {
         <td style="text-align:center;">${new Date(f.date_creation).toLocaleDateString()}</td>
         <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
           <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="previsualiserFiche(${f.id})">👁️ Voir</button>
-          <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerFiche(${f.id}, '${f.titre}')">Suppr</button>
+          <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerFiche(${f.id}, '${f.titre.replace(/'/g, "\\'")}')">Suppr</button>
         </td>
       </tr>
     `).join('');
@@ -128,8 +200,7 @@ function importerFichierHtmlFiche(input) {
     const doc = new DOMParser().parseFromString(fullContent, 'text/html');
     const bodyHtml = (doc.body && doc.body.innerHTML.trim().length > 0) ? doc.body.innerHTML.trim() : fullContent.trim();
     document.getElementById('ficheHtmlInput').value = bodyHtml;
-    
-    // Si le titre de la fiche est encore vide, on prend le nom du fichier
+
     const inputTitre = document.getElementById('ficheTitreInput');
     if (!inputTitre.value.trim()) {
       inputTitre.value = file.name.replace(/\.[^/.]+$/, "");
@@ -215,7 +286,7 @@ async function previsualiserFiche(ficheId) {
     document.getElementById('titreModalApercuFiche').innerText = `[${fiche.matiere_nom}] ${fiche.titre}`;
     document.getElementById('corpsModalApercuFiche').innerHTML = fiche.contenu_html;
     document.getElementById('modalApercuFiche').style.display = 'flex';
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function fermerApercuFiche() {

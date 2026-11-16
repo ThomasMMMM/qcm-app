@@ -1,4 +1,22 @@
-﻿export async function onRequest(context) {
+const COMPETENCES_PSE_DEFAUT = [
+  { code: "C1", libelle: "Traiter l'information" },
+  { code: "C2", libelle: "Appliquer une démarche d'analyse" },
+  { code: "C3", libelle: "Expliquer un phénomène / enjeu en lien avec la prévention" },
+  { code: "C4", libelle: "Proposer une solution pour résoudre un problème" },
+  { code: "C5", libelle: "Argumenter un choix" }
+];
+
+function getCompetencesPourMatiere(row) {
+  if (row && row.competences_json) {
+    try {
+      const parsed = JSON.parse(row.competences_json);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {}
+  }
+  return COMPETENCES_PSE_DEFAUT;
+}
+
+export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const method = request.method;
@@ -12,7 +30,6 @@
       const classe_id = url.searchParams.get("classe_id");
       const mode = url.searchParams.get("mode");
 
-      // 1. Consultation d'une fiche précise (liseuse)
       if (fiche_id) {
         const fiche = await env.DB.prepare(`
           SELECT f.*, m.nom AS matiere_nom 
@@ -23,10 +40,9 @@
         return new Response(JSON.stringify(fiche || null), { headers: { "Content-Type": "application/json" } });
       }
 
-      // 2. Matières assignées à une classe spécifique
       if (mode === "classe_matieres" && classe_id) {
         const { results: matieres } = await env.DB.prepare(`
-          SELECT m.id, m.nom, 
+          SELECT m.id, m.nom, m.competences_json,
                  CASE WHEN cm.classe_id IS NOT NULL THEN 1 ELSE 0 END as attribuee
           FROM matieres m
           LEFT JOIN classes_matieres cm ON m.id = cm.matiere_id AND cm.classe_id = ?
@@ -36,15 +52,17 @@
         return new Response(JSON.stringify(matieres), { headers: { "Content-Type": "application/json" } });
       }
 
-      // 3. Liste des matières seules d'un prof
       if (mode === "matieres_only" && prof_id) {
         const { results: matieres } = await env.DB.prepare(
           "SELECT * FROM matieres WHERE prof_id = ? ORDER BY nom ASC"
         ).bind(prof_id).all();
-        return new Response(JSON.stringify(matieres), { headers: { "Content-Type": "application/json" } });
+        const enrichies = (matieres || []).map(m => ({
+          ...m,
+          competences: getCompetencesPourMatiere(m)
+        }));
+        return new Response(JSON.stringify(enrichies), { headers: { "Content-Type": "application/json" } });
       }
 
-      // 4. Consultation Espace Élève : Uniquement les fiches des matières assignées à sa classe
       if (mode === "eleve") {
         let query = `
           SELECT f.id, f.titre, f.date_creation, m.nom AS matiere_nom, m.id AS matiere_id
@@ -66,7 +84,6 @@
         return new Response(JSON.stringify(fiches), { headers: { "Content-Type": "application/json" } });
       }
 
-      // 5. Consultation Professeur par défaut (toutes ses fiches)
       if (prof_id) {
         let query = `
           SELECT f.id, f.titre, f.matiere_id, f.date_creation, m.nom AS matiere_nom
@@ -93,7 +110,6 @@
       const body = await request.json();
       const { type } = body;
 
-      // Association d'une matière à une classe (Case à cocher)
       if (type === "toggle_classe_matiere") {
         const { classe_id, matiere_id, active } = body;
         if (!classe_id || !matiere_id) {
@@ -112,19 +128,34 @@
         return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
       }
 
-      // Création d'une matière
       if (type === "creer_matiere") {
         const { prof_id, nom } = body;
         if (!prof_id || !nom || !nom.trim()) {
           return new Response(JSON.stringify({ error: "Nom de matière requis" }), { status: 400 });
         }
+        const compJson = JSON.stringify(COMPETENCES_PSE_DEFAUT);
         const insert = await env.DB.prepare(
-          "INSERT INTO matieres (prof_id, nom) VALUES (?, ?)"
-        ).bind(prof_id, nom.trim()).run();
+          "INSERT INTO matieres (prof_id, nom, competences_json) VALUES (?, ?, ?)"
+        ).bind(prof_id, nom.trim(), compJson).run();
         return new Response(JSON.stringify({ success: true, id: insert.meta.last_row_id }), { headers: { "Content-Type": "application/json" } });
       }
 
-      // Création / Import d'une fiche de synthèse
+      if (type === "update_competences_matiere") {
+        const { matiere_id, competences } = body;
+        if (!matiere_id || !Array.isArray(competences)) {
+          return new Response(JSON.stringify({ error: "Paramètres invalides" }), { status: 400 });
+        }
+        const cleanComps = competences
+          .map(c => ({ code: String(c.code || "").trim().toUpperCase(), libelle: String(c.libelle || "").trim() }))
+          .filter(c => c.code && c.libelle);
+
+        await env.DB.prepare(
+          "UPDATE matieres SET competences_json = ? WHERE id = ?"
+        ).bind(JSON.stringify(cleanComps), parseInt(matiere_id, 10)).run();
+
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+      }
+
       if (type === "creer_fiche") {
         const { prof_id, matiere_id, titre, contenu_html } = body;
         if (!prof_id || !matiere_id || !titre || !contenu_html) {

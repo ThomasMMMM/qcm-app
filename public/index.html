@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -308,6 +308,113 @@
       margin-bottom: 16px !important;
     }
 
+    /* ================= ARBRE DE COMPÉTENCES & BADGES ÉLÈVE ================= */
+    .arbre-matiere-bloc {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .arbre-matiere-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .competence-branche {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .competence-branche:last-child {
+      margin-bottom: 0;
+    }
+    .competence-entete {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .competence-code-pill {
+      background: var(--pronote-blue);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 3px 9px;
+      border-radius: 6px;
+      margin-right: 6px;
+    }
+    .arbre-nodes-track {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .badge-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 10px 6px;
+      border-radius: 10px;
+      border: 2px solid #e2e8f0;
+      background: #f1f5f9;
+      color: #94a3b8;
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+    .badge-node.unlocked {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .badge-node.tier-1.unlocked {
+      background: linear-gradient(135deg, #fff7ed, #ffedd5);
+      border-color: #d97706;
+      color: #9a3412;
+    }
+    .badge-node.tier-2.unlocked {
+      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      border-color: #64748b;
+      color: #1e293b;
+    }
+    .badge-node.tier-3.unlocked {
+      background: linear-gradient(135deg, #fefce8, #fef08a);
+      border-color: #eab308;
+      color: #854d0e;
+    }
+    .badge-node.tier-4.unlocked {
+      background: linear-gradient(135deg, #ecfeff, #bae6fd);
+      border-color: #0284c7;
+      color: #075985;
+    }
+    .badge-node-icon {
+      font-size: 1.45rem;
+      margin-bottom: 4px;
+    }
+    .badge-node-title {
+      font-size: 0.76rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .badge-node-lvl {
+      font-size: 0.68rem;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+    @media (max-width: 600px) {
+      .arbre-nodes-track {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
 </head>
 <body>
