@@ -2058,7 +2058,17 @@
         document.getElementById('viewEleveQcm').style.display = 'block';
         document.getElementById('simuBannerBox').style.display = 'none';
 
-        afficherQuestionCourante();
+        window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
+      window.suiviDirectScoreMaxCourant = 0;
+      envoyerPingSuiviDirect({
+        statut: "en_cours",
+        question_courante: 1,
+        score_actuel: 0,
+        score_max_courant: 0,
+        reponses: window.suiviDirectReponses,
+        hors_ecran: 0
+      });
+      afficherQuestionCourante();
       } catch(e) {
         alert("Erreur de connexion au serveur.");
       }
@@ -2689,6 +2699,16 @@
 
       document.getElementById('simuBannerBox').style.display = 'flex';
       document.getElementById('alerteSortieEleve').innerHTML = "ℹ️ <strong>Mode Test Professeur :</strong> Les avertissements s'affichent normalement mais aucun événement n'est transmis au serveur.";
+      window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
+      window.suiviDirectScoreMaxCourant = 0;
+      envoyerPingSuiviDirect({
+        statut: "en_cours",
+        question_courante: 1,
+        score_actuel: 0,
+        score_max_courant: 0,
+        reponses: window.suiviDirectReponses,
+        hors_ecran: 0
+      });
       afficherQuestionCourante();
     }
 
@@ -3265,7 +3285,17 @@
         currentQuestionIndex++;
         const dureeSec = (typeof dureeCumuleeSortiesSec !== 'undefined') ? dureeCumuleeSortiesSec : 0;
         sauverEtatQcm(currentCode, currentQuestionIndex, totalScoreObtenu, compteurSortiesEleve, dureeSec);
-        afficherQuestionCourante();
+        window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
+      window.suiviDirectScoreMaxCourant = 0;
+      envoyerPingSuiviDirect({
+        statut: "en_cours",
+        question_courante: 1,
+        score_actuel: 0,
+        score_max_courant: 0,
+        reponses: window.suiviDirectReponses,
+        hors_ecran: 0
+      });
+      afficherQuestionCourante();
       } else {
         await terminerEvaluation();
       }
@@ -3380,6 +3410,36 @@
       }
     }
 
+    window.suiviDirectReponses = [];
+    window.suiviDirectScoreMaxCourant = 0;
+
+    async function envoyerPingSuiviDirect(extra = {}) {
+      try {
+        if (typeof isModeSimulation !== 'undefined' && isModeSimulation) return;
+        if (!sessionEleve || !sessionEleve.eleve || !sessionEleve.seance) return;
+        const el = sessionEleve.eleve;
+        const sc = sessionEleve.seance;
+        if (!sc.id) return;
+
+        await fetch('/api/suivi_direct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            seance_id: sc.id,
+            eleve_id: el.id || null,
+            code_eleve: el.code_eleve,
+            nom_eleve: el.nom || "",
+            prenom_eleve: el.prenom || "",
+            total_questions: Array.isArray(currentQuestions) ? currentQuestions.length : 1,
+            score_total_possible: typeof totalScorePossible !== 'undefined' ? totalScorePossible : 0,
+            nb_sorties: typeof compteurSortiesEleve !== 'undefined' ? compteurSortiesEleve : 0,
+            duree_sorties_sec: typeof dureeCumuleeSortiesSec !== 'undefined' ? dureeCumuleeSortiesSec : 0,
+            ...extra
+          })
+        });
+      } catch (e) {}
+    }
+
     async function logSortie(type) {
       if (isModeSimulation) return;
       if (document.getElementById('viewEleveQcm').style.display !== 'block') return;
@@ -3402,6 +3462,7 @@
           compteurSortiesEleve++;
           tempsDepartSortie = Date.now();
           logSortie("page_masquee");
+          envoyerPingSuiviDirect({ hors_ecran: 1, nb_sorties: compteurSortiesEleve });
         } else if (document.visibilityState === "visible") {
           if (tempsDepartSortie) {
             const deltaSec = Math.round((Date.now() - tempsDepartSortie) / 1000);
@@ -3409,6 +3470,7 @@
             tempsDepartSortie = null;
           }
           logSortie("retour_qcm");
+          envoyerPingSuiviDirect({ hors_ecran: 0, nb_sorties: compteurSortiesEleve, duree_sorties_sec: dureeCumuleeSortiesSec });
           alert(isModeSimulation ? "Test Prof : Sortie d'écran détectée." : "Attention : Vous avez quitté la page du QCM. Cette sortie et sa durée sont signalées à l'enseignant.");
         }
       }

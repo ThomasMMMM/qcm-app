@@ -733,5 +733,50 @@
       </div>
     </div>
   </div>
-  </body>
+    <!-- MODALE SUIVI EN DIRECT DE LA CLASSE (LIVE CLASS MONITOR) -->
+  <div id="modalSuiviDirectClasse" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.72); z-index:9999; align-items:center; justify-content:center; padding:14px;">
+    <div class="modal-content" style="background:#ffffff; width:100%; max-width:980px; max-height:92vh; border-radius:12px; padding:18px; box-shadow:0 20px 45px rgba(15,23,42,0.35); display:flex; flex-direction:column; margin:auto;">
+      <div class="modal-header" style="border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div id="liveDirectTitreSeance" style="font-size:1.05rem; color:#0f172a;">📡 Suivi en direct de la classe</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span style="font-size:0.75rem; color:#16a34a; font-weight:700; background:#f0fdf4; padding:4px 8px; border-radius:99px; border:1px solid #bbf7d0;">● Actualisation auto (4s)</span>
+          <button type="button" class="btn" style="background:#0284c7; margin:0; padding:6px 10px; font-size:0.8rem;" onclick="rafraichirSuiviDirect()">🔄 Actualiser</button>
+          <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.82rem;" onclick="fermerSuiviDirectSeance()">✖ Fermer</button>
+        </div>
+      </div>
+
+      <div id="liveDirectKpis" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:12px;"></div>
+
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; margin-bottom:12px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:0.78rem; font-weight:700; color:#475569;">Réussite par question :</span>
+          <div id="liveDirectRadarQuestions" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+        </div>
+        <div>
+          <select id="selectTriSuiviDirect" class="input-field" style="margin:0; padding:4px 8px; font-size:0.8rem;" onchange="if(donneesSuiviDirectCache) rendreSuiviDirect(donneesSuiviDirectCache)">
+            <option value="nom">Trier : Ordre alphabétique</option>
+            <option value="alertes">Trier : Alertes sortie d'écran d'abord</option>
+            <option value="score_asc">Trier : Élèves en difficulté d'abord</option>
+            <option value="avancement">Trier : Avancement décroissant</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead style="position:sticky; top:0; background:#f1f5f9; z-index:2;">
+            <tr>
+              <th style="text-align:left; padding:8px 10px;">Élève</th>
+              <th style="text-align:center; padding:8px 10px; width:130px;">Statut</th>
+              <th style="text-align:left; padding:8px 10px;">Progression par question</th>
+              <th style="text-align:center; padding:8px 10px; width:125px;">Sorties d'écran</th>
+              <th style="text-align:center; padding:8px 10px; width:100px;">Note / 20</th>
+            </tr>
+          </thead>
+          <tbody id="tableSuiviDirectBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
 </html>

@@ -88,6 +88,7 @@ async function chargerSeancesProf() {
           </td>
           <td style="text-align:center;">${s.nb_copies || 0}</td>
           <td style="display:flex; gap:4px; align-items:center; justify-content:center;">
+            <button type="button" class="btn" style="background:#0284c7; padding:4px 8px; font-size:0.75rem; margin:0;" onclick="ouvrirSuiviDirectSeance(${s.id})">📡 En direct</button>
             <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationSeance(${s.id})">🔍 Tester</button>
             <button type="button" class="btn btn-pdf" style="background:${s.actif ? '#eab308' : '#16a34a'}; padding:4px 8px; font-size:0.75rem;" onclick="toggleEtatSeance(${s.id}, ${s.actif})">
               ${s.actif ? 'Fermer' : 'Rouvrir'}
@@ -161,4 +162,157 @@ function afficherPlanningSemaine() {
       </div>
     `;
   }
+}
+// ==============================================================================
+// SUIVI EN DIRECT DU QCM EN CLASSE (LIVE CLASS MONITOR)
+// ==============================================================================
+let intervalSuiviDirect = null;
+let seanceSuiviDirectId = null;
+let donneesSuiviDirectCache = null;
+
+function ouvrirSuiviDirectSeance(seanceId) {
+  seanceSuiviDirectId = seanceId;
+  const modal = document.getElementById('modalSuiviDirectClasse');
+  if (modal) modal.style.display = 'flex';
+
+  rafraichirSuiviDirect();
+  if (intervalSuiviDirect) clearInterval(intervalSuiviDirect);
+  intervalSuiviDirect = setInterval(rafraichirSuiviDirect, 4000);
+}
+
+function fermerSuiviDirectSeance() {
+  if (intervalSuiviDirect) {
+    clearInterval(intervalSuiviDirect);
+    intervalSuiviDirect = null;
+  }
+  seanceSuiviDirectId = null;
+  const modal = document.getElementById('modalSuiviDirectClasse');
+  if (modal) modal.style.display = 'none';
+}
+
+async function rafraichirSuiviDirect() {
+  if (!seanceSuiviDirectId) return;
+  try {
+    const res = await fetch(`/api/suivi_direct?seance_id=${seanceSuiviDirectId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    donneesSuiviDirectCache = data;
+    rendreSuiviDirect(data);
+  } catch (e) {}
+}
+
+function rendreSuiviDirect(data) {
+  if (!data || !data.seance) return;
+
+  const titreEl = document.getElementById('liveDirectTitreSeance');
+  if (titreEl) {
+    titreEl.innerHTML = `📡 Suivi en direct — <strong>${data.seance.classe_nom}</strong> • ${data.seance.qcm_titre} <span class="badge-session" style="margin-left:6px;">${data.seance.code_session}</span>`;
+  }
+
+  const r = data.resume || {};
+  const kpiEl = document.getElementById('liveDirectKpis');
+  if (kpiEl) {
+    kpiEl.innerHTML = `
+      <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:10px; text-align:center;">
+        <div style="font-size:0.75rem; color:#0369a1; font-weight:700; text-transform:uppercase;">Connectés</div>
+        <div style="font-size:1.3rem; font-weight:800; color:#0f172a;">${r.connectes || 0} / ${r.effectif_total || 0}</div>
+      </div>
+      <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px; text-align:center;">
+        <div style="font-size:0.75rem; color:#15803d; font-weight:700; text-transform:uppercase;">Terminés / En cours</div>
+        <div style="font-size:1.3rem; font-weight:800; color:#15803d;">${r.termines || 0} <span style="font-size:0.9rem; color:#0284c7;">(${r.en_cours || 0} en cours)</span></div>
+      </div>
+      <div style="background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:10px; text-align:center;">
+        <div style="font-size:0.75rem; color:#a16207; font-weight:700; text-transform:uppercase;">Moyenne provisoire</div>
+        <div style="font-size:1.3rem; font-weight:800; color:#854d0e;">${r.moyenne_provisoire !== null ? r.moyenne_provisoire.toFixed(1) + ' / 20' : '—'}</div>
+      </div>
+      <div style="background:${(r.hors_ecran_actuel > 0 || r.total_alertes_sorties > 0) ? '#fef2f2' : '#f8fafc'}; border:1px solid ${(r.hors_ecran_actuel > 0 || r.total_alertes_sorties > 0) ? '#fecaca' : '#e2e8f0'}; border-radius:8px; padding:10px; text-align:center;">
+        <div style="font-size:0.75rem; color:#b91c1c; font-weight:700; text-transform:uppercase;">Sorties d'application</div>
+        <div style="font-size:1.3rem; font-weight:800; color:${r.hors_ecran_actuel > 0 ? '#dc2626' : '#334155'};">
+          ${r.hors_ecran_actuel > 0 ? `🚨 ${r.hors_ecran_actuel} dehors !` : `${r.total_alertes_sorties || 0} sortie(s)`}
+        </div>
+      </div>
+    `;
+  }
+
+  // Radar des questions
+  const radarEl = document.getElementById('liveDirectRadarQuestions');
+  if (radarEl && Array.isArray(data.stats_questions)) {
+    radarEl.innerHTML = data.stats_questions.map(sq => {
+      const taux = sq.repondus > 0 ? Math.round(((sq.justes + sq.partiels * 0.5) / sq.repondus) * 100) : null;
+      const bg = taux === null ? '#f1f5f9' : (taux >= 70 ? '#dcfce7' : (taux >= 45 ? '#fef9c3' : '#fee2e2'));
+      const color = taux === null ? '#64748b' : (taux >= 70 ? '#15803d' : (taux >= 45 ? '#a16207' : '#b91c1c'));
+      return `
+        <div style="background:${bg}; color:${color}; border:1px solid rgba(0,0,0,0.08); border-radius:6px; padding:5px 10px; font-size:0.78rem; font-weight:700;" title="${sq.titre}">
+          Q${sq.numero} : ${taux !== null ? taux + '%' : '—'}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Tri de la liste des élèves
+  const critereTri = document.getElementById('selectTriSuiviDirect')?.value || 'nom';
+  const eleves = [...(data.eleves || [])];
+
+  if (critereTri === 'alertes') {
+    eleves.sort((a, b) => (b.hors_ecran - a.hors_ecran) || (b.nb_sorties - a.nb_sorties) || a.nom.localeCompare(b.nom));
+  } else if (critereTri === 'score_asc') {
+    eleves.sort((a, b) => {
+      const na = a.note_sur_20 !== null ? a.note_sur_20 : 999;
+      const nb = b.note_sur_20 !== null ? b.note_sur_20 : 999;
+      return na - nb;
+    });
+  } else if (critereTri === 'avancement') {
+    eleves.sort((a, b) => (b.question_courante - a.question_courante));
+  }
+
+  const tbody = document.getElementById('tableSuiviDirectBody');
+  if (!tbody) return;
+
+  const nbQ = data.seance.total_questions || 1;
+
+  tbody.innerHTML = eleves.map(el => {
+    let badgeStatut = `<span style="background:#f1f5f9; color:#64748b; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">⚪ En attente</span>`;
+    if (el.hors_ecran === 1 && el.statut === 'en_cours') {
+      badgeStatut = `<span style="background:#dc2626; color:#ffffff; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:800; animation: pulse 1.2s infinite;">🚨 HORS ÉCRAN !</span>`;
+    } else if (el.statut === 'termine') {
+      badgeStatut = `<span style="background:#dcfce7; color:#15803d; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">✅ Terminé</span>`;
+    } else if (el.statut === 'en_cours') {
+      badgeStatut = `<span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">🔵 Q${Math.min(el.question_courante, nbQ)} / ${nbQ}</span>`;
+    }
+
+    let badgeSorties = `<span style="color:#94a3b8; font-size:0.78rem;">0</span>`;
+    if (el.nb_sorties > 0) {
+      badgeSorties = `<span style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; padding:2px 7px; border-radius:6px; font-size:0.75rem; font-weight:800;">⚠️ ${el.nb_sorties}x (${el.duree_sorties_sec}s)</span>`;
+    }
+
+    // Pastilles Q1..Qn
+    let pastillesHtml = '<div style="display:flex; gap:4px; flex-wrap:wrap;">';
+    for (let i = 0; i < nbQ; i++) {
+      const rep = Array.isArray(el.reponses) ? el.reponses[i] : null;
+      let bgP = '#e2e8f0';
+      let colP = '#475569';
+      if (rep && rep.etat === 'juste') { bgP = '#22c55e'; colP = '#ffffff'; }
+      else if (rep && rep.etat === 'partiel') { bgP = '#f59e0b'; colP = '#ffffff'; }
+      else if (rep && rep.etat === 'faux') { bgP = '#ef4444'; colP = '#ffffff'; }
+
+      pastillesHtml += `<span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:5px; background:${bgP}; color:${colP}; font-size:0.72rem; font-weight:800;">${i + 1}</span>`;
+    }
+    pastillesHtml += '</div>';
+
+    const noteTxt = el.note_sur_20 !== null
+      ? `<strong style="color:${el.note_sur_20 >= 10 ? '#15803d' : '#dc2626'}; font-size:0.92rem;">${el.note_sur_20.toFixed(1)} / 20</strong>`
+      : `<span style="color:#94a3b8;">—</span>`;
+
+    const rowBg = (el.hors_ecran === 1 && el.statut === 'en_cours') ? 'background:#fef2f2;' : '';
+
+    return `
+      <tr style="${rowBg}">
+        <td><strong>${el.nom}</strong> ${el.prenom}</td>
+        <td style="text-align:center;">${badgeStatut}</td>
+        <td>${pastillesHtml}</td>
+        <td style="text-align:center;">${badgeSorties}</td>
+        <td style="text-align:center;">${noteTxt}</td>
+      </tr>
+    `;
+  }).join('');
 }
