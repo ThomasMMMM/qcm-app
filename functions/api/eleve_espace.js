@@ -70,7 +70,7 @@ export async function onRequestPost(context) {
 
     try {
       const resCopies = await env.DB.prepare(`
-        SELECT r.id, r.seance_id, r.note, r.total, r.note_proportionnelle, r.questions_traitees, r.questions_totales,
+        SELECT r.id, r.seance_id, r.note, r.total, r.note_proportionnelle, r.questions_traitees, r.questions_totales, COALESCE(r.exporte_pronote, 0) AS exporte_pronote,
                r.date_soumission, s.code_session, q.titre AS qcm_titre, q.matiere_id, q.competence_code
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
@@ -130,7 +130,8 @@ export async function onRequestPost(context) {
         note_proportionnelle: copie ? copie.note_proportionnelle : null,
         questions_traitees: copie ? copie.questions_traitees : null,
         questions_totales: copie ? copie.questions_totales : null,
-        date_soumission: copie ? copie.date_soumission : null
+        date_soumission: copie ? copie.date_soumission : null,
+        exporte_pronote: copie ? (Number(copie.exporte_pronote) === 1) : false
       };
     });
 
