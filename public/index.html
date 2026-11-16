@@ -2906,8 +2906,82 @@
     }
 
     // ==================== 9. MOTEUR DU QUIZ ====================
+    function preparerQuestionCloze(q) {
+      if (!q || q.type !== "cloze") return q;
+      if (Array.isArray(q.etapes) && q.etapes.length > 0 && q.enonce_template) return q;
+
+      const sourceHtml = q.enonce || q.text || "";
+      const regexCloze = /\{(\d+)?\s*:\s*(MC|MCV|MCH|MULTICHOICE|MULTICHOICE_V|MULTICHOICE_H|SA|SHORTANSWER|MW|NUMERICAL|NM)\s*:\s*([^}]+)\}/gi;
+      const etapes = [];
+      let idx = 0;
+
+      const template = sourceHtml.replace(regexCloze, (fullMatch, poidsStr, subType, contenu) => {
+        const poids = poidsStr ? parseFloat(poidsStr) : 1;
+        const typeUpper = subType.toUpperCase();
+        const isShort = (typeUpper === "SA" || typeUpper === "SHORTANSWER" || typeUpper === "MW" || typeUpper === "NUMERICAL" || typeUpper === "NM");
+        const morceaux = contenu.split('~').map(s => s.trim()).filter(Boolean);
+        const options = [];
+        let bonneReponse = "";
+        let feedbackBonne = "";
+
+        morceaux.forEach(m => {
+          let estCorrect = false;
+          let texteOpt = m;
+          let fbOpt = "";
+
+          if (texteOpt.startsWith('=')) {
+            estCorrect = true;
+            texteOpt = texteOpt.slice(1).trim();
+          } else if (/^%100%/.test(texteOpt)) {
+            estCorrect = true;
+            texteOpt = texteOpt.replace(/^%100%/, '').trim();
+          } else if (/^%\d+%/.test(texteOpt)) {
+            texteOpt = texteOpt.replace(/^%\d+%/, '').trim();
+          }
+
+          if (texteOpt.includes('#')) {
+            const parts = texteOpt.split('#');
+            texteOpt = parts[0].trim();
+            fbOpt = parts.slice(1).join('#').trim();
+          }
+
+          if (estCorrect && !bonneReponse) {
+            bonneReponse = texteOpt;
+            feedbackBonne = fbOpt;
+          }
+          options.push({ text: texteOpt, correct: estCorrect, feedback: fbOpt });
+        });
+
+        if (!bonneReponse && options.length > 0) {
+          bonneReponse = options[0].text;
+          feedbackBonne = options[0].feedback || "";
+          options[0].correct = true;
+        }
+
+        // Mélanger les options pour l'affichage élève
+        const optionsMelangees = [...options].sort(() => Math.random() - 0.5);
+
+        const token = `[[CLOZE_STEP_${idx}]]`;
+        etapes.push({
+          index: idx,
+          label: `Étape ${idx + 1}`,
+          mode: isShort ? "text" : "select",
+          poids,
+          bonne_reponse: bonneReponse,
+          feedback: feedbackBonne,
+          options: optionsMelangees
+        });
+        idx++;
+        return token;
+      });
+
+      q.etapes = etapes;
+      q.enonce_template = template;
+      return q;
+    }
+
     function afficherQuestionCourante() {
-      const q = currentQuestions[currentQuestionIndex];
+      const q = preparerQuestionCloze(currentQuestions[currentQuestionIndex]);
       const totalQ = currentQuestions.length;
 
       document.getElementById('questionProgressionText').innerText = `Question ${currentQuestionIndex + 1} sur ${totalQ}`;
@@ -2955,7 +3029,7 @@
     }
 
     function validerQuestionCourante() {
-      const q = currentQuestions[currentQuestionIndex];
+      const q = preparerQuestionCloze(currentQuestions[currentQuestionIndex]);
       let scoreQuestion = 0;
       let explications = [];
 
