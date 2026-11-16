@@ -15,17 +15,17 @@ function calculerNiveauBadge(nbReussis, moyenne) {
 }
 
 function getProchainObjectifTexte(niveau, nbReussis, moyenne) {
-  if (niveau === 0) return "Réussir 1 QCM (≥ 10/20) pour débloquer le badge Bronze";
-  if (niveau === 1) return `Encore ${2 - nbReussis} QCM réussi (≥ 10/20) pour le badge Argent`;
+  if (niveau === 0) return "Réussir 1 QCM (≥ 10/20) pour valider le Niveau 1 (Maîtrise insuffisante)";
+  if (niveau === 1) return `Encore ${2 - nbReussis} QCM réussi (≥ 10/20) pour atteindre le Niveau 2 (Maîtrise fragile)`;
   if (niveau === 2) {
-    if (nbReussis < 3) return `Encore ${3 - nbReussis} QCM réussi (moy. ≥ 14/20) pour le badge Or`;
-    return `Atteindre 14/20 de moyenne (actuellement ${moyenne.toFixed(1)}/20) pour le badge Or`;
+    if (nbReussis < 3) return `Encore ${3 - nbReussis} QCM réussi (moy. ≥ 14/20) pour le Niveau 3 (Très bonne maîtrise)`;
+    return `Atteindre 14/20 de moyenne (actuellement ${moyenne.toFixed(1)}/20) pour le Niveau 3 (Très bonne maîtrise)`;
   }
   if (niveau === 3) {
-    if (nbReussis < 4) return `Encore ${4 - nbReussis} QCM réussi (moy. ≥ 16/20) pour le badge Diamant`;
-    return `Atteindre 16/20 de moyenne (actuellement ${moyenne.toFixed(1)}/20) pour le badge Diamant`;
+    if (nbReussis < 4) return `Encore ${4 - nbReussis} QCM réussi (moy. ≥ 16/20) pour le Niveau 4 (Excellente maîtrise)`;
+    return `Atteindre 16/20 de moyenne (actuellement ${moyenne.toFixed(1)}/20) pour le Niveau 4 (Excellente maîtrise)`;
   }
-  return "Niveau maximal atteint !";
+  return "Niveau maximal atteint — Excellente maîtrise !";
 }
 
 export async function onRequestPost(context) {

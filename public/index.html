@@ -640,7 +640,7 @@
             <div class="card" style="margin-top:0;">
               <h3><i class="fa-solid fa-trophy" style="color:#eab308;"></i> Mon Arbre de Compétences & Badges</h3>
               <p style="color:#64748b; font-size:0.88rem; margin-bottom:14px;">
-                Voici les matières enseignées dans ta classe et leurs compétences. Chaque QCM réussi débloque progressivement 4 niveaux de badges : <strong>Bronze</strong>, <strong>Argent</strong>, <strong>Or</strong> et <strong>Diamant</strong>.
+                Voici les matières enseignées dans ta classe et leurs compétences. Chaque QCM réussi fait progresser ton badge sur 4 niveaux officiels : <strong>Maîtrise insuffisante</strong>, <strong>Maîtrise fragile</strong>, <strong>Très bonne maîtrise</strong> et <strong>Excellente maîtrise</strong>.
               </p>
               <div id="conteneurArbreCompetencesEleve"></div>
             </div>
@@ -1571,82 +1571,171 @@
       }).join('');
     }
 
+    function genererBadgeGarminSvg(codeComp, niveau) {
+      const configs = {
+        0: { main: "#94a3b8", light: "#f1f5f9", pct: "0%", nivTxt: "VERROUILLÉ", arc: 0, glow: "none" },
+        1: { main: "#dc2626", light: "#fef2f2", pct: "15%", nivTxt: "NIVEAU 1", arc: 52, glow: "drop-shadow(0 0 6px rgba(220,38,38,0.28))" },
+        2: { main: "#ea580c", light: "#fff7ed", pct: "45%", nivTxt: "NIVEAU 2", arc: 155, glow: "drop-shadow(0 0 6px rgba(234,88,12,0.28))" },
+        3: { main: "#0284c7", light: "#f0f9ff", pct: "75%", nivTxt: "NIVEAU 3", arc: 260, glow: "drop-shadow(0 0 6px rgba(2,132,199,0.28))" },
+        4: { main: "#16a34a", light: "#f0fdf4", pct: "100%", nivTxt: "NIVEAU 4", arc: 345, glow: "drop-shadow(0 0 8px rgba(22,163,74,0.35))" }
+      };
+      const cfg = configs[niveau] || configs[0];
+      const r = 55;
+      const circ = 2 * Math.PI * r;
+      const dashLen = (cfg.arc / 360) * circ;
+
+      // Icône centrale évolutive selon le niveau
+      let iconeCentre = "";
+      if (niveau === 0) {
+        iconeCentre = `
+          <rect x="61" y="54" width="26" height="34" rx="3" fill="none" stroke="${cfg.main}" stroke-width="2.2"/>
+          <line x1="66" y1="63" x2="81" y2="63" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="66" y1="70" x2="81" y2="70" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="66" y1="77" x2="75" y2="77" stroke="${cfg.main}" stroke-width="2"/>
+        `;
+      } else if (niveau === 1) {
+        // Document + triangle d'alerte
+        iconeCentre = `
+          <path d="M58 53 h18 l7 7 v26 h-25 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+          <line x1="63" y1="63" x2="76" y2="63" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="63" y1="70" x2="74" y2="70" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="63" y1="77" x2="71" y2="77" stroke="${cfg.main}" stroke-width="2"/>
+          <polygon points="84,71 95,89 73,89" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2" stroke-linejoin="round"/>
+          <line x1="84" y1="77" x2="84" y2="83" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="84" cy="86" r="1.2" fill="${cfg.main}"/>
+        `;
+      } else if (niveau === 2) {
+        // Document + loupe d'analyse
+        iconeCentre = `
+          <path d="M57 52 h19 l7 7 v27 h-26 z" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+          <line x1="62" y1="62" x2="76" y2="62" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="62" y1="69" x2="72" y2="69" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="62" y1="76" x2="70" y2="76" stroke="${cfg.main}" stroke-width="2"/>
+          <circle cx="81" cy="76" r="9.5" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.6"/>
+          <line x1="88" y1="83" x2="96" y2="91" stroke="${cfg.main}" stroke-width="3.2" stroke-linecap="round"/>
+        `;
+      } else if (niveau === 3) {
+        // Documents connectés + engrenage technique
+        iconeCentre = `
+          <rect x="65" y="49" width="24" height="30" rx="2" fill="#ffffff" stroke="${cfg.main}" stroke-width="2"/>
+          <rect x="57" y="55" width="24" height="30" rx="2" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+          <line x1="62" y1="63" x2="75" y2="63" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="62" y1="69" x2="72" y2="69" stroke="${cfg.main}" stroke-width="2"/>
+          <circle cx="82" cy="78" r="9" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.4"/>
+          <circle cx="82" cy="78" r="3.5" fill="none" stroke="${cfg.main}" stroke-width="2"/>
+          <path d="M82 66 v3 M82 87 v3 M70 78 h3 M91 78 h3 M73.5 69.5 l2 2 M88.5 84.5 l2 2 M88.5 69.5 l-2 2 M73.5 84.5 l-2 2" stroke="${cfg.main}" stroke-width="2" stroke-linecap="round"/>
+        `;
+      } else {
+        // Diplôme / document maîtrisé + lauriers et étoiles
+        iconeCentre = `
+          <path d="M49 62 q-4 12 4 22" fill="none" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M101 62 q4 12 -4 22" fill="none" stroke="${cfg.main}" stroke-width="2.4" stroke-linecap="round"/>
+          <rect x="61" y="52" width="28" height="34" rx="3" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+          <polygon points="75,56 76.8,60 81,60.5 78,63.3 78.8,67.5 75,65.4 71.2,67.5 72,63.3 69,60.5 73.2,60" fill="${cfg.main}"/>
+          <line x1="67" y1="72" x2="83" y2="72" stroke="${cfg.main}" stroke-width="2"/>
+          <line x1="67" y1="78" x2="79" y2="78" stroke="${cfg.main}" stroke-width="2"/>
+          <circle cx="98" cy="49" r="2" fill="${cfg.main}"/>
+          <circle cx="52" cy="49" r="1.8" fill="${cfg.main}"/>
+        `;
+      }
+
+      const codeTexte = (codeComp || "C1").slice(0, 5);
+
+      return `
+        <svg viewBox="0 0 150 144" style="width:128px; height:124px; display:block; margin:0 auto; filter:${cfg.glow};">
+          <!-- Anneau extérieur segmenté façon Garmin -->
+          <circle cx="75" cy="72" r="63" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.6"/>
+          <circle cx="75" cy="72" r="59" fill="none" stroke="${cfg.main}" stroke-width="1.2" stroke-dasharray="18 6 4 6" opacity="0.75"/>
+          <circle cx="75" cy="72" r="55" fill="${cfg.light}" stroke="#e2e8f0" stroke-width="5"/>
+          ${cfg.arc > 0 ? `<circle cx="75" cy="72" r="55" fill="none" stroke="${cfg.main}" stroke-width="5.2" stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round" transform="rotate(-90 75 72)"/>` : ""}
+          <circle cx="75" cy="72" r="46" fill="#ffffff" stroke="${cfg.main}" stroke-width="1.2" opacity="0.85"/>
+
+          <!-- Pastille octogonale haute (Code compétence : C1, C2...) -->
+          <polygon points="62,6 88,6 93,12 93,23 88,29 62,29 57,23 57,12" fill="#ffffff" stroke="${cfg.main}" stroke-width="2.2"/>
+          <text x="75" y="22" text-anchor="middle" font-size="13" font-weight="800" font-family="system-ui, sans-serif" fill="#1e293b">${codeTexte}</text>
+
+          <!-- Indicateur de pourcentage à droite -->
+          <rect x="108" y="64" width="26" height="15" rx="4" fill="#ffffff" stroke="${cfg.main}" stroke-width="1.2"/>
+          <text x="121" y="74.5" text-anchor="middle" font-size="8.5" font-weight="800" font-family="system-ui, sans-serif" fill="${cfg.main}">${cfg.pct}</text>
+
+          <!-- Illustration centrale -->
+          ${iconeCentre}
+
+          <!-- Cartouche bas (Niveau 1 à 4) -->
+          <rect x="44" y="102" width="62" height="18" rx="9" fill="#ffffff" stroke="${cfg.main}" stroke-width="1.8"/>
+          <text x="75" y="114" text-anchor="middle" font-size="9.5" font-weight="800" font-family="system-ui, sans-serif" fill="#1e293b">${cfg.nivTxt}</text>
+        </svg>
+      `;
+    }
+
     function afficherArbreCompetencesEleve() {
       const cont = document.getElementById('conteneurArbreCompetencesEleve');
-      const elTuileComp = document.getElementById('navBadgeEleveCompetences');
+      const badgeNav = document.getElementById('navBadgeEleveCompetences');
       const arbre = (sessionEleve && Array.isArray(sessionEleve.arbre_competences)) ? sessionEleve.arbre_competences : [];
 
+      let totalBadgesMax = 0;
       let totalBadgesDebloques = 0;
-      let totalBadgesPossibles = 0;
-      arbre.forEach(m => {
-        (m.competences || []).forEach(c => {
+      arbre.forEach(mat => {
+        (mat.competences || []).forEach(c => {
+          totalBadgesMax += 4;
           totalBadgesDebloques += Number(c.niveau || 0);
-          totalBadgesPossibles += 4;
         });
       });
-
-      if (elTuileComp) {
-        elTuileComp.innerText = totalBadgesPossibles > 0
-          ? `${totalBadgesDebloques}/${totalBadgesPossibles}`
-          : '0/0';
-      }
+      if (badgeNav) badgeNav.innerText = `${totalBadgesDebloques}/${totalBadgesMax}`;
 
       if (!cont) return;
       if (arbre.length === 0) {
-        cont.innerHTML = "<p style='color:#64748b; font-style:italic;'>Aucune matière à compétences n'est encore associée à ta classe.</p>";
+        cont.innerHTML = "<p style='color:#64748b; font-style:italic;'>Aucune matière configurée pour ta classe.</p>";
         return;
       }
 
-      const paliers = [
-        { lvl: 1, nom: "Bronze", label: "Initié", icon: "🥉" },
-        { lvl: 2, nom: "Argent", label: "Confirmé", icon: "🥈" },
-        { lvl: 3, nom: "Or", label: "Maîtrise", icon: "🥇" },
-        { lvl: 4, nom: "Diamant", label: "Expert", icon: "💎" }
+      const niveauxInfo = [
+        { titre: "NON ÉVALUÉ", color: "#64748b", bg: "#f8fafc", border: "#cbd5e1" },
+        { titre: "MAÎTRISE INSUFFISANTE", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+        { titre: "MAÎTRISE FRAGILE", color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
+        { titre: "TRÈS BONNE MAÎTRISE", color: "#0284c7", bg: "#f0f9ff", border: "#bae6fd" },
+        { titre: "EXCELLENTE MAÎTRISE", color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" }
       ];
 
       cont.innerHTML = arbre.map(mat => {
-        const branchesHtml = (mat.competences || []).map(c => {
-          const nodesHtml = paliers.map(p => {
-            const acquis = Number(c.niveau || 0) >= p.lvl;
-            return `
-              <div class="badge-node tier-${p.lvl} ${acquis ? 'unlocked' : ''}">
-                <div class="badge-node-icon">${acquis ? p.icon : '🔒'}</div>
-                <div class="badge-node-title">${p.nom}</div>
-                <div class="badge-node-lvl">Niv. ${p.lvl} • ${p.label}</div>
-              </div>
-            `;
-          }).join('');
-
-          const statsTxt = c.nb_qcm > 0
-            ? `${c.nb_reussis}/${c.nb_qcm} QCM réussi(s) • Moy. ${c.moyenne}/20`
-            : 'Aucun QCM évalué';
+        const cartesComps = (mat.competences || []).map(comp => {
+          const niv = Number(comp.niveau || 0);
+          const meta = niveauxInfo[niv] || niveauxInfo[0];
+          const svgBadge = genererBadgeGarminSvg(comp.code, niv);
 
           return `
-            <div class="competence-branche">
-              <div class="competence-entete">
-                <div>
-                  <span class="competence-code-pill">${c.code}</span>
-                  <strong style="color:#1e293b; font-size:0.95rem;">${c.libelle}</strong>
+            <div style="background:#ffffff; border:1.5px solid ${meta.border}; border-radius:12px; padding:14px 12px; text-align:center; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+              <div>
+                ${svgBadge}
+                <div style="font-weight:900; font-size:0.86rem; letter-spacing:0.3px; color:${meta.color}; margin-top:4px; text-transform:uppercase;">
+                  ${meta.titre}
                 </div>
-                <span style="font-size:0.78rem; color:#475569; font-weight:600;">${statsTxt}</span>
+                <div style="font-size:0.83rem; font-weight:700; color:#1e293b; margin-top:5px; line-height:1.3;">
+                  ${comp.libelle}
+                </div>
               </div>
-              <div class="arbre-nodes-track">${nodesHtml}</div>
-              <div style="font-size:0.78rem; color:${c.niveau === 4 ? '#15803d' : '#64748b'}; font-weight:500;">
-                <i class="fa-solid ${c.niveau === 4 ? 'fa-circle-check' : 'fa-bullseye'}"></i> ${c.objectif}
+
+              <div style="margin-top:10px; padding-top:8px; border-top:1px solid #f1f5f9;">
+                <div style="font-size:0.78rem; color:#475569; font-weight:600;">
+                  ${comp.nb_qcm > 0 ? `Moyenne : <strong style="color:var(--pronote-blue);">${comp.moyenne}/20</strong> (${comp.nb_reussis} réussi${comp.nb_reussis > 1 ? 's' : ''})` : 'Aucun QCM passé'}
+                </div>
+                <div style="font-size:0.73rem; color:#64748b; margin-top:3px; line-height:1.25;">
+                  ${comp.objectif}
+                </div>
               </div>
             </div>
           `;
         }).join('');
 
         return `
-          <div class="arbre-matiere-bloc">
-            <div class="arbre-matiere-header">
-              <strong style="color:var(--pronote-blue); font-size:1.05rem;">
-                <i class="fa-solid fa-layer-group"></i> ${mat.matiere_nom}
-              </strong>
-              <span class="badge" style="background:#e0f2fe; color:#0369a1;">${(mat.competences || []).length} compétences</span>
+          <div style="margin-bottom:20px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; padding-bottom:6px; border-bottom:2px solid #e2e8f0;">
+              <i class="fa-solid fa-layer-group" style="color:var(--pronote-blue);"></i>
+              <strong style="font-size:1.02rem; color:#1e293b;">${mat.matiere_nom}</strong>
             </div>
-            ${branchesHtml}
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(215px, 1fr)); gap:12px;">
+              ${cartesComps}
+            </div>
           </div>
         `;
       }).join('');
