@@ -531,8 +531,6 @@
             </div>
             <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
           </div>
-            <div class="tuile-fleche"><i class="fa-solid fa-chevron-right"></i></div>
-          </div>
         </div>
       </div>
 
@@ -578,6 +576,23 @@
         <div class="card">
           <h3><i class="fa-solid fa-clock-rotate-left"></i> Mes QCM terminés</h3>
           <div id="conteneurQcmPasses"></div>
+        </div>
+      </div>
+
+      <!-- RUBRIQUE 4 : ARBRE DE COMPÉTENCES & BADGES -->
+      <div id="rubriqueEleveCompetences" class="rubrique-contenu-eleve" style="display:none;">
+        <div class="rubrique-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <button type="button" class="btn btn-pdf" style="font-size:0.85rem; padding:6px 12px;" onclick="retournerAuHubEleve()">
+            <i class="fa-solid fa-arrow-left"></i> Revenir à mon espace
+          </button>
+          <span style="font-size:0.85rem; color:#64748b; font-weight:600;"><i class="fa-solid fa-award"></i> Arbre de Compétences</span>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-trophy" style="color:#eab308;"></i> Mon Arbre de Compétences & Badges</h3>
+          <p style="color:#64748b; font-size:0.88rem; margin-bottom:14px;">
+            Voici les matières enseignées dans ta classe et leurs compétences. Chaque QCM réussi débloque progressivement 4 niveaux de badges : <strong>Bronze</strong>, <strong>Argent</strong>, <strong>Or</strong> et <strong>Diamant</strong>.
+          </p>
+          <div id="conteneurArbreCompetencesEleve"></div>
         </div>
       </div>
 
