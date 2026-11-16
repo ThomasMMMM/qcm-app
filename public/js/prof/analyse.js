@@ -995,5 +995,8 @@ function actualiserVueAnalyseMacro() {
 
     <!-- 5. POINT 3 : SUIVI LONGITUDINAL & DÉTECTION DE DÉCROCHAGE -->
     ${sectionLongitudinalHtml}
+
+    <!-- 6. POINT 4 : ANALYSE PSYCHOMÉTRIQUE DES QCM -->
+    ${sectionPsychometrieHtml}
   `;
 }
