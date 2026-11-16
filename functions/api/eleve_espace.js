@@ -140,6 +140,18 @@ export async function onRequestPost(context) {
     // 4. Construction de l'arbre de compétences : STRICTEMENT les matières associées à la classe de l'élève
     let arbreCompetences = [];
     try {
+      try {
+        await env.DB.prepare("ALTER TABLE fiches_synthese ADD COLUMN competence_code TEXT DEFAULT NULL").run();
+      } catch (eCol) {}
+
+      const { results: fichesClasse } = await env.DB.prepare(`
+        SELECT f.id, f.matiere_id, f.titre, f.competence_code
+        FROM fiches_synthese f
+        INNER JOIN classes_matieres cm ON f.matiere_id = cm.matiere_id
+        WHERE cm.classe_id = ?
+        ORDER BY f.titre ASC
+      `).bind(eleve.classe_id).all();
+
       const { results: matieresClasse } = await env.DB.prepare(`
         SELECT m.id, m.nom, m.competences_json
         FROM matieres m
@@ -179,6 +191,18 @@ export async function onRequestPost(context) {
           const moyenne = nbTotal > 0 ? (notesRetenues.reduce((a, b) => a + b, 0) / nbTotal) : 0;
           const niveau = calculerNiveauBadge(nbReussis, moyenne);
 
+          const codeCompUpper = String(comp.code || "").trim().toUpperCase();
+          const fichesLiees = (fichesClasse || [])
+            .filter(f => {
+              if (Number(f.matiere_id) !== Number(mat.id)) return false;
+              const fCode = String(f.competence_code || "").trim().toUpperCase();
+              if (fCode && fCode === codeCompUpper) return true;
+              // Correspondance automatique si le titre mentionne explicitement le code compétence (ex: "Fiche C1", "[C1]")
+              const regexCode = new RegExp(`(^|[^A-Z0-9])${codeCompUpper}([^A-Z0-9]|$)`, "i");
+              return !fCode && regexCode.test(f.titre || "");
+            })
+            .map(f => ({ id: f.id, titre: f.titre }));
+
           return {
             code: comp.code,
             libelle: comp.libelle,
@@ -186,7 +210,8 @@ export async function onRequestPost(context) {
             nb_qcm: nbTotal,
             nb_reussis: nbReussis,
             moyenne: Number(moyenne.toFixed(1)),
-            objectif: getProchainObjectifTexte(niveau, nbReussis, moyenne)
+            objectif: getProchainObjectifTexte(niveau, nbReussis, moyenne),
+            fiches: fichesLiees
           };
         });
 

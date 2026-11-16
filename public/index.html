@@ -1868,6 +1868,21 @@
                 <div style="font-size:0.73rem; color:#64748b; margin-top:3px; line-height:1.25;">
                   ${comp.objectif}
                 </div>
+                ${(Array.isArray(comp.fiches) && comp.fiches.length > 0) ? `
+                  <div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">
+                    ${comp.fiches.map(f => {
+                      const estPrioritaire = (niv === 1 || niv === 2);
+                      const btnBg = estPrioritaire ? "#ea580c" : "#0284c7";
+                      const prefixe = estPrioritaire ? "📖 Réviser :" : "📖 Fiche méthode :";
+                      return `
+                        <button type="button" class="btn" style="background:${btnBg}; width:100%; justify-content:center; padding:5px 8px; font-size:0.75rem; line-height:1.2;"
+                                onclick="ouvrirFicheEleve(${f.id})" title="Ouvrir la fiche méthode associée à ${comp.code}">
+                          ${prefixe} ${f.titre}
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                ` : ''}
               </div>
             </div>
           `;

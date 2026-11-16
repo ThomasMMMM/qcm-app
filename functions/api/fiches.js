@@ -29,6 +29,9 @@ export async function onRequest(context) {
       const fiche_id = url.searchParams.get("fiche_id");
       const classe_id = url.searchParams.get("classe_id");
       const mode = url.searchParams.get("mode");
+      try {
+        await env.DB.prepare("ALTER TABLE fiches_synthese ADD COLUMN competence_code TEXT DEFAULT NULL").run();
+      } catch (eCol) {}
 
       if (fiche_id) {
         const fiche = await env.DB.prepare(`
@@ -65,7 +68,7 @@ export async function onRequest(context) {
 
       if (mode === "eleve") {
         let query = `
-          SELECT f.id, f.titre, f.date_creation, m.nom AS matiere_nom, m.id AS matiere_id
+          SELECT f.id, f.titre, f.competence_code, f.date_creation, m.nom AS matiere_nom, m.id AS matiere_id
           FROM fiches_synthese f
           INNER JOIN matieres m ON f.matiere_id = m.id
         `;
@@ -86,7 +89,7 @@ export async function onRequest(context) {
 
       if (prof_id) {
         let query = `
-          SELECT f.id, f.titre, f.matiere_id, f.date_creation, m.nom AS matiere_nom
+          SELECT f.id, f.titre, f.matiere_id, f.competence_code, f.date_creation, m.nom AS matiere_nom
           FROM fiches_synthese f
           INNER JOIN matieres m ON f.matiere_id = m.id
           WHERE f.prof_id = ?
@@ -157,14 +160,37 @@ export async function onRequest(context) {
       }
 
       if (type === "creer_fiche") {
-        const { prof_id, matiere_id, titre, contenu_html } = body;
+        const { prof_id, matiere_id, titre, contenu_html, competence_code } = body;
         if (!prof_id || !matiere_id || !titre || !contenu_html) {
           return new Response(JSON.stringify({ error: "Tous les champs sont requis." }), { status: 400 });
         }
 
+        try {
+          await env.DB.prepare("ALTER TABLE fiches_synthese ADD COLUMN competence_code TEXT DEFAULT NULL").run();
+        } catch (eCol) {}
+
+        const compClean = competence_code ? String(competence_code).trim().toUpperCase() : null;
+
         await env.DB.prepare(
-          "INSERT INTO fiches_synthese (prof_id, matiere_id, titre, contenu_html) VALUES (?, ?, ?, ?)"
-        ).bind(prof_id, parseInt(matiere_id), titre.trim(), contenu_html.trim()).run();
+          "INSERT INTO fiches_synthese (prof_id, matiere_id, titre, contenu_html, competence_code) VALUES (?, ?, ?, ?, ?)"
+        ).bind(prof_id, parseInt(matiere_id), titre.trim(), contenu_html.trim(), compClean || null).run();
+
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+      }
+
+      if (type === "update_fiche_competence") {
+        const { fiche_id, competence_code } = body;
+        if (!fiche_id) {
+          return new Response(JSON.stringify({ error: "fiche_id requis" }), { status: 400 });
+        }
+        try {
+          await env.DB.prepare("ALTER TABLE fiches_synthese ADD COLUMN competence_code TEXT DEFAULT NULL").run();
+        } catch (eCol) {}
+
+        const compClean = competence_code ? String(competence_code).trim().toUpperCase() : null;
+        await env.DB.prepare(
+          "UPDATE fiches_synthese SET competence_code = ? WHERE id = ?"
+        ).bind(compClean || null, parseInt(fiche_id, 10)).run();
 
         return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
       }

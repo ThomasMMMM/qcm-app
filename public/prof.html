@@ -267,11 +267,17 @@
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px;">
               <div>
                 <label style="font-weight:bold; font-size:0.8rem;">Matière associée * :</label>
-                <select id="selectMatiereFiche" class="input-field" style="margin-bottom:0;"></select>
+                <select id="selectMatiereFiche" class="input-field" style="margin-bottom:0;" onchange="majSelectCompetencesFiche()"></select>
               </div>
               <div>
-                <label style="font-weight:bold; font-size:0.8rem;">Titre de la fiche synthèse * :</label>
-                <input type="text" id="ficheTitreInput" class="input-field" placeholder="Ex: Fiche 01 - Les micro-organismes pathogènes" style="margin-bottom:0;">
+                <label style="font-weight:bold; font-size:0.8rem;">Compétence liée (Badge élève) :</label>
+                <select id="selectCompetenceFiche" class="input-field" style="margin-bottom:0;">
+                  <option value="">-- Aucune compétence spécifique --</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-weight:bold; font-size:0.8rem;">Titre de la fiche synthèse / méthode * :</label>
+                <input type="text" id="ficheTitreInput" class="input-field" placeholder="Ex: Fiche méthode C1 - Extraire l'information" style="margin-bottom:0;">
               </div>
             </div>
 
@@ -310,6 +316,7 @@
               <thead>
                 <tr>
                   <th style="width:140px;">Matière</th>
+                  <th style="width:185px;">Compétence (Badge)</th>
                   <th>Titre de la Fiche Synthèse</th>
                   <th style="text-align:center; width:110px;">Date</th>
                   <th style="text-align:center; width:150px;">Actions</th>

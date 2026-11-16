@@ -165,6 +165,39 @@ async function chargerFichesProf() {
   } catch (e) {}
 }
 
+function majSelectCompetencesFiche() {
+  const matId = document.getElementById('selectMatiereFiche')?.value;
+  const selComp = document.getElementById('selectCompetenceFiche');
+  if (!selComp) return;
+
+  const mat = listeMatieresMemoire.find(m => String(m.id) === String(matId));
+  if (!mat || !Array.isArray(mat.competences) || mat.competences.length === 0) {
+    selComp.innerHTML = '<option value="">-- Aucune compétence spécifique --</option>';
+    return;
+  }
+
+  selComp.innerHTML = '<option value="">-- Fiche générale (sans badge) --</option>' +
+    mat.competences.map(c => `<option value="${c.code}">${c.code} — ${c.libelle}</option>`).join('');
+}
+
+async function modifierCompetenceFiche(ficheId, nouveauCode) {
+  try {
+    const res = await fetch('/api/fiches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: "update_fiche_competence",
+        fiche_id: ficheId,
+        competence_code: nouveauCode
+      })
+    });
+    if (res.ok) {
+      const f = listeFichesMemoire.find(item => Number(item.id) === Number(ficheId));
+      if (f) f.competence_code = nouveauCode || null;
+    }
+  } catch (e) {}
+}
+
 function afficherTableauFiches() {
   const filtreMatiereId = document.getElementById('filtreMatiereFicheSelect')?.value;
   let fiches = listeFichesMemoire;
@@ -176,18 +209,31 @@ function afficherTableauFiches() {
   if (!tbody) return;
 
   tbody.innerHTML = fiches.length === 0
-    ? "<tr><td colspan='4' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune fiche synthèse enregistrée.</td></tr>"
-    : fiches.map(f => `
-      <tr>
-        <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${f.matiere_nom}</span></td>
-        <td><strong>${f.titre}</strong></td>
-        <td style="text-align:center;">${new Date(f.date_creation).toLocaleDateString()}</td>
-        <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
-          <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="previsualiserFiche(${f.id})">👁️ Voir</button>
-          <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerFiche(${f.id}, '${f.titre.replace(/'/g, "\\'")}')">Suppr</button>
-        </td>
-      </tr>
-    `).join('');
+    ? "<tr><td colspan='5' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune fiche synthèse enregistrée.</td></tr>"
+    : fiches.map(f => {
+      const mat = listeMatieresMemoire.find(m => Number(m.id) === Number(f.matiere_id));
+      const comps = (mat && Array.isArray(mat.competences)) ? mat.competences : [];
+      const codeActuel = String(f.competence_code || "").toUpperCase();
+      const optionsComp = `<option value="">— Générale —</option>` +
+        comps.map(c => `<option value="${c.code}" ${String(c.code).toUpperCase() === codeActuel ? 'selected' : ''}>🎯 ${c.code} — ${c.libelle}</option>`).join('');
+
+      return `
+        <tr>
+          <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${f.matiere_nom}</span></td>
+          <td>
+            <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.8rem;" onchange="modifierCompetenceFiche(${f.id}, this.value)">
+              ${optionsComp}
+            </select>
+          </td>
+          <td><strong>${f.titre}</strong></td>
+          <td style="text-align:center;">${new Date(f.date_creation).toLocaleDateString()}</td>
+          <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
+            <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="previsualiserFiche(${f.id})">👁️ Voir</button>
+            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerFiche(${f.id}, '${f.titre.replace(/'/g, "\\'")}')">Suppr</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
 }
 
 function importerFichierHtmlFiche(input) {
@@ -233,6 +279,7 @@ function insererImageDansFiche(input) {
 
 async function enregistrerNouvelleFiche() {
   const matiereId = document.getElementById('selectMatiereFiche').value;
+  const competenceCode = document.getElementById('selectCompetenceFiche')?.value || '';
   const titre = document.getElementById('ficheTitreInput').value.trim();
   const contenuHtml = document.getElementById('ficheHtmlInput').value.trim();
 
@@ -257,7 +304,8 @@ async function enregistrerNouvelleFiche() {
       prof_id: currentProf.id,
       matiere_id: parseInt(matiereId),
       titre,
-      contenu_html: contenuHtml
+      contenu_html: contenuHtml,
+      competence_code: competenceCode
     })
   });
 
