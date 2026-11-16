@@ -1525,9 +1525,7 @@
           detailDroite = `
             <div style="text-align:right;">
               <div style="font-size:1.05rem; font-weight:800; color:var(--pronote-blue);">${noteAffichee} / ${item.total || 20}</div>
-              ${item.exporte_pronote
-                ? '<div style="font-size:0.74rem; color:#15803d; font-weight:700; margin-top:2px;">✓ Note sur Pronote</div>'
-                : '<div style="font-size:0.74rem; color:#b45309; font-weight:600; margin-top:2px;">⏳ Export Pronote en attente</div>'}
+              
               ${estIncomplet ? `<div style="font-size:0.72rem; color:#b45309;">Note prop. (${item.questions_traitees}/${item.questions_totales} Q.)</div>` : ''}
               ${mentionPronote}
             </div>
