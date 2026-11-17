@@ -1,4 +1,4 @@
-﻿export async function onRequestPost(context) {
+export async function onRequestPost(context) {
   try {
     const { request, env } = context;
     const body = await request.json();
@@ -44,11 +44,20 @@
       ORDER BY s.date_creation DESC
     `).bind(eleve.classe_id).all();
 
-    // 3. Historique des notes avec récupération directe du titre du QCM (même pour les copies passées)
+    // 3. Historique des notes avec récupération directe du titre du QCM et moyenne de séance (si clôturée)
     const { results: notesPassees } = await env.DB.prepare(`
       SELECT r.id, r.seance_id, r.session_code, 
              COALESCE(q.titre, r.qcm_titre, 'Évaluation ' || r.session_code) AS qcm_titre,
-             r.note, r.total, r.date_soumission
+             r.note, r.total, r.date_soumission,
+             COALESCE(s.actif, 0) AS seance_actif,
+             CASE 
+               WHEN COALESCE(s.actif, 0) = 0 AND r.seance_id IS NOT NULL THEN (
+                 SELECT ROUND(AVG(COALESCE(r2.note_proportionnelle, r2.note)), 1)
+                 FROM resultats_qcm r2
+                 WHERE r2.seance_id = r.seance_id
+               )
+               ELSE NULL
+             END AS moyenne_seance
       FROM resultats_qcm r
       LEFT JOIN seances s ON r.seance_id = s.id
       LEFT JOIN qcm_banque q ON s.qcm_id = q.id
