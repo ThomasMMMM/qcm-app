@@ -117,6 +117,16 @@ export async function onRequestGet(context) {
               bonnesReponses.push(`${sub.question || sub.text || ""} → ${sub.answer || ""}`);
             });
           }
+        } else if (qSrc.type === "ordering" && Array.isArray(qSrc.items)) {
+          const attendus = qSrc.items.filter(it => !it.distracteur).sort((a, b) => Number(a.ordre) - Number(b.ordre));
+          if (bonnesReponses.length === 0) {
+            attendus.forEach((it, idx) => {
+              bonnesReponses.push(`${idx + 1}. ${it.text}`);
+            });
+          }
+          qSrc.items.filter(it => it.distracteur).forEach(it => {
+            if (it.feedback) explicationsSrc.push(`<strong>Intrus à écarter (${it.text}) :</strong> ${it.feedback}`);
+          });
         }
       }
 
