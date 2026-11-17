@@ -7,7 +7,10 @@ let currentDocumentHtml = null;
 
 function preparerQuestionClozeSimu(q) {
   if (!q || q.type !== "cloze") return q;
-  if (Array.isArray(q.etapes) && q.etapes.length > 0 && q.enonce_template) return q;
+  const texteBrutCheck = q.enonce_template || q.enonce || q.text || "";
+  if (Array.isArray(q.etapes) && q.etapes.length > 0 && q.enonce_template && !/\{(\d+)?\s*:\s*(MC|MULTICHOICE|SA|SHORTANSWER)/i.test(texteBrutCheck)) {
+    return q;
+  }
 
   const sourceHtml = q.enonce || q.text || "";
   const regexCloze = /\{(\d+)?\s*:\s*(MC|MCV|MCH|MULTICHOICE|MULTICHOICE_V|MULTICHOICE_H|SA|SHORTANSWER|MW|NUMERICAL|NM)\s*:\s*([^}]+)\}/gi;
