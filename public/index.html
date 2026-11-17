@@ -2926,6 +2926,72 @@
     }
 
     // ==================== 9. MOTEUR DU QUIZ ====================
+    window.eleveOrderingSelected = [];
+    window.eleveOrderingPool = [];
+
+    function initOrderingEleve(q) {
+      const allItems = (q.items || []).map((it, idx) => ({ ...it, uid: idx }));
+      window.eleveOrderingSelected = [];
+      window.eleveOrderingPool = [...allItems].sort(() => Math.random() - 0.5);
+    }
+
+    function renderOrderingEleveZones(disabled = false) {
+      const zoneSel = document.getElementById('eleve_ordering_selected');
+      const zonePool = document.getElementById('eleve_ordering_pool');
+      if (!zoneSel || !zonePool) return;
+
+      if (window.eleveOrderingSelected.length === 0) {
+        zoneSel.innerHTML = `<div style="text-align:center; color:#64748b; font-size:0.85rem; padding:14px; border:2px dashed #cbd5e1; border-radius:8px;">Touchez une étape ci-dessous pour la placer en position 1...</div>`;
+      } else {
+        zoneSel.innerHTML = window.eleveOrderingSelected.map((it, idx) => `
+          <div id="eleve_ord_row_${idx}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:#eff6ff; border:2px solid #93c5fd; border-radius:8px; padding:8px 10px; margin-bottom:6px;">
+            <div style="display:flex; align-items:center; gap:8px; flex:1;">
+              <span style="background:#0284c7; color:#fff; font-weight:800; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0;">${idx + 1}</span>
+              <span style="font-size:0.9rem; font-weight:600; color:#0f172a;">${it.text}</span>
+            </div>
+            ${disabled ? '' : `
+              <div style="display:flex; gap:4px; flex-shrink:0;">
+                <button type="button" onclick="moveOrderingEleve(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} style="padding:5px 9px; border:1px solid #cbd5e1; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold;">▲</button>
+                <button type="button" onclick="moveOrderingEleve(${idx}, 1)" ${idx === window.eleveOrderingSelected.length - 1 ? 'disabled' : ''} style="padding:5px 9px; border:1px solid #cbd5e1; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold;">▼</button>
+                <button type="button" onclick="removeOrderingEleve(${idx})" style="padding:5px 9px; border:1px solid #fecaca; background:#fee2e2; color:#b91c1c; border-radius:6px; cursor:pointer; font-weight:bold;">✖</button>
+              </div>
+            `}
+          </div>
+        `).join('');
+      }
+
+      if (window.eleveOrderingPool.length === 0) {
+        zonePool.innerHTML = `<div style="font-size:0.8rem; color:#94a3b8; font-style:italic;">Toutes les étiquettes ont été placées.</div>`;
+      } else {
+        zonePool.innerHTML = window.eleveOrderingPool.map((it, idx) => `
+          <button type="button" ${disabled ? 'disabled' : ''} onclick="pickOrderingEleve(${idx})" style="display:block; width:100%; text-align:left; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; margin-bottom:6px; font-size:0.9rem; color:#1e293b; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+            ➕ ${it.text}
+          </button>
+        `).join('');
+      }
+    }
+
+    function pickOrderingEleve(poolIdx) {
+      const [item] = window.eleveOrderingPool.splice(poolIdx, 1);
+      if (item) window.eleveOrderingSelected.push(item);
+      renderOrderingEleveZones(false);
+    }
+
+    function removeOrderingEleve(selIdx) {
+      const [item] = window.eleveOrderingSelected.splice(selIdx, 1);
+      if (item) window.eleveOrderingPool.push(item);
+      renderOrderingEleveZones(false);
+    }
+
+    function moveOrderingEleve(selIdx, delta) {
+      const newIdx = selIdx + delta;
+      if (newIdx < 0 || newIdx >= window.eleveOrderingSelected.length) return;
+      const temp = window.eleveOrderingSelected[selIdx];
+      window.eleveOrderingSelected[selIdx] = window.eleveOrderingSelected[newIdx];
+      window.eleveOrderingSelected[newIdx] = temp;
+      renderOrderingEleveZones(false);
+    }
+
     function preparerQuestionCloze(q) {
       if (!q || q.type !== "cloze") return q;
       if (Array.isArray(q.etapes) && q.etapes.length > 0 && q.enonce_template) return q;
@@ -3157,6 +3223,38 @@
         });
 
         scoreQuestion = q.points * (poidsObtenu / (poidsTotal || 1));
+      } else if (q.type === "ordering" && Array.isArray(q.items)) {
+        const attendus = q.items.filter(it => !it.distracteur).sort((a, b) => a.ordre - b.ordre);
+        if (window.eleveOrderingSelected.length === 0) {
+          alert("Veuillez sélectionner et ordonner les étapes avant de valider.");
+          return;
+        }
+        renderOrderingEleveZones(true);
+
+        let bonsPlacements = 0;
+        let intrusClasses = 0;
+
+        window.eleveOrderingSelected.forEach((it, idx) => {
+          const row = document.getElementById(`eleve_ord_row_${idx}`);
+          if (it.distracteur) {
+            intrusClasses++;
+            if (row) { row.style.background = "#fee2e2"; row.style.borderColor = "#dc2626"; }
+            explications.push(`<strong>❌ Intrus classé (${it.text}) :</strong> ${it.feedback || "Cet élément ne devait pas être retenu."}`);
+          } else if (attendus[idx] && attendus[idx].uid === it.uid) {
+            bonsPlacements++;
+            if (row) { row.style.background = "#dcfce7"; row.style.borderColor = "#16a34a"; }
+          } else {
+            if (row) { row.style.background = "#fef9c3"; row.style.borderColor = "#eab308"; }
+          }
+        });
+
+        const ratio = Math.max(0, (bonsPlacements - intrusClasses * 0.5) / (attendus.length || 1));
+        scoreQuestion = q.points * ratio;
+
+        if (scoreQuestion < q.points) {
+          const listeOrdreHtml = attendus.map((it, i) => `<div><strong>${i + 1}.</strong> ${it.text}</div>`).join('');
+          explications.unshift(`<div style="background:#f0fdf4; border:1px solid #86efac; padding:8px; border-radius:6px; margin-bottom:6px;"><strong>✅ Ordre exact attendu :</strong>${listeOrdreHtml}</div>`);
+        }
       }
 
       scoreQuestion = parseFloat(scoreQuestion) || 0;
@@ -3191,6 +3289,13 @@
             const lbl = etape.label || `Étape ${eIdx + 1}`;
             repEleveList.push(`${lbl} : ${field ? field.value : ""}`);
             bonnesRepList.push(`${lbl} : ${etape.bonne_reponse}`);
+          });
+        } else if (q.type === "ordering" && Array.isArray(q.items)) {
+          window.eleveOrderingSelected.forEach((it, idx) => {
+            repEleveList.push(`${idx + 1}. ${it.text}${it.distracteur ? ' [Intrus]' : ''}`);
+          });
+          q.items.filter(it => !it.distracteur).sort((a, b) => a.ordre - b.ordre).forEach((it, idx) => {
+            bonnesRepList.push(`${idx + 1}. ${it.text}`);
           });
         }
 

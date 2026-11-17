@@ -143,6 +143,72 @@ function fermerDocRessourceSimu() {
   document.getElementById('modalDocRessourceSimu').style.display = 'none';
 }
 
+window.simuOrderingSelected = [];
+window.simuOrderingPool = [];
+
+function initOrderingSimu(q) {
+  const allItems = (q.items || []).map((it, idx) => ({ ...it, uid: idx }));
+  window.simuOrderingSelected = [];
+  window.simuOrderingPool = [...allItems].sort(() => Math.random() - 0.5);
+}
+
+function renderOrderingSimuZones(disabled = false) {
+  const zoneSel = document.getElementById('simu_ordering_selected');
+  const zonePool = document.getElementById('simu_ordering_pool');
+  if (!zoneSel || !zonePool) return;
+
+  if (window.simuOrderingSelected.length === 0) {
+    zoneSel.innerHTML = `<div style="text-align:center; color:#64748b; font-size:0.85rem; padding:14px; border:2px dashed #cbd5e1; border-radius:8px;">Touchez une étape ci-dessous pour la placer en position 1...</div>`;
+  } else {
+    zoneSel.innerHTML = window.simuOrderingSelected.map((it, idx) => `
+      <div id="simu_ord_row_${idx}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:#eff6ff; border:2px solid #93c5fd; border-radius:8px; padding:8px 10px; margin-bottom:6px;">
+        <div style="display:flex; align-items:center; gap:8px; flex:1;">
+          <span style="background:#0284c7; color:#fff; font-weight:800; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0;">${idx + 1}</span>
+          <span style="font-size:0.9rem; font-weight:600; color:#0f172a;">${it.text}</span>
+        </div>
+        ${disabled ? '' : `
+          <div style="display:flex; gap:4px; flex-shrink:0;">
+            <button type="button" onclick="moveOrderingSimu(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} style="padding:4px 8px; border:1px solid #cbd5e1; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold;">▲</button>
+            <button type="button" onclick="moveOrderingSimu(${idx}, 1)" ${idx === window.simuOrderingSelected.length - 1 ? 'disabled' : ''} style="padding:4px 8px; border:1px solid #cbd5e1; background:#fff; border-radius:6px; cursor:pointer; font-weight:bold;">▼</button>
+            <button type="button" onclick="removeOrderingSimu(${idx})" style="padding:4px 8px; border:1px solid #fecaca; background:#fee2e2; color:#b91c1c; border-radius:6px; cursor:pointer; font-weight:bold;">✖</button>
+          </div>
+        `}
+      </div>
+    `).join('');
+  }
+
+  if (window.simuOrderingPool.length === 0) {
+    zonePool.innerHTML = `<div style="font-size:0.8rem; color:#94a3b8; font-style:italic;">Toutes les étiquettes ont été placées.</div>`;
+  } else {
+    zonePool.innerHTML = window.simuOrderingPool.map((it, idx) => `
+      <button type="button" ${disabled ? 'disabled' : ''} onclick="pickOrderingSimu(${idx})" style="display:block; width:100%; text-align:left; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:9px 12px; margin-bottom:6px; font-size:0.88rem; color:#1e293b; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        ➕ ${it.text}
+      </button>
+    `).join('');
+  }
+}
+
+function pickOrderingSimu(poolIdx) {
+  const [item] = window.simuOrderingPool.splice(poolIdx, 1);
+  if (item) window.simuOrderingSelected.push(item);
+  renderOrderingSimuZones(false);
+}
+
+function removeOrderingSimu(selIdx) {
+  const [item] = window.simuOrderingSelected.splice(selIdx, 1);
+  if (item) window.simuOrderingPool.push(item);
+  renderOrderingSimuZones(false);
+}
+
+function moveOrderingSimu(selIdx, delta) {
+  const newIdx = selIdx + delta;
+  if (newIdx < 0 || newIdx >= window.simuOrderingSelected.length) return;
+  const temp = window.simuOrderingSelected[selIdx];
+  window.simuOrderingSelected[selIdx] = window.simuOrderingSelected[newIdx];
+  window.simuOrderingSelected[newIdx] = temp;
+  renderOrderingSimuZones(false);
+}
+
 function afficherQuestionSimulateur() {
   const q = preparerQuestionClozeSimu(currentQuestions[currentQuestionIndex]);
   const totalQ = currentQuestions.length;
@@ -208,8 +274,19 @@ function afficherQuestionSimulateur() {
     });
     h = `<div class="question-enonce" style="line-height:1.65;">${htmlCloze}</div>`;
     if (q.image) h += `<img class="img-qcm" style="max-width:100%; height:auto; border-radius:6px; margin:10px 0; border:1px solid #cbd5e1;" src="data:image/png;base64,${q.image}">`;
+  } else if (q.type === "ordering" && Array.isArray(q.items)) {
+    initOrderingSimu(q);
+    h += `
+      <div style="margin-top:12px;">
+        <div style="font-size:0.8rem; font-weight:800; color:#0369a1; text-transform:uppercase; margin-bottom:6px;">📋 Votre procédure ordonnée :</div>
+        <div id="simu_ordering_selected" style="margin-bottom:14px;"></div>
+        <div style="font-size:0.8rem; font-weight:800; color:#475569; text-transform:uppercase; margin-bottom:6px;">🗂️ Étapes disponibles (laissez les intrus ici) :</div>
+        <div id="simu_ordering_pool"></div>
+      </div>
+    `;
   }
   container.innerHTML = h;
+  if (q.type === "ordering") renderOrderingSimuZones(false);
 }
 
 function validerQuestionSimu() {
@@ -318,6 +395,38 @@ function validerQuestionSimu() {
     });
 
     scoreQuestion = q.points * (poidsObtenu / (poidsTotal || 1));
+  } else if (q.type === "ordering" && Array.isArray(q.items)) {
+    const attendus = q.items.filter(it => !it.distracteur).sort((a, b) => a.ordre - b.ordre);
+    if (window.simuOrderingSelected.length === 0) {
+      alert("Veuillez sélectionner et ordonner les étapes avant de valider.");
+      return;
+    }
+    renderOrderingSimuZones(true);
+
+    let bonsPlacements = 0;
+    let intrusClasses = 0;
+
+    window.simuOrderingSelected.forEach((it, idx) => {
+      const row = document.getElementById(`simu_ord_row_${idx}`);
+      if (it.distracteur) {
+        intrusClasses++;
+        if (row) { row.style.background = "#fee2e2"; row.style.borderColor = "#dc2626"; }
+        explications.push(`<strong>❌ Intrus classé (${it.text}) :</strong> ${it.feedback || "Cet élément ne devait pas être retenu."}`);
+      } else if (attendus[idx] && attendus[idx].uid === it.uid) {
+        bonsPlacements++;
+        if (row) { row.style.background = "#dcfce7"; row.style.borderColor = "#16a34a"; }
+      } else {
+        if (row) { row.style.background = "#fef9c3"; row.style.borderColor = "#eab308"; }
+      }
+    });
+
+    const ratio = Math.max(0, (bonsPlacements - intrusClasses * 0.5) / (attendus.length || 1));
+    scoreQuestion = q.points * ratio;
+
+    if (scoreQuestion < q.points) {
+      const listeOrdreHtml = attendus.map((it, i) => `<div><strong>${i + 1}.</strong> ${it.text}</div>`).join('');
+      explications.unshift(`<div style="background:#f0fdf4; border:1px solid #86efac; padding:8px; border-radius:6px; margin-bottom:6px;"><strong>✅ Ordre exact attendu :</strong>${listeOrdreHtml}</div>`);
+    }
   }
 
   totalScoreObtenu += scoreQuestion;

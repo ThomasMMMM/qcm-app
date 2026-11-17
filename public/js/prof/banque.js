@@ -309,6 +309,28 @@ async function importerDansBanque() {
           generalFeedback
         });
       }
+    } else if (type === "ordering") {
+      const answersNodes = qn.querySelectorAll('answer');
+      const items = [];
+      let ordreIdx = 1;
+      answersNodes.forEach(an => {
+        const fraction = parseFloat(an.getAttribute("fraction")) || 0;
+        const textAns = an.querySelector('text') ? an.querySelector('text').textContent.trim() : "";
+        const fbAns = an.querySelector('feedback text') ? an.querySelector('feedback text').textContent.trim() : "";
+        if (textAns) {
+          const isDistracteur = fraction <= 0;
+          items.push({
+            id: items.length,
+            text: textAns,
+            ordre: isDistracteur ? 0 : ordreIdx++,
+            distracteur: isDistracteur,
+            feedback: fbAns
+          });
+        }
+      });
+      if (items.length >= 2) {
+        questions.push({ type: "ordering", title, enonce, points, generalFeedback, items });
+      }
     }
   });
 
