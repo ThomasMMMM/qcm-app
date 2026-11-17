@@ -3240,7 +3240,7 @@
             intrusClasses++;
             if (row) { row.style.background = "#fee2e2"; row.style.borderColor = "#dc2626"; }
             explications.push(`<strong>❌ Intrus classé (${it.text}) :</strong> ${it.feedback || "Cet élément ne devait pas être retenu."}`);
-          } else if (attendus[idx] && attendus[idx].uid === it.uid) {
+          } else if (attendus[idx] && Number(attendus[idx].ordre) === Number(it.ordre)) {
             bonsPlacements++;
             if (row) { row.style.background = "#dcfce7"; row.style.borderColor = "#16a34a"; }
           } else {
