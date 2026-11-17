@@ -180,26 +180,47 @@ async function genererPdfClasse(classeId, nomClasse) {
 
 async function ouvrirModalGestionEleves(classeId, nomClasse) {
   classeSelectionneePapId = classeId;
-  document.getElementById('nomClasseGestionPap').innerText = nomClasse;
+  if (nomClasse) {
+    document.getElementById('nomClasseGestionPap').innerText = nomClasse;
+  }
+  const titreClasseCourant = document.getElementById('nomClasseGestionPap').innerText;
   document.getElementById('modalGestionEleves').style.display = 'flex';
 
   const cont = document.getElementById('conteneurListeElevesPap');
   cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Chargement des élèves...</p>";
+
+  const formulaireAjoutHtml = `
+    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:14px;">
+      <div style="font-size:0.85rem; font-weight:800; color:#0369a1; margin-bottom:8px;">➕ Ajouter un élève arrivé en cours d'année</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; align-items:center;">
+        <input type="text" id="ajoutEleveNomInput" class="input-field" placeholder="NOM (ex: MARTIN)" style="margin:0; text-transform:uppercase;">
+        <input type="text" id="ajoutElevePrenomInput" class="input-field" placeholder="Prénom (ex: Léo) *" style="margin:0;">
+        <input type="text" id="ajoutEleveDateInput" class="input-field" placeholder="Né(e) le (JJ/MM/AAAA)" style="margin:0;">
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.82rem; font-weight:700; color:#7e22ce; cursor:pointer; padding:4px;">
+          <input type="checkbox" id="ajoutElevePapInput" style="transform:scale(1.2);"> PAP / Adaptation
+        </label>
+        <button type="button" class="btn btn-success" style="margin:0; padding:8px 12px; font-size:0.82rem; white-space:nowrap;" onclick="ajouterEleveManuellement(${classeId})">
+          ➕ Ajouter
+        </button>
+      </div>
+      <div id="ajoutEleveConfirmation" style="display:none; margin-top:8px; font-size:0.84rem; font-weight:700; color:#15803d; background:#dcfce7; border:1px solid #86efac; padding:6px 10px; border-radius:6px;"></div>
+    </div>
+  `;
 
   try {
     const res = await fetch('/api/classes?classe_id=' + classeId);
     const eleves = await res.json();
 
     if (eleves.length === 0) {
-      cont.innerHTML = "<p style='padding:12px; color:#64748b;'>Aucun élève dans cette classe.</p>";
+      cont.innerHTML = formulaireAjoutHtml + "<p style='padding:12px; color:#64748b;'>Aucun élève dans cette classe.</p>";
       return;
     }
 
-    cont.innerHTML = '<table><thead><tr><th>N°</th><th>Élève</th><th>Code</th><th style="text-align:center;">Aménagement PAP</th></tr></thead><tbody>' +
+    const tableauHtml = '<table><thead><tr><th>N°</th><th>Élève</th><th>Code</th><th style="text-align:center;">Aménagement PAP</th><th style="text-align:center; width:60px;">Retirer</th></tr></thead><tbody>' +
       eleves.map((e, idx) => `
         <tr style="background:${e.est_pap ? '#fdf4ff' : 'white'};">
           <td>${idx + 1}</td>
-          <td><strong>${e.prenom}</strong></td>
+          <td><strong>${e.nom ? e.nom + ' ' : ''}${e.prenom}</strong>${e.date_naissance ? ` <span style="font-size:0.76rem; color:#64748b;">(${e.date_naissance})</span>` : ''}</td>
           <td><span class="badge-session">${e.code_eleve}</span></td>
           <td style="text-align:center;">
             <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:bold; color:${e.est_pap ? '#7e22ce' : '#64748b'};">
@@ -207,11 +228,70 @@ async function ouvrirModalGestionEleves(classeId, nomClasse) {
               ${e.est_pap ? 'PAP Activé' : 'Standard'}
             </label>
           </td>
+          <td style="text-align:center;">
+            <button type="button" class="btn btn-danger" style="margin:0; padding:3px 7px; font-size:0.74rem;" title="Retirer cet élève de la classe" onclick="retirerEleveDeClasse(${e.id}, '${(e.prenom || '').replace(/'/g, "\\'")}', ${classeId}, '${titreClasseCourant.replace(/'/g, "\\'")}')">🗑️</button>
+          </td>
         </tr>
       `).join('') + '</tbody></table>';
+
+    cont.innerHTML = formulaireAjoutHtml + tableauHtml;
   } catch(err) {
-    cont.innerHTML = "<p style='padding:12px; color:#dc2626;'>Erreur de chargement.</p>";
+    cont.innerHTML = formulaireAjoutHtml + "<p style='padding:12px; color:#dc2626;'>Erreur de chargement.</p>";
   }
+}
+
+async function ajouterEleveManuellement(classeId) {
+  const nom = document.getElementById('ajoutEleveNomInput').value.trim();
+  const prenom = document.getElementById('ajoutElevePrenomInput').value.trim();
+  const dateNaissance = document.getElementById('ajoutEleveDateInput').value.trim();
+  const estPap = document.getElementById('ajoutElevePapInput').checked;
+
+  if (!prenom) {
+    alert("Veuillez saisir au minimum le prénom de l'élève.");
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/classes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "ajouter_eleve",
+        classe_id: classeId,
+        nom: nom,
+        prenom: prenom,
+        date_naissance: dateNaissance,
+        est_pap: estPap
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert("Erreur : " + (data.error || "Impossible d'ajouter l'élève."));
+      return;
+    }
+
+    const nomClasseCourant = document.getElementById('nomClasseGestionPap').innerText;
+    await ouvrirModalGestionEleves(classeId, nomClasseCourant);
+    const boxConfirm = document.getElementById('ajoutEleveConfirmation');
+    if (boxConfirm && data.eleve) {
+      boxConfirm.style.display = 'block';
+      boxConfirm.innerHTML = `✓ Élève <strong>${data.eleve.nom ? data.eleve.nom + ' ' : ''}${data.eleve.prenom}</strong> ajouté ! Code d'accès généré : <span class="badge-session" style="font-size:0.9rem;">${data.eleve.code_eleve}</span>`;
+    }
+  } catch (e) {
+    alert("Erreur réseau lors de l'ajout.");
+  }
+}
+
+async function retirerEleveDeClasse(eleveId, prenom, classeId, nomClasse) {
+  if (!confirm(`Voulez-vous vraiment retirer "${prenom}" de la classe ${nomClasse} ?`)) return;
+  try {
+    await fetch('/api/classes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: "supprimer_eleve", eleve_id: eleveId })
+    });
+    await ouvrirModalGestionEleves(classeId, nomClasse);
+  } catch (e) {}
 }
 
 function fermerModalGestionEleves() {

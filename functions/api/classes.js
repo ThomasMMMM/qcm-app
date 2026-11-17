@@ -1,4 +1,4 @@
-﻿export async function onRequestGet(context) {
+export async function onRequestGet(context) {
   try {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -44,6 +44,57 @@ export async function onRequestPost(context) {
       await env.DB.prepare(
         "UPDATE eleves SET est_pap = ? WHERE id = ?"
       ).bind(body.est_pap ? 1 : 0, body.eleve_id).run();
+      return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // Ajout manuel d'un élève dans une classe existante
+    if (body.action === "ajouter_eleve" && body.classe_id) {
+      const n = (body.nom || "").trim().toUpperCase();
+      const p = (body.prenom || "").trim();
+      const d = (body.date_naissance || "").trim();
+      const estPap = body.est_pap ? 1 : 0;
+
+      if (!p) {
+        return new Response(JSON.stringify({ error: "Le prénom de l'élève est obligatoire." }), { status: 400 });
+      }
+
+      // Génération d'un code élève unique (sans 0/O/1/I)
+      const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+      let codePerso = "";
+      let existeCode = true;
+      while (existeCode) {
+        codePerso = "";
+        for (let i = 0; i < 4; i++) codePerso += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+        const check = await env.DB.prepare("SELECT id FROM eleves WHERE code_eleve = ?").bind(codePerso).first();
+        existeCode = !!check;
+      }
+
+      // Déterminer le numéro d'ordre à la suite de la classe
+      const maxRow = await env.DB.prepare(
+        "SELECT COALESCE(MAX(COALESCE(ordre, id)), 0) AS max_ord FROM eleves WHERE classe_id = ?"
+      ).bind(body.classe_id).first();
+      const nextOrdre = (maxRow && maxRow.max_ord ? Number(maxRow.max_ord) : 0) + 1;
+
+      const resIns = await env.DB.prepare(
+        "INSERT INTO eleves (classe_id, nom, prenom, date_naissance, code_eleve, est_pap, ordre) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      ).bind(body.classe_id, n || null, p, d || null, codePerso, estPap, nextOrdre).run();
+
+      return new Response(JSON.stringify({
+        success: true,
+        eleve: {
+          id: resIns.meta.last_row_id,
+          nom: n || null,
+          prenom: p,
+          date_naissance: d || null,
+          code_eleve: codePerso,
+          est_pap: estPap
+        }
+      }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    // Suppression individuelle d'un élève
+    if (body.action === "supprimer_eleve" && body.eleve_id) {
+      await env.DB.prepare("DELETE FROM eleves WHERE id = ?").bind(body.eleve_id).run();
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
     }
 
