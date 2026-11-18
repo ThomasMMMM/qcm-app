@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="/css/commun.css">
   <style>
     :root {
       --pronote-blue: #0b5cab;
@@ -999,14 +1000,28 @@
   </div>
 
   <!-- MODAL DOCUMENT RESSOURCE ÉLÈVE -->
-  <div id="modalDocRessourceEleve" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:10000; justify-content:center; align-items:center; padding:10px; box-sizing:border-box;">
-    <div style="background:white; border-radius:8px; max-width:850px; width:100%; height:92vh; display:flex; flex-direction:column; padding:16px; box-sizing:border-box; box-shadow:0 6px 24px rgba(0,0,0,0.3);">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px;">
-        <h3 style="margin:0; color:var(--pronote-blue); font-size:1.15rem;">📖 Document Ressource</h3>
-        <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceEleve()">✖ Fermer</button>
+  <div id="modalDocRessourceEleve" class="fiche-modal-backdrop" onclick="if(event.target===this) fermerDocRessourceEleve()">
+    <div class="fiche-modal-card">
+      <div class="fiche-modal-topbar">
+        <div class="fiche-modal-title-group">
+          <span id="badgeMatiereDocEleve" class="fiche-matiere-pill" style="display:none;"></span>
+          <h3 id="titreDocRessourceEleve" class="fiche-modal-title">📖 Document Ressource</h3>
+        </div>
+        <div class="fiche-modal-actions">
+          <button type="button" class="btn-fiche-print" onclick="imprimerModalFiche('modalDocRessourceEleve')" title="Imprimer ou enregistrer en PDF">
+            <i class="fa-solid fa-print"></i> <span>Imprimer</span>
+          </button>
+          <button type="button" class="btn-fiche-close-icon" onclick="fermerDocRessourceEleve()" title="Fermer (Échap)" aria-label="Fermer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
       </div>
-      <div id="corpsDocRessourceEleve" style="flex:1; overflow-y:auto; overflow-x:auto; padding:8px; font-size:0.95rem; line-height:1.5;"></div>
-      <button type="button" class="btn btn-success" style="margin-top:10px; padding:10px;" onclick="fermerDocRessourceEleve()">✓ Revenir à la question</button>
+      <div id="corpsDocRessourceEleve" class="fiche-document-body"></div>
+      <div class="fiche-modal-footer">
+        <button type="button" id="btnPiedModalDocEleve" class="btn btn-success" style="padding:9px 18px;" onclick="fermerDocRessourceEleve()">
+          ✓ Revenir à la question
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1397,13 +1412,8 @@
         const res = await fetch(`/api/fiches?fiche_id=${ficheId}`);
         const f = await res.json();
         if (!f) return;
-
-        currentDocumentHtml = `
-          <h2 style="color:var(--pronote-blue); border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:0;">${f.titre}</h2>
-          <div style="margin-bottom:14px;"><span class="badge" style="background:#e0f2fe; color:#0369a1;">${f.matiere_nom}</span></div>
-          ${f.contenu_html}
-        `;
-        ouvrirDocRessourceEleve();
+        currentDocumentHtml = f.contenu_html;
+        ouvrirDocRessourceEleve({ titre: f.titre, matiere: f.matiere_nom, mode: "fiche" });
       } catch(e) {
         alert("Impossible d'ouvrir la fiche.");
       }
@@ -1455,11 +1465,8 @@
           alert("Aucun document support disponible pour cette séance.");
           return;
         }
-        currentDocumentHtml = `
-          <h2 style="color:var(--pronote-blue); border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:0;">${qcm.titre}</h2>
-          ${qcm.document_html}
-        `;
-        ouvrirDocRessourceEleve();
+        currentDocumentHtml = qcm.document_html;
+        ouvrirDocRessourceEleve({ titre: qcm.titre, matiere: qcm.matiere_nom || "Document support", mode: "fiche" });
       } catch (e) {
         alert("Impossible de charger le document support.");
       }
@@ -2122,15 +2129,47 @@
       input.value = "";
     }
 
-    function ouvrirDocRessourceEleve() {
+    function ouvrirDocRessourceEleve(options = {}) {
       if (!currentDocumentHtml) return;
-      document.getElementById('corpsDocRessourceEleve').innerHTML = currentDocumentHtml;
-      document.getElementById('modalDocRessourceEleve').style.display = 'flex';
+      const modal = document.getElementById('modalDocRessourceEleve');
+      const titreEl = document.getElementById('titreDocRessourceEleve');
+      const badgeEl = document.getElementById('badgeMatiereDocEleve');
+      const corpsEl = document.getElementById('corpsDocRessourceEleve');
+      const btnPied = document.getElementById('btnPiedModalDocEleve');
+
+      const mode = options.mode || "qcm";
+      if (titreEl) titreEl.innerText = options.titre || "Document Ressource";
+      if (badgeEl) {
+        if (options.matiere) { badgeEl.innerText = options.matiere; badgeEl.style.display = "inline-block"; }
+        else { badgeEl.style.display = "none"; }
+      }
+      if (btnPied) {
+        if (mode === "fiche") { btnPied.className = "btn btn-pdf"; btnPied.innerHTML = "Fermer la fiche"; }
+        else { btnPied.className = "btn btn-success"; btnPied.innerHTML = "✓ Revenir à la question"; }
+      }
+      corpsEl.innerHTML = currentDocumentHtml;
+      corpsEl.scrollTop = 0;
+      modal.style.display = 'flex';
     }
 
     function fermerDocRessourceEleve() {
-      document.getElementById('modalDocRessourceEleve').style.display = 'none';
+      const modal = document.getElementById('modalDocRessourceEleve');
+      if (modal) modal.style.display = 'none';
     }
+
+    function imprimerModalFiche(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      document.body.classList.add('printing-fiche');
+      modal.classList.add('fiche-print-active');
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-fiche');
+        modal.classList.remove('fiche-print-active');
+      }, 300);
+    }
+
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerDocRessourceEleve(); });
 
     // ==================== 4. BANQUE DE QCM ====================
     async function chargerBanqueProf() {

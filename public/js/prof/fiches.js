@@ -348,12 +348,35 @@ async function previsualiserFiche(ficheId) {
     const fiche = await res.json();
     if (!fiche) return;
 
-    document.getElementById('titreModalApercuFiche').innerText = `[${fiche.matiere_nom}] ${fiche.titre}`;
-    document.getElementById('corpsModalApercuFiche').innerHTML = fiche.contenu_html;
+    const badgeEl = document.getElementById('badgeMatiereApercuFiche');
+    if (badgeEl) {
+      if (fiche.matiere_nom) { badgeEl.innerText = fiche.matiere_nom; badgeEl.style.display = 'inline-block'; }
+      else { badgeEl.style.display = 'none'; }
+    }
+
+    document.getElementById('titreModalApercuFiche').innerText = fiche.titre;
+    const corps = document.getElementById('corpsModalApercuFiche');
+    corps.innerHTML = fiche.contenu_html;
+    corps.scrollTop = 0;
     document.getElementById('modalApercuFiche').style.display = 'flex';
   } catch (e) {}
 }
 
 function fermerApercuFiche() {
-  document.getElementById('modalApercuFiche').style.display = 'none';
+  const modal = document.getElementById('modalApercuFiche');
+  if (modal) modal.style.display = 'none';
 }
+
+function imprimerModalFicheProf() {
+  const modal = document.getElementById('modalApercuFiche');
+  if (!modal) return;
+  document.body.classList.add('printing-fiche');
+  modal.classList.add('fiche-print-active');
+  window.print();
+  setTimeout(() => {
+    document.body.classList.remove('printing-fiche');
+    modal.classList.remove('fiche-print-active');
+  }, 300);
+}
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerApercuFiche(); });
