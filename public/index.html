@@ -2122,7 +2122,7 @@
       }, 300);
     }
 
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerDocRessourceEleve(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { fermerDocRessourceEleve(); fermerModalCopieCorrigeeEleve(); } });
 
     // ==================== 4. BANQUE DE QCM ====================
     async function chargerBanqueProf() {
@@ -3773,7 +3773,7 @@
 
       const codeEl = getCodeEleveEnCours();
       modal.style.display = 'flex';
-      if (titreEl) titreEl.innerText = "📝 Chargement de la correction...";
+      if (titreEl) titreEl.innerText = "Chargement de la correction...";
       corpsEl.innerHTML = `<p style="color:#64748b; padding:20px; text-align:center;">Récupération de ta copie et des explications...</p>`;
 
       try {
@@ -3789,7 +3789,7 @@
           throw new Error(data.error || "Impossible d'afficher la copie.");
         }
 
-        if (titreEl) titreEl.innerText = `📝 ${data.qcm_titre || "Ma copie corrigée"}`;
+        if (titreEl) titreEl.innerText = data.qcm_titre || "Ma copie corrigée";
 
         if (data.verrouille) {
           corpsEl.innerHTML = `
