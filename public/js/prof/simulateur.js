@@ -131,9 +131,19 @@ function demarrerSimulation(questions, titre, docHtml = null) {
 
 function quitterSimulation() {
   isModeSimulation = false;
-  document.getElementById('viewSimulateurProf').style.display = 'none';
-  document.getElementById('viewSimulateurFin').style.display = 'none';
-  document.getElementById('viewProfDashboard').style.display = 'block';
+  const vSimu = document.getElementById('viewSimulateurProf');
+  const vFin = document.getElementById('viewSimulateurFin');
+  const vDash = document.getElementById('viewProfDashboard');
+  if (vSimu) vSimu.style.display = 'none';
+  if (vFin) vFin.style.display = 'none';
+  if (vDash) vDash.style.display = 'flex';
+
+  const uneRubriqueVisible = Array.from(document.querySelectorAll('.rubrique-contenu-prof')).some(el => el.style.display === 'block');
+  const hub = document.getElementById('vueHubProf');
+  if (!uneRubriqueVisible && hub) {
+    hub.style.display = 'block';
+  }
+  if (typeof actualiserCompteursTuiles === 'function') actualiserCompteursTuiles();
 }
 
 function ouvrirDocRessourceSimu() {
