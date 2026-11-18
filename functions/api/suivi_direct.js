@@ -206,6 +206,7 @@ export async function onRequestGet(context) {
 
       fusionEleves.push({
         id: el.id,
+        est_absent: setAbsents.has(Number(el.id)),
         nom: el.nom,
         prenom: el.prenom,
         code_eleve: el.code_eleve,

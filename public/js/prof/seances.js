@@ -272,7 +272,9 @@ function rendreSuiviDirect(data) {
 
   tbody.innerHTML = eleves.map(el => {
     let badgeStatut = `<span style="background:#f1f5f9; color:#64748b; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">⚪ En attente</span>`;
-    if (el.hors_ecran === 1 && el.statut === 'en_cours') {
+    if (el.est_absent && el.statut === 'non_connecte') {
+      badgeStatut = `<span style="background:#e2e8f0; color:#334155; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:800;">🚫 Absent</span>`;
+    } else if (el.hors_ecran === 1 && el.statut === 'en_cours') {
       badgeStatut = `<span style="background:#dc2626; color:#ffffff; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:800; animation: pulse 1.2s infinite;">🚨 HORS ÉCRAN !</span>`;
     } else if (el.statut === 'termine') {
       badgeStatut = `<span style="background:#dcfce7; color:#15803d; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">✅ Terminé</span>`;
@@ -303,10 +305,18 @@ function rendreSuiviDirect(data) {
       ? `<strong style="color:${el.note_sur_20 >= 10 ? '#15803d' : '#dc2626'}; font-size:0.92rem;">${el.note_sur_20.toFixed(1)} / 20</strong>`
       : `<span style="color:#94a3b8;">—</span>`;
 
-    const rowBg = (el.hors_ecran === 1 && el.statut === 'en_cours') ? 'background:#fef2f2;' : '';
+    const rowBg = (el.hors_ecran === 1 && el.statut === 'en_cours')
+      ? 'background:#fef2f2;'
+      : (el.est_absent ? 'background:#f8fafc; opacity:0.75;' : '');
+    const disableAbsent = (el.statut === 'termine' || el.statut === 'en_cours') ? 'disabled title="Élève connecté"' : '';
 
     return `
       <tr style="${rowBg}">
+        <td style="text-align:center;">
+          <input type="checkbox" ${el.est_absent ? 'checked' : ''} ${disableAbsent}
+                 onchange="toggleAbsentEleveSeance(${el.id}, this.checked)"
+                 style="width:17px; height:17px; cursor:pointer; accent-color:#dc2626;">
+        </td>
         <td><strong>${el.nom}</strong> ${el.prenom}</td>
         <td style="text-align:center;">${badgeStatut}</td>
         <td>${pastillesHtml}</td>
