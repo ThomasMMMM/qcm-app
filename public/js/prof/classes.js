@@ -121,6 +121,9 @@ async function chargerClassesProf() {
     const selFiltre = document.getElementById('filtreClasseSelect');
     if (selClasse) selClasse.innerHTML = listeClassesMemoire.map(c => '<option value="' + c.id + '">' + c.nom + '</option>').join('');
     if (selFiltre) selFiltre.innerHTML = '<option value="">Toutes les classes</option>' + listeClassesMemoire.map(c => '<option value="' + c.id + '">' + c.nom + '</option>').join('');
+    if (typeof alimenterFiltreClassesFiches === 'function') alimenterFiltreClassesFiches();
+    if (typeof majCheckboxesClassesCreationFiche === 'function') majCheckboxesClassesCreationFiche();
+    if (typeof afficherTableauFiches === 'function') afficherTableauFiches();
   } catch(e) {}
 }
 

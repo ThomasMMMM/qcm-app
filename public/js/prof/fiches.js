@@ -5,7 +5,7 @@ let matiereEnCoursEditionCompId = null;
 async function chargerMatieresProf() {
   if (!currentProf) return;
   try {
-    const res = await fetch(`/api/fiches?mode=matieres_only&prof_id=${currentProf.id}`);
+    const res = await fetch(`/api/fiches?mode=matieres_only&prof_id=${currentProf.id}&t=${Date.now()}`, { cache: "no-store" });
     listeMatieresMemoire = await res.json();
 
     const selAjout = document.getElementById('selectMatiereFiche');
@@ -23,6 +23,9 @@ async function chargerMatieresProf() {
       selFiltre.innerHTML = '<option value="">Toutes les matières</option>' +
         listeMatieresMemoire.map(m => `<option value="${m.id}">${m.nom}</option>`).join('');
     }
+
+    alimenterFiltreClassesFiches();
+    majCheckboxesClassesCreationFiche();
 
     const selDocQcm = document.getElementById('selectFichePourQcm');
     if (selDocQcm) {
@@ -58,6 +61,43 @@ async function chargerMatieresProf() {
       afficherTableauFiches();
     }
   } catch (e) {}
+}
+
+function alimenterFiltreClassesFiches() {
+  const selClasse = document.getElementById('filtreClasseFicheSelect');
+  if (!selClasse) return;
+  const valActuelle = selClasse.value;
+  const classes = (typeof listeClassesMemoire !== 'undefined' && Array.isArray(listeClassesMemoire)) ? listeClassesMemoire : [];
+  selClasse.innerHTML = '<option value="">Toutes les classes</option>' +
+    '<option value="__brouillon__">🔒 Brouillons (aucune classe)</option>' +
+    classes.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+  if (valActuelle) selClasse.value = valActuelle;
+}
+
+function majCheckboxesClassesCreationFiche() {
+  const cont = document.getElementById('zoneCheckboxesClassesCreationFiche');
+  if (!cont) return;
+  const classes = (typeof listeClassesMemoire !== 'undefined' && Array.isArray(listeClassesMemoire)) ? listeClassesMemoire : [];
+  if (classes.length === 0) {
+    cont.innerHTML = `<span style="font-size:0.8rem; color:#94a3b8; font-style:italic;">Aucune classe configurée.</span>`;
+    return;
+  }
+
+  const matId = document.getElementById('selectMatiereFiche')?.value;
+  const mat = listeMatieresMemoire.find(m => String(m.id) === String(matId));
+  const idsMatiere = (mat && Array.isArray(mat.classe_ids)) ? mat.classe_ids.map(Number) : [];
+
+  cont.innerHTML = classes.map(c => {
+    const cid = Number(c.id);
+    const cocheParDefaut = idsMatiere.length > 0 ? idsMatiere.includes(cid) : false;
+    return `
+      <label style="display:inline-flex; align-items:center; gap:6px; background:${cocheParDefaut ? '#dcfce7' : '#f8fafc'}; border:1px solid ${cocheParDefaut ? '#86efac' : '#cbd5e1'}; color:${cocheParDefaut ? '#166534' : '#475569'}; padding:5px 10px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; user-select:none; transition:all 0.15s;"
+             onchange="this.style.background = this.querySelector('input').checked ? '#dcfce7' : '#f8fafc'; this.style.borderColor = this.querySelector('input').checked ? '#86efac' : '#cbd5e1'; this.style.color = this.querySelector('input').checked ? '#166534' : '#475569';">
+        <input type="checkbox" class="chk-classe-creation-fiche" value="${cid}" ${cocheParDefaut ? 'checked' : ''} style="accent-color:#16a34a; cursor:pointer;">
+        <span>${c.nom}</span>
+      </label>
+    `;
+  }).join('');
 }
 
 function ouvrirModalCompetencesMatiere(matiereId) {
@@ -156,8 +196,10 @@ async function supprimerMatiere(matiereId, nom) {
 async function chargerFichesProf() {
   if (!currentProf) return;
   try {
-    const res = await fetch(`/api/fiches?prof_id=${currentProf.id}`);
+    const res = await fetch(`/api/fiches?prof_id=${currentProf.id}&t=${Date.now()}`, { cache: "no-store" });
     listeFichesMemoire = await res.json();
+    alimenterFiltreClassesFiches();
+    majCheckboxesClassesCreationFiche();
     afficherTableauFiches();
 
     const selDocQcm = document.getElementById('selectFichePourQcm');
@@ -170,6 +212,8 @@ async function chargerFichesProf() {
 
 function majSelectCompetencesFiche() {
   const matId = document.getElementById('selectMatiereFiche')?.value;
+  majCheckboxesClassesCreationFiche();
+
   const selComp = document.getElementById('selectCompetenceFiche');
   if (!selComp) return;
 
@@ -201,18 +245,62 @@ async function modifierCompetenceFiche(ficheId, nouveauCode) {
   } catch (e) {}
 }
 
+async function basculerAccesClasseFiche(ficheId, classeId, active) {
+  try {
+    const res = await fetch('/api/fiches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: "toggle_fiche_classe",
+        fiche_id: ficheId,
+        classe_id: classeId,
+        active: active
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const f = listeFichesMemoire.find(item => Number(item.id) === Number(ficheId));
+      if (f) {
+        f.ciblage_classes = 1;
+        f.classe_ids = data.classe_ids || [];
+      }
+      afficherTableauFiches();
+    }
+  } catch (e) {}
+}
+
+function getClassesAutoriseesPourFiche(f) {
+  const mat = listeMatieresMemoire.find(m => Number(m.id) === Number(f.matiere_id));
+  if (Number(f.ciblage_classes) === 1) {
+    return Array.isArray(f.classe_ids) ? f.classe_ids.map(Number) : [];
+  }
+  // Mode hérité (ciblage_classes = 0) : les classes ayant cette matière
+  return (mat && Array.isArray(mat.classe_ids)) ? mat.classe_ids.map(Number) : [];
+}
+
 function afficherTableauFiches() {
   const filtreMatiereId = document.getElementById('filtreMatiereFicheSelect')?.value;
+  const filtreClasseId = document.getElementById('filtreClasseFicheSelect')?.value;
+  const classes = (typeof listeClassesMemoire !== 'undefined' && Array.isArray(listeClassesMemoire)) ? listeClassesMemoire : [];
+
   let fiches = listeFichesMemoire;
   if (filtreMatiereId) {
-    fiches = fiches.filter(f => f.matiere_id == filtreMatiereId);
+    fiches = fiches.filter(f => String(f.matiere_id) === String(filtreMatiereId));
+  }
+  if (filtreClasseId) {
+    if (filtreClasseId === "__brouillon__") {
+      fiches = fiches.filter(f => getClassesAutoriseesPourFiche(f).length === 0);
+    } else {
+      const cidNum = Number(filtreClasseId);
+      fiches = fiches.filter(f => getClassesAutoriseesPourFiche(f).includes(cidNum));
+    }
   }
 
   const tbody = document.getElementById('tableFichesBody');
   if (!tbody) return;
 
   tbody.innerHTML = fiches.length === 0
-    ? "<tr><td colspan='5' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune fiche synthèse enregistrée.</td></tr>"
+    ? "<tr><td colspan='6' style='text-align:center; color:#94a3b8; padding:14px;'>Aucune fiche synthèse ne correspond à ces critères.</td></tr>"
     : fiches.map(f => {
       const mat = listeMatieresMemoire.find(m => Number(m.id) === Number(f.matiere_id));
       let comps = [];
@@ -234,6 +322,25 @@ function afficherTableauFiches() {
       const optionsComp = `<option value="">— Générale —</option>` +
         comps.map(c => `<option value="${c.code}" ${String(c.code).toUpperCase() === codeActuel ? 'selected' : ''}>🎯 ${c.code} — ${c.libelle}</option>`).join('');
 
+      const idsAutorises = getClassesAutoriseesPourFiche(f);
+      const pilulesClassesHtml = classes.length === 0
+        ? `<span style="font-size:0.75rem; color:#94a3b8;">Aucune classe</span>`
+        : `<div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+            ${classes.map(c => {
+              const cid = Number(c.id);
+              const estActive = idsAutorises.includes(cid);
+              return `
+                <button type="button"
+                        onclick="basculerAccesClasseFiche(${f.id}, ${cid}, ${!estActive})"
+                        title="${estActive ? 'Cliquer pour masquer à ' + c.nom : 'Cliquer pour publier à ' + c.nom}"
+                        style="border:1px solid ${estActive ? '#86efac' : '#cbd5e1'}; background:${estActive ? '#dcfce7' : '#f8fafc'}; color:${estActive ? '#166534' : '#64748b'}; border-radius:999px; padding:2px 8px; font-size:0.74rem; font-weight:700; cursor:pointer; transition:all 0.15s;">
+                  ${estActive ? '✓ ' : '+ '}${c.nom}
+                </button>
+              `;
+            }).join('')}
+            ${idsAutorises.length === 0 ? `<span style="font-size:0.72rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:700;">🔒 Brouillon</span>` : ''}
+          </div>`;
+
       return `
         <tr>
           <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${f.matiere_nom}</span></td>
@@ -243,10 +350,13 @@ function afficherTableauFiches() {
             </select>
           </td>
           <td><strong>${f.titre}</strong></td>
+          <td>${pilulesClassesHtml}</td>
           <td style="text-align:center;">${new Date(f.date_creation).toLocaleDateString()}</td>
-          <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
-            <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="previsualiserFiche(${f.id})">👁️ Voir</button>
-            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerFiche(${f.id}, '${f.titre.replace(/'/g, "\\'")}')">Suppr</button>
+          <td style="text-align:center;">
+            <div style="display:inline-flex; gap:6px; justify-content:center;">
+              <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="previsualiserFiche(${f.id})">👁️ Voir</button>
+              <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerFiche(${f.id}, '${f.titre.replace(/'/g, "\\'")}')">Suppr</button>
+            </div>
           </td>
         </tr>
       `;
@@ -299,6 +409,7 @@ async function enregistrerNouvelleFiche() {
   const competenceCode = document.getElementById('selectCompetenceFiche')?.value || '';
   const titre = document.getElementById('ficheTitreInput').value.trim();
   const contenuHtml = document.getElementById('ficheHtmlInput').value.trim();
+  const classeIdsSelectionnees = Array.from(document.querySelectorAll('.chk-classe-creation-fiche:checked')).map(cb => parseInt(cb.value, 10));
 
   if (!matiereId) {
     alert("Veuillez obligatoirement sélectionner une matière pour cette fiche.");
@@ -322,12 +433,16 @@ async function enregistrerNouvelleFiche() {
       matiere_id: parseInt(matiereId),
       titre,
       contenu_html: contenuHtml,
-      competence_code: competenceCode
+      competence_code: competenceCode,
+      classe_ids: classeIdsSelectionnees
     })
   });
 
   if (res.ok) {
-    alert(`✓ Fiche synthèse "${titre}" enregistrée avec succès !`);
+    const msgStatut = classeIdsSelectionnees.length > 0
+      ? `publiée pour ${classeIdsSelectionnees.length} classe(s)`
+      : `enregistrée en brouillon (aucune classe cochée)`;
+    alert(`✓ Fiche synthèse "${titre}" ${msgStatut} !`);
     document.getElementById('ficheTitreInput').value = "";
     document.getElementById('ficheHtmlInput').value = "";
     await chargerFichesProf();

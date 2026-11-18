@@ -288,6 +288,13 @@
               </div>
             </div>
 
+            <div style="margin-bottom:10px;">
+              <label style="font-weight:bold; font-size:0.8rem; color:#334155; display:block; margin-bottom:6px;">
+                Classes destinataires (décocher tout pour garder la fiche en brouillon masqué) :
+              </label>
+              <div id="zoneCheckboxesClassesCreationFiche" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;"></div>
+            </div>
+
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
               <label style="font-weight:bold; font-size:0.8rem; color:#475569; margin:0;">
                 Contenu HTML de la fiche (texte, tableaux, images) :
@@ -313,20 +320,26 @@
           <!-- C. TABLEAU DES FICHES -->
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
             <strong style="font-size:0.9rem; color:#334155;">Fiches disponibles :</strong>
-            <select id="filtreMatiereFicheSelect" class="input-field" style="margin-bottom:0; max-width:240px;" onchange="afficherTableauFiches()">
-              <option value="">Toutes les matières</option>
-            </select>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <select id="filtreMatiereFicheSelect" class="input-field" style="margin-bottom:0; max-width:210px;" onchange="afficherTableauFiches()">
+                <option value="">Toutes les matières</option>
+              </select>
+              <select id="filtreClasseFicheSelect" class="input-field" style="margin-bottom:0; max-width:220px;" onchange="afficherTableauFiches()">
+                <option value="">Toutes les classes</option>
+              </select>
+            </div>
           </div>
 
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
-                  <th style="width:140px;">Matière</th>
-                  <th style="width:185px;">Compétence (Badge)</th>
+                  <th style="width:130px;">Matière</th>
+                  <th style="width:175px;">Compétence (Badge)</th>
                   <th>Titre de la Fiche Synthèse</th>
-                  <th style="text-align:center; width:110px;">Date</th>
-                  <th style="text-align:center; width:150px;">Actions</th>
+                  <th style="width:230px;">Classes autorisées</th>
+                  <th style="text-align:center; width:95px;">Date</th>
+                  <th style="text-align:center; width:130px;">Actions</th>
                 </tr>
               </thead>
               <tbody id="tableFichesBody"></tbody>
@@ -753,7 +766,7 @@
 
   <!-- CHARGEMENT DES MODULES JS PROFESSEUR -->
   <script src="/js/prof/auth.js?v=20261118a"></script>
-  <script src="/js/prof/fiches.js?v=20261118a"></script>
+  <script src="/js/prof/fiches.js?v=20261118c"></script>
   <script src="/js/prof/classes.js?v=20261118a"></script>
   <script src="/js/prof/banque.js?v=20261118a"></script>
   <script src="/js/prof/seances.js?v=20261118b"></script>
