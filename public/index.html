@@ -1064,7 +1064,7 @@
   <!-- ========================================== -->
   <script>
 
-    // --- GESTION REPRISE QCM APRES DECONNEXION ---
+        // ==================== GESTION UNIFIÉE DE LA PERSISTANCE QCM ====================
     function getCodeEleveEnCours() {
       if (typeof sessionEleve !== 'undefined' && sessionEleve) {
         if (sessionEleve.eleve && sessionEleve.eleve.code_eleve) return sessionEleve.eleve.code_eleve;
@@ -1077,39 +1077,51 @@
       return 'qcm_etat_' + String(codeSession || '').trim().toUpperCase() + '_' + String(getCodeEleveEnCours()).trim().toUpperCase();
     }
 
-    function aUneSessionEnCours(codeSession) {
+    function chargerEtatQcm(codeSession) {
       try {
+        if (!codeSession) return null;
         const raw = localStorage.getItem(cleSauvegardeQcm(codeSession));
-        if (!raw) return false;
+        if (!raw) return null;
         const d = JSON.parse(raw);
-        return (Date.now() - d.timestamp < 8 * 3600 * 1000) && (d.index > 0);
-      } catch(e) {
-        return false;
-      }
+        if (!d || (Date.now() - (d.timestamp || 0) >= 8 * 3600 * 1000)) {
+          purgerEtatQcm(codeSession);
+          return null;
+        }
+        return d;
+      } catch (e) { return null; }
+    }
+
+    function aUneSessionEnCours(codeSession) {
+      const d = chargerEtatQcm(codeSession);
+      return !!(d && (d.index > 0 || (Array.isArray(d.validees) && d.validees.length > 0)));
     }
 
     function sauverEtatQcm(codeSession, idx, score, sorties, duree) {
       try {
-        if (!codeSession) return;
+        if (!codeSession || (typeof isModeSimulation !== 'undefined' && isModeSimulation)) return;
         const payload = {
-          index: idx,
-          score: score || 0,
-          sorties: sorties || 0,
-          duree: duree || 0,
+          index: typeof idx === 'number' ? idx : (currentQuestionIndex || 0),
+          score: typeof score === 'number' ? score : (totalScoreObtenu || 0),
+          sorties: typeof sorties === 'number' ? sorties : (compteurSortiesEleve || 0),
+          duree: typeof duree === 'number' ? duree : (dureeCumuleeSortiesSec || 0),
+          validees: window.questionsValideesSet ? Array.from(window.questionsValideesSet) : [],
+          reponses_detaillees: Array.isArray(window.reponsesDetailleesEleve) ? window.reponsesDetailleesEleve : [],
+          suivi_reponses: Array.isArray(window.suiviDirectReponses) ? window.suiviDirectReponses : [],
+          score_max_courant: typeof window.suiviDirectScoreMaxCourant === 'number' ? window.suiviDirectScoreMaxCourant : 0,
           timestamp: Date.now()
         };
         localStorage.setItem(cleSauvegardeQcm(codeSession), JSON.stringify(payload));
-      } catch(e) {}
+        localStorage.setItem('qcm_session_active_' + String(getCodeEleveEnCours()).trim().toUpperCase(), String(codeSession).trim().toUpperCase());
+      } catch (e) {}
     }
 
     function purgerEtatQcm(codeSession) {
       try {
-        if (!codeSession) return;
-        localStorage.removeItem(cleSauvegardeQcm(codeSession));
-      } catch(e) {}
+        if (codeSession) localStorage.removeItem(cleSauvegardeQcm(codeSession));
+        localStorage.removeItem('qcm_session_active_' + String(getCodeEleveEnCours()).trim().toUpperCase());
+      } catch (e) {}
     }
-
-
+    window.purgerEtatQuiz = purgerEtatQcm;
     // Variables d'état globales
     let currentProf = null;
     let authMode = "login";
@@ -1175,79 +1187,6 @@
     }
 
 
-    // --- GESTION REPRISE QCM APRES DECONNEXION ---
-    function getCodeEleveEnCours() {
-      if (typeof sessionEleve !== 'undefined' && sessionEleve) {
-        if (sessionEleve.eleve && sessionEleve.eleve.code_eleve) return sessionEleve.eleve.code_eleve;
-        if (sessionEleve.code_eleve) return sessionEleve.code_eleve;
-      }
-      return localStorage.getItem('dernier_code_eleve') || 'INCONNU';
-    }
-
-    function cleSauvegardeQcm(codeSession) {
-      return 'qcm_etat_' + String(codeSession || '').trim().toUpperCase() + '_' + String(getCodeEleveEnCours()).trim().toUpperCase();
-    }
-
-    function aUneSessionEnCours(codeSession) {
-      try {
-        const raw = localStorage.getItem(cleSauvegardeQcm(codeSession));
-        if (!raw) return false;
-        const d = JSON.parse(raw);
-        return (Date.now() - d.timestamp < 8 * 3600 * 1000) && (d.index > 0);
-      } catch(e) {
-        return false;
-      }
-    }
-
-    function sauvegarderEtatQuiz(codeSession, idx, score, sorties, duree) {
-      try {
-        const payload = {
-          index: idx,
-          score: score,
-          sorties: sorties || 0,
-          duree: duree || 0,
-          timestamp: Date.now()
-        };
-        localStorage.setItem(cleSauvegardeQcm(codeSession), JSON.stringify(payload));
-      } catch(e) {}
-    }
-
-    function purgerEtatQuiz(codeSession) {
-      try {
-        localStorage.removeItem(cleSauvegardeQcm(codeSession));
-      } catch(e) {}
-    }
-
-
-    // Fonctions de sauvegarde et reprise après coupure / déconnexion
-    function getCleSauvegardeProgression(sessionCode, codeEleve) {
-      return 'qcm_progression_' + (sessionCode || '').toUpperCase() + '_' + (codeEleve || '').toUpperCase();
-    }
-
-    function sauvegarderProgressionLocale(sessionCode, codeEleve) {
-      if (!sessionCode || !codeEleve) return;
-      const etat = {
-        sessionCode: sessionCode,
-        codeEleve: codeEleve,
-        currentQuestionIndex: currentQuestionIndex,
-        totalScoreObtenu: totalScoreObtenu,
-        totalScorePossible: totalScorePossible,
-        compteurSortiesEleve: compteurSortiesEleve || 0,
-        dureeCumuleeSortiesSec: dureeCumuleeSortiesSec || 0,
-        timestamp: Date.now()
-      };
-      try {
-        localStorage.setItem(getCleSauvegardeProgression(sessionCode, codeEleve), JSON.stringify(etat));
-      } catch(e) {}
-    }
-
-    function purgerProgressionLocale(sessionCode, codeEleve) {
-      if (!sessionCode || !codeEleve) return;
-      try {
-        localStorage.removeItem(getCleSauvegardeProgression(sessionCode, codeEleve));
-      } catch(e) {}
-    }
-
     let currentQuestionIndex = 0;
     let totalScoreObtenu = 0; window.questionsValideesSet = new Set(); window.reponsesDetailleesEleve = [];
     let totalScorePossible = 0;
@@ -1270,8 +1209,15 @@
       if (savedEleve) {
         try {
           sessionEleve = JSON.parse(savedEleve);
+          const codeElActif = getCodeEleveEnCours();
+          const codeSessionEnCours = localStorage.getItem('qcm_session_active_' + String(codeElActif).trim().toUpperCase());
+          const aFaireActifs = (sessionEleve && Array.isArray(sessionEleve.a_faire)) ? sessionEleve.a_faire : [];
+          if (codeSessionEnCours && aFaireActifs.some(q => String(q.code_session).toUpperCase() === codeSessionEnCours) && aUneSessionEnCours(codeSessionEnCours)) {
+            demarrerQuizDepuisEspace(codeSessionEnCours, true);
+            return;
+          }
           afficherEspaceEleve();
-          actualiserEspaceEleve(); // Re-synchronisation serveur immédiate en arrière-plan
+          actualiserEspaceEleve();
           return;
         } catch(e) {}
       }
@@ -2026,38 +1972,47 @@
     }
 
     // ==================== 2. LANCEMENT DU QUIZ DEPUIS L'ESPACE ====================
-    async function demarrerQuizDepuisEspace(codeSession) {
+    async function demarrerQuizDepuisEspace(codeSession, repriseSilencieuse = false) {
       if (!sessionEleve) return;
       const el = sessionEleve.eleve;
-
       try {
-        const res = await fetch(`/api/eleve_quiz?code=${encodeURIComponent(codeSession)}&code_eleve=${encodeURIComponent(el.code_eleve)}`);
+        const res = await fetch('/api/eleve_quiz?code=' + encodeURIComponent(codeSession) + '&code_eleve=' + encodeURIComponent(el.code_eleve));
         const data = await res.json();
-
         if (!res.ok) {
+          purgerEtatQcm(codeSession);
+          if (repriseSilencieuse) { afficherEspaceEleve(); return; }
           alert(data.error || "Impossible d'accéder à l'épreuve.");
           return;
         }
-
         currentCode = codeSession;
         currentSeanceId = data.seance_id;
         currentQuestions = data.questions;
-        let sessionSauvee = null;
-        try {
-          const raw = localStorage.getItem(cleSauvegardeQcm(codeSession));
-          if (raw) sessionSauvee = JSON.parse(raw);
-        } catch(e) {}
+        totalScorePossible = currentQuestions.reduce((acc, q) => acc + (parseFloat(q.points) || 1), 0);
 
-        if (sessionSauvee && sessionSauvee.index > 0 && sessionSauvee.index < currentQuestions.length) {
+        const sessionSauvee = chargerEtatQcm(codeSession);
+        if (sessionSauvee && (sessionSauvee.index > 0 || (Array.isArray(sessionSauvee.validees) && sessionSauvee.validees.length > 0)) && sessionSauvee.index < currentQuestions.length) {
           currentQuestionIndex = sessionSauvee.index;
           totalScoreObtenu = sessionSauvee.score || 0;
           compteurSortiesEleve = sessionSauvee.sorties || 0;
-          if (typeof dureeCumuleeSortiesSec !== 'undefined') dureeCumuleeSortiesSec = sessionSauvee.duree || 0;
-          alert("Reprise de votre devoir : vous reprenez directement à la question " + (currentQuestionIndex + 1) + " sur " + currentQuestions.length + ".");
+          dureeCumuleeSortiesSec = sessionSauvee.duree || 0;
+          window.questionsValideesSet = new Set(Array.isArray(sessionSauvee.validees) ? sessionSauvee.validees : []);
+          window.reponsesDetailleesEleve = Array.isArray(sessionSauvee.reponses_detaillees) ? sessionSauvee.reponses_detaillees : [];
+          window.suiviDirectReponses = (Array.isArray(sessionSauvee.suivi_reponses) && sessionSauvee.suivi_reponses.length === currentQuestions.length)
+            ? sessionSauvee.suivi_reponses
+            : new Array(currentQuestions.length).fill(null);
+          window.suiviDirectScoreMaxCourant = sessionSauvee.score_max_courant || 0;
+          if (!repriseSilencieuse) {
+            alert("Reprise de votre devoir : vous reprenez directement à la question " + (currentQuestionIndex + 1) + " sur " + currentQuestions.length + ".");
+          }
         } else {
           currentQuestionIndex = 0;
           totalScoreObtenu = 0;
           compteurSortiesEleve = 0;
+          dureeCumuleeSortiesSec = 0;
+          window.questionsValideesSet = new Set();
+          window.reponsesDetailleesEleve = [];
+          window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
+          window.suiviDirectScoreMaxCourant = 0;
         }
 
         currentDocumentHtml = data.document_html || null;
@@ -2068,20 +2023,18 @@
         document.getElementById('viewEleveQcm').style.display = 'block';
         document.getElementById('simuBannerBox').style.display = 'none';
 
-        window.reponsesDetailleesEleve = [];
-        window.questionsValideesSet = new Set();
-        window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
-      window.suiviDirectScoreMaxCourant = 0;
-      envoyerPingSuiviDirect({
-        statut: "en_cours",
-        question_courante: 1,
-        score_actuel: 0,
-        score_max_courant: 0,
-        reponses: window.suiviDirectReponses,
-        hors_ecran: 0
-      });
-      afficherQuestionCourante();
+        sauverEtatQcm(currentCode, currentQuestionIndex, totalScoreObtenu, compteurSortiesEleve, dureeCumuleeSortiesSec);
+        envoyerPingSuiviDirect({
+          statut: "en_cours",
+          question_courante: currentQuestionIndex + 1,
+          score_actuel: totalScoreObtenu,
+          score_max_courant: window.suiviDirectScoreMaxCourant,
+          reponses: window.suiviDirectReponses,
+          hors_ecran: 0
+        });
+        afficherQuestionCourante();
       } catch(e) {
+        if (repriseSilencieuse) { afficherEspaceEleve(); return; }
         alert("Erreur de connexion au serveur.");
       }
     }
@@ -3526,19 +3479,15 @@
         currentQuestionIndex++;
         const dureeSec = (typeof dureeCumuleeSortiesSec !== 'undefined') ? dureeCumuleeSortiesSec : 0;
         sauverEtatQcm(currentCode, currentQuestionIndex, totalScoreObtenu, compteurSortiesEleve, dureeSec);
-        window.reponsesDetailleesEleve = [];
-        window.questionsValideesSet = new Set();
-        window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
-      window.suiviDirectScoreMaxCourant = 0;
-      envoyerPingSuiviDirect({
-        statut: "en_cours",
-        question_courante: 1,
-        score_actuel: 0,
-        score_max_courant: 0,
-        reponses: window.suiviDirectReponses,
-        hors_ecran: 0
-      });
-      afficherQuestionCourante();
+        envoyerPingSuiviDirect({
+          statut: "en_cours",
+          question_courante: currentQuestionIndex + 1,
+          score_actuel: totalScoreObtenu,
+          score_max_courant: window.suiviDirectScoreMaxCourant || 0,
+          reponses: window.suiviDirectReponses || [],
+          hors_ecran: 0
+        });
+        afficherQuestionCourante();
       } else {
         await terminerEvaluation();
       }
