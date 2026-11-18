@@ -99,6 +99,26 @@ function majSelectCompetencesImport() {
     comps.map(c => `<option value="${c.code}">${c.code} — ${c.libelle}</option>`).join('');
 }
 
+async function modifierFicheLieeQcmInline(qcmId, nouvelleFicheId) {
+  try {
+    await fetch('/api/banque', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "update_fiche_liee",
+        qcm_id: qcmId,
+        fiche_id: nouvelleFicheId || null
+      })
+    });
+    const q = listeBanqueQcmMemoire.find(item => Number(item.id) === Number(qcmId));
+    if (q) {
+      q.fiche_id = nouvelleFicheId ? parseInt(nouvelleFicheId, 10) : null;
+    }
+    afficherTableauBanqueQcm();
+    if (typeof afficherTableauFiches === 'function') afficherTableauFiches();
+  } catch (e) {}
+}
+
 async function modifierCompetenceQcmInline(qcmId, nouvelleMatiereId, nouvelleCompCode) {
   try {
     await fetch('/api/banque', {
@@ -125,9 +145,10 @@ function afficherTableauBanqueQcm() {
   if (!tbody) return;
 
   const matieres = (typeof listeMatieresMemoire !== 'undefined') ? listeMatieresMemoire : [];
+  const fiches = (typeof listeFichesMemoire !== 'undefined') ? listeFichesMemoire : [];
 
   tbody.innerHTML = listeBanqueQcmMemoire.length === 0
-    ? "<tr><td colspan='4' style='text-align:center; color:#94a3b8; padding:14px;'>Aucun QCM enregistré.</td></tr>"
+    ? "<tr><td colspan='5' style='text-align:center; color:#94a3b8; padding:14px;'>Aucun QCM enregistré.</td></tr>"
     : listeBanqueQcmMemoire.map(q => {
       const mat = matieres.find(m => Number(m.id) === Number(q.matiere_id));
       const comps = (mat && Array.isArray(mat.competences)) ? mat.competences : [];
@@ -137,6 +158,12 @@ function afficherTableauBanqueQcm() {
 
       const optionsComp = '<option value="">Compétence...</option>' +
         comps.map(c => `<option value="${c.code}" ${String(c.code) === String(q.competence_code || '') ? 'selected' : ''}>${c.code} — ${c.libelle}</option>`).join('');
+
+      const fichesFiltrees = q.matiere_id
+        ? fiches.filter(f => Number(f.matiere_id) === Number(q.matiere_id))
+        : fiches;
+      const optionsFiches = '<option value="">— Aucune fiche —</option>' +
+        fichesFiltrees.map(f => `<option value="${f.id}" ${Number(f.id) === Number(q.fiche_id) ? 'selected' : ''}>${f.titre}</option>`).join('');
 
       return `
         <tr>
@@ -149,15 +176,25 @@ function afficherTableauBanqueQcm() {
               <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:auto; max-width:125px;" onchange="modifierCompetenceQcmInline(${q.id}, this.value, '')">
                 ${optionsMat}
               </select>
-              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:auto; max-width:165px;" ${!q.matiere_id ? 'disabled' : ''} onchange="modifierCompetenceQcmInline(${q.id}, '${q.matiere_id || ''}', this.value)">
+              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:auto; max-width:155px;" ${!q.matiere_id ? 'disabled' : ''} onchange="modifierCompetenceQcmInline(${q.id}, '${q.matiere_id || ''}', this.value)">
                 ${optionsComp}
               </select>
             </div>
           </td>
+          <td>
+            <div style="display:flex; gap:4px; align-items:center;">
+              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; flex:1; min-width:140px;" onchange="modifierFicheLieeQcmInline(${q.id}, this.value)">
+                ${optionsFiches}
+              </select>
+              ${q.fiche_id ? `<button type="button" class="btn btn-simu" style="padding:4px 7px; font-size:0.74rem;" onclick="previsualiserFiche(${q.fiche_id})" title="Aperçu de la fiche liée">👁️</button>` : ''}
+            </div>
+          </td>
           <td style="text-align:center;">${new Date(q.date_creation).toLocaleDateString()}</td>
-          <td style="text-align:center; display:flex; gap:6px; justify-content:center;">
-            <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
-            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerQcmBanque(${q.id})">Suppr</button>
+          <td style="text-align:center;">
+            <div style="display:inline-flex; gap:6px; justify-content:center;">
+              <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
+              <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerQcmBanque(${q.id})">Suppr</button>
+            </div>
           </td>
         </tr>
       `;
@@ -352,7 +389,8 @@ async function importerDansBanque() {
       prof_id: currentProf.id,
       document_html: docHtml,
       matiere_id: matiereId,
-      competence_code: competenceCode
+      competence_code: competenceCode,
+      fiche_id: document.getElementById('selectFichePourQcm')?.value || null
     })
   });
 
