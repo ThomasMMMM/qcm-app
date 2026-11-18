@@ -548,3 +548,163 @@ function imprimerModalFicheProf() {
 }
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerApercuFiche(); });
+// ==================== MODALE ÉDITION COMPLÈTE FICHE SYNTHÈSE ====================
+let ficheEnCoursEditionId = null;
+
+async function ouvrirModalEditionFiche(ficheId) {
+  try {
+    const res = await fetch(`/api/fiches?fiche_id=${ficheId}&t=${Date.now()}`, { cache: "no-store" });
+    const fiche = await res.json();
+    if (!fiche) {
+      alert("Impossible de charger cette fiche.");
+      return;
+    }
+
+    ficheEnCoursEditionId = Number(fiche.id);
+
+    // 1. Alimenter le sélecteur de matière
+    const selMat = document.getElementById('editFicheMatiereSelect');
+    if (selMat) {
+      selMat.innerHTML = listeMatieresMemoire.map(m =>
+        `<option value="${m.id}" ${Number(m.id) === Number(fiche.matiere_id) ? 'selected' : ''}>${m.nom}</option>`
+      ).join('');
+    }
+
+    // 2. Alimenter les compétences de cette matière
+    majSelectCompetencesEditionFiche(fiche.competence_code || "");
+
+    // 3. Titre et contenu HTML
+    document.getElementById('editFicheTitreInput').value = fiche.titre || "";
+    const txtHtml = document.getElementById('editFicheHtmlInput');
+    txtHtml.value = fiche.contenu_html || "";
+    actualiserApercuDirectEditionFiche();
+
+    // 4. Pilules des classes autorisées
+    const ficheMem = listeFichesMemoire.find(item => Number(item.id) === ficheEnCoursEditionId) || fiche;
+    const idsAutorises = getClassesAutoriseesPourFiche(ficheMem);
+    const classes = (typeof listeClassesMemoire !== 'undefined' && Array.isArray(listeClassesMemoire)) ? listeClassesMemoire : [];
+    const zoneClasses = document.getElementById('editFicheZoneClasses');
+
+    if (zoneClasses) {
+      zoneClasses.innerHTML = classes.length === 0
+        ? `<span style="font-size:0.8rem; color:#94a3b8;">Aucune classe configurée.</span>`
+        : classes.map(c => {
+            const cid = Number(c.id);
+            const coche = idsAutorises.includes(cid);
+            return `
+              <label style="display:inline-flex; align-items:center; gap:6px; background:${coche ? '#dcfce7' : '#f8fafc'}; border:1px solid ${coche ? '#86efac' : '#cbd5e1'}; color:${coche ? '#166534' : '#475569'}; padding:4px 10px; border-radius:999px; font-size:0.78rem; font-weight:700; cursor:pointer; user-select:none;"
+                     onchange="this.style.background = this.querySelector('input').checked ? '#dcfce7' : '#f8fafc'; this.style.borderColor = this.querySelector('input').checked ? '#86efac' : '#cbd5e1'; this.style.color = this.querySelector('input').checked ? '#166534' : '#475569';">
+                <input type="checkbox" class="chk-classe-edition-fiche" value="${cid}" ${coche ? 'checked' : ''} style="accent-color:#16a34a; cursor:pointer;">
+                <span>${c.nom}</span>
+              </label>
+            `;
+          }).join('');
+    }
+
+    document.getElementById('modalEditionFiche').style.display = 'flex';
+  } catch (e) {
+    alert("Erreur lors du chargement de la fiche.");
+  }
+}
+
+function majSelectCompetencesEditionFiche(codeForce = null) {
+  const matId = document.getElementById('editFicheMatiereSelect')?.value;
+  const selComp = document.getElementById('editFicheCompetenceSelect');
+  if (!selComp) return;
+
+  const codeActuel = codeForce !== null ? String(codeForce).toUpperCase() : String(selComp.value || "").toUpperCase();
+  const mat = listeMatieresMemoire.find(m => String(m.id) === String(matId));
+  const comps = (mat && Array.isArray(mat.competences)) ? mat.competences : [];
+
+  selComp.innerHTML = '<option value="">-- Fiche générale (sans badge) --</option>' +
+    comps.map(c => `<option value="${c.code}" ${String(c.code).toUpperCase() === codeActuel ? 'selected' : ''}>🎯 ${c.code} — ${c.libelle}</option>`).join('');
+}
+
+function actualiserApercuDirectEditionFiche() {
+  const html = document.getElementById('editFicheHtmlInput')?.value || "";
+  const preview = document.getElementById('editFicheApercuLive');
+  if (preview) {
+    preview.innerHTML = html.trim()
+      ? html
+      : `<div style="color:#94a3b8; font-style:italic; text-align:center; padding:30px 10px;">L'aperçu visuel de la fiche apparaîtra ici...</div>`;
+  }
+}
+
+function importerFichierHtmlEditionFiche(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const fullContent = e.target.result;
+    const doc = new DOMParser().parseFromString(fullContent, 'text/html');
+    const bodyHtml = (doc.body && doc.body.innerHTML.trim().length > 0) ? doc.body.innerHTML.trim() : fullContent.trim();
+    document.getElementById('editFicheHtmlInput').value = bodyHtml;
+    actualiserApercuDirectEditionFiche();
+  };
+  reader.readAsText(file, "UTF-8");
+  input.value = "";
+}
+
+function insererImageDansEditionFiche(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const tagImg = `\n<img src="${e.target.result}" alt="Illustration" style="max-width:100%; height:auto; border-radius:6px; margin:10px 0; border:1px solid #cbd5e1; display:block;">\n`;
+    const textarea = document.getElementById('editFicheHtmlInput');
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      textarea.value = textarea.value.substring(0, start) + tagImg + textarea.value.substring(end);
+      actualiserApercuDirectEditionFiche();
+    }
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+
+function fermerModalEditionFiche() {
+  const modal = document.getElementById('modalEditionFiche');
+  if (modal) modal.style.display = 'none';
+  ficheEnCoursEditionId = null;
+}
+
+async function sauvegarderEditionFiche() {
+  if (!ficheEnCoursEditionId) return;
+
+  const matiereId = document.getElementById('editFicheMatiereSelect').value;
+  const competenceCode = document.getElementById('editFicheCompetenceSelect')?.value || '';
+  const titre = document.getElementById('editFicheTitreInput').value.trim();
+  const contenuHtml = document.getElementById('editFicheHtmlInput').value.trim();
+  const classeIds = Array.from(document.querySelectorAll('.chk-classe-edition-fiche:checked')).map(cb => parseInt(cb.value, 10));
+
+  if (!matiereId || !titre || !contenuHtml) {
+    alert("Veuillez renseigner la matière, le titre et le contenu HTML de la fiche.");
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/fiches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: "modifier_fiche",
+        fiche_id: ficheEnCoursEditionId,
+        matiere_id: parseInt(matiereId, 10),
+        titre,
+        contenu_html: contenuHtml,
+        competence_code: competenceCode,
+        classe_ids: classeIds
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      fermerModalEditionFiche();
+      await chargerFichesProf();
+    } else {
+      alert("Erreur lors de la sauvegarde : " + (data.error || "Erreur serveur"));
+    }
+  } catch (e) {
+    alert("Erreur réseau lors de l'enregistrement.");
+  }
+}
