@@ -57,6 +57,12 @@ function preparerQuestions(questions, estPap = false) {
   });
 }
 
+async function ensureColsQcmBanque(db) {
+  try { await db.prepare("ALTER TABLE qcm_banque ADD COLUMN fiche_id INTEGER DEFAULT NULL").run(); } catch (e) {}
+  try { await db.prepare("ALTER TABLE qcm_banque ADD COLUMN matiere_id INTEGER DEFAULT NULL").run(); } catch (e) {}
+  try { await db.prepare("ALTER TABLE qcm_banque ADD COLUMN competence_code TEXT DEFAULT NULL").run(); } catch (e) {}
+}
+
 export async function onRequestGet(context) {
   try {
     const { request, env } = context;
@@ -67,15 +73,22 @@ export async function onRequestGet(context) {
     const simuQcmId = url.searchParams.get("simulateur_qcm_id");
     const simuSeanceId = url.searchParams.get("simulateur_seance_id");
 
+    await ensureColsQcmBanque(env.DB);
+
     // 1. Simulation Banque
     if (simuQcmId) {
-      const qcm = await env.DB.prepare("SELECT id, titre, data_json, document_html FROM qcm_banque WHERE id = ?").bind(simuQcmId).first();
+      const qcm = await env.DB.prepare(`
+        SELECT q.id, q.titre, q.data_json, q.document_html, q.fiche_id, fs.contenu_html AS fiche_html
+        FROM qcm_banque q
+        LEFT JOIN fiches_synthese fs ON q.fiche_id = fs.id
+        WHERE q.id = ?
+      `).bind(simuQcmId).first();
       if (!qcm) return new Response(JSON.stringify({ error: "QCM introuvable" }), { status: 404 });
       const brute = JSON.parse(qcm.data_json);
       return new Response(JSON.stringify({
         qcm_id: qcm.id,
         titre: qcm.titre,
-        document_html: qcm.document_html || null,
+        document_html: qcm.document_html || qcm.fiche_html || null,
         questions: preparerQuestions(brute, false)
       }), { headers: { "Content-Type": "application/json" } });
     }
@@ -83,9 +96,11 @@ export async function onRequestGet(context) {
     // 2. Simulation Séance
     if (simuSeanceId) {
       const seance = await env.DB.prepare(`
-        SELECT s.id, s.code_session, q.titre, q.data_json, q.document_html, q.fiche_id AS fiche_liee_id, q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre
+        SELECT s.id, s.code_session, q.titre, q.data_json, q.document_html, q.fiche_id AS fiche_liee_id,
+               q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre, fs.contenu_html AS fiche_html
         FROM seances s
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
+        LEFT JOIN fiches_synthese fs ON q.fiche_id = fs.id
         WHERE s.id = ?
       `).bind(simuSeanceId).first();
       if (!seance) return new Response(JSON.stringify({ error: "Séance introuvable" }), { status: 404 });
@@ -94,7 +109,9 @@ export async function onRequestGet(context) {
         seance_id: seance.id,
         titre: seance.titre,
         code_session: seance.code_session,
-        document_html: seance.document_html || null,
+        document_html: seance.document_html || seance.fiche_html || null,
+        fiche_liee_id: seance.fiche_liee_id || null,
+        fiche_liee_titre: seance.fiche_liee_titre || null,
         questions: preparerQuestions(brute, false)
       }), { headers: { "Content-Type": "application/json" } });
     }
@@ -108,10 +125,13 @@ export async function onRequestGet(context) {
     const cleanCodeEleve = code_eleve.toUpperCase().trim();
 
     const seance = await env.DB.prepare(`
-      SELECT s.id AS seance_id, s.code_session, s.actif, s.classe_id, q.titre, q.data_json, q.document_html, q.fiche_id AS fiche_liee_id, q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre, c.nom AS classe_nom
+      SELECT s.id AS seance_id, s.code_session, s.actif, s.classe_id, q.titre, q.data_json, q.document_html,
+             q.fiche_id AS fiche_liee_id, q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre,
+             c.nom AS classe_nom
       FROM seances s
       INNER JOIN qcm_banque q ON s.qcm_id = q.id
       INNER JOIN classes c ON s.classe_id = c.id
+      LEFT JOIN fiches_synthese fs ON q.fiche_id = fs.id
       WHERE s.code_session = ?
     `).bind(cleanCode).first();
 
@@ -135,6 +155,10 @@ export async function onRequestGet(context) {
       eleve_prenom: eleve.prenom,
       est_pap: estPap,
       document_html: seance.document_html || null,
+      fiche_liee_id: seance.fiche_liee_id || null,
+      fiche_liee_titre: seance.fiche_liee_titre || null,
+      matiere_id: seance.matiere_id || null,
+      competence_code: seance.competence_code || null,
       questions: preparerQuestions(questionsBrutes, estPap)
     }), { headers: { "Content-Type": "application/json" } });
 
