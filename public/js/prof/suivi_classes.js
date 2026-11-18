@@ -1,3 +1,125 @@
+let offsetSemaineSuivi = -1;
+let seanceSelectionneeSuiviId = null;
+
+function changerSemainePlanningSuivi(delta) {
+  offsetSemaineSuivi += delta;
+  afficherPlanningSemaineSuivi();
+}
+
+function getLundiSemaineSuivi(offset) {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = (day === 0 ? -6 : 1) - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday + (offset * 7));
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+function afficherPlanningSemaineSuivi() {
+  const grille = document.getElementById('grillePlanningSemaineSuivi');
+  if (!grille) return;
+
+  const seancesSource = (donneesSuiviClassesCache && Array.isArray(donneesSuiviClassesCache.seances))
+    ? donneesSuiviClassesCache.seances
+    : (typeof listeSeancesMemoire !== 'undefined' && Array.isArray(listeSeancesMemoire) ? listeSeancesMemoire : []);
+  const classesSource = (donneesSuiviClassesCache && Array.isArray(donneesSuiviClassesCache.classes))
+    ? donneesSuiviClassesCache.classes
+    : (typeof listeClassesMemoire !== 'undefined' && Array.isArray(listeClassesMemoire) ? listeClassesMemoire : []);
+  const copiesSource = (donneesSuiviClassesCache && Array.isArray(donneesSuiviClassesCache.copies))
+    ? donneesSuiviClassesCache.copies
+    : [];
+
+  const lundi = getLundiSemaineSuivi(offsetSemaineSuivi);
+  const vendredi = new Date(lundi);
+  vendredi.setDate(lundi.getDate() + 4);
+
+  const formatJourMois = (d) => `${d.getDate()} ${d.toLocaleDateString('fr-FR', { month: 'short' })}`;
+  const lbl = document.getElementById('labelSemainePlanningSuivi');
+  if (lbl) {
+    lbl.innerText = `Semaine du ${formatJourMois(lundi)} au ${formatJourMois(vendredi)} ${vendredi.getFullYear()}`;
+  }
+
+  grille.innerHTML = "";
+  const joursSemaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
+
+  const extraireMinutesDebut = (h) => {
+    if (!h) return 9999;
+    const m = String(h).trim().match(/^(\d{1,2})\s*[hH:]\s*(\d{0,2})/);
+    if (!m) return 9999;
+    return (parseInt(m[1], 10) * 60) + (m[2] ? parseInt(m[2], 10) : 0);
+  };
+
+  for (let i = 0; i < 5; i++) {
+    const curDate = new Date(lundi);
+    curDate.setDate(lundi.getDate() + i);
+    const yyyy = curDate.getFullYear();
+    const mm = String(curDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(curDate.getDate()).padStart(2, '0');
+    const strDateIso = `${yyyy}-${mm}-${dd}`;
+
+    const seancesDuJour = seancesSource
+      .filter(s => {
+        const dRef = (s.date_seance && String(s.date_seance).trim()) ? String(s.date_seance).trim() : String(s.date_creation || "").slice(0, 10);
+        return dRef === strDateIso;
+      })
+      .sort((a, b) => {
+        const diffHeure = extraireMinutesDebut(a.horaire_seance) - extraireMinutesDebut(b.horaire_seance);
+        if (diffHeure !== 0) return diffHeure;
+        return (Number(a.id) || 0) - (Number(b.id) || 0);
+      });
+
+    let cartesHtml = "";
+    if (seancesDuJour.length === 0) {
+      cartesHtml = "<div style='font-size:0.75rem; color:#94a3b8; font-style:italic; padding:10px 0;'>Aucun devoir</div>";
+    } else {
+      cartesHtml = seancesDuJour.map(s => {
+        const clObj = classesSource.find(c => Number(c.id) === Number(s.classe_id));
+        const nomClasse = s.classe_nom || (clObj ? clObj.nom : "Classe");
+        const nbCopies = s.nb_copies !== undefined
+          ? s.nb_copies
+          : copiesSource.filter(c => Number(c.seance_id) === Number(s.id) || (c.session_code && c.session_code === s.code_session)).length;
+        const estSelectionnee = Number(seanceSelectionneeSuiviId) === Number(s.id);
+
+        return `
+          <div class="seance-item"
+               onclick="selectionnerSeanceDepuisPlanningSuivi(${Number(s.classe_id)}, ${Number(s.id)})"
+               title="Cliquer pour afficher la progression et les présences de ${nomClasse}"
+               style="cursor:pointer; border-left:3px solid ${estSelectionnee ? '#0284c7' : (Number(s.actif) === 1 ? '#22c55e' : '#94a3b8')}; background:${estSelectionnee ? '#eff6ff' : '#ffffff'}; box-shadow:${estSelectionnee ? '0 0 0 2px #0284c7' : 'none'}; transition:all 0.15s;">
+            <div style="font-weight:bold; font-size:0.8rem; color:#1e293b;">${s.horaire_seance || ''}</div>
+            <div style="font-weight:bold; font-size:0.85rem; color:var(--pronote-blue);">${nomClasse}</div>
+            <div style="font-size:0.75rem; color:#475569; margin:2px 0;">${s.qcm_titre || 'Évaluation'}</div>
+            <div style="font-size:0.7rem; color:#64748b;">${nbCopies} copie(s)</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    grille.innerHTML += `
+      <div class="carte-jour">
+        <div class="carte-jour-titre">${joursSemaine[i]} ${curDate.getDate()}</div>
+        ${cartesHtml}
+      </div>
+    `;
+  }
+}
+
+function selectionnerSeanceDepuisPlanningSuivi(classeId, seanceId) {
+  seanceSelectionneeSuiviId = Number(seanceId);
+  const selClasse = document.getElementById('filtreSuiviClasseSelect');
+  if (selClasse && classeId) {
+    selClasse.value = String(classeId);
+  }
+  afficherPlanningSemaineSuivi();
+  rendreSuiviClasses();
+
+  setTimeout(() => {
+    const carteCible = document.getElementById('carte-seance-suivi-' + seanceId);
+    if (carteCible) {
+      carteCible.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 80);
+}
 let donneesSuiviClassesCache = null;
 
 async function chargerSuiviClasses() {
@@ -25,6 +147,7 @@ async function chargerSuiviClasses() {
       }
     }
 
+    afficherPlanningSemaineSuivi();
     rendreSuiviClasses();
   } catch (err) {
     zone.innerHTML = `<div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:14px; border-radius:8px;">⚠️ ${err.message}</div>`;
@@ -328,7 +451,7 @@ function rendreSuiviClasses() {
         : '';
 
       return `
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${Number(s.actif) === 1 ? '#16a34a' : '#0b5cab'}; border-radius:8px; padding:12px 14px; margin-bottom:10px;">
+        <div id="carte-seance-suivi-${s.id}" style="background:${Number(seanceSelectionneeSuiviId) === Number(s.id) ? '#f0f9ff' : '#ffffff'}; border:1px solid ${Number(seanceSelectionneeSuiviId) === Number(s.id) ? '#0284c7' : '#e2e8f0'}; border-left:4px solid ${Number(s.actif) === 1 ? '#16a34a' : '#0b5cab'}; box-shadow:${Number(seanceSelectionneeSuiviId) === Number(s.id) ? '0 0 0 2px rgba(2,132,199,0.2)' : 'none'}; border-radius:8px; padding:12px 14px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
             <div>
               <div style="font-size:0.8rem; font-weight:700; color:#475569; margin-bottom:4px;">
