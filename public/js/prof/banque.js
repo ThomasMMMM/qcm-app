@@ -159,11 +159,14 @@ function afficherTableauBanqueQcm() {
       const optionsComp = '<option value="">Compétence...</option>' +
         comps.map(c => `<option value="${c.code}" ${String(c.code) === String(q.competence_code || '') ? 'selected' : ''}>${c.code} — ${c.libelle}</option>`).join('');
 
-      const fichesFiltrees = q.matiere_id
-        ? fiches.filter(f => Number(f.matiere_id) === Number(q.matiere_id))
-        : fiches;
+      const fichesTriees = [...fiches].sort((a, b) => {
+        const aMatch = q.matiere_id && Number(a.matiere_id) === Number(q.matiere_id) ? 0 : 1;
+        const bMatch = q.matiere_id && Number(b.matiere_id) === Number(q.matiere_id) ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+        return String(a.titre || '').localeCompare(String(b.titre || ''));
+      });
       const optionsFiches = '<option value="">— Aucune fiche —</option>' +
-        fichesFiltrees.map(f => `<option value="${f.id}" ${Number(f.id) === Number(q.fiche_id) ? 'selected' : ''}>${f.titre}</option>`).join('');
+        fichesTriees.map(f => `<option value="${f.id}" ${Number(f.id) === Number(q.fiche_id) ? 'selected' : ''}>${f.matiere_nom ? '[' + f.matiere_nom + '] ' : ''}${f.titre}</option>`).join('');
 
       return `
         <tr>
@@ -204,7 +207,10 @@ function afficherTableauBanqueQcm() {
 async function chargerBanqueProf() {
   if (!currentProf) return;
   try {
-    const res = await fetch('/api/banque?prof_id=' + currentProf.id);
+    if ((!Array.isArray(listeFichesMemoire) || listeFichesMemoire.length === 0) && typeof chargerFichesProf === 'function') {
+      await chargerFichesProf();
+    }
+    const res = await fetch('/api/banque?prof_id=' + currentProf.id + '&t=' + Date.now(), { cache: "no-store" });
     listeBanqueQcmMemoire = await res.json();
 
     alimenterSelectMatieresBanque();
