@@ -36,7 +36,7 @@ export async function onRequestGet(context) {
     await ensureTableSuiviDirect(env.DB);
 
     const seance = await env.DB.prepare(`
-      SELECT s.*, c.nom AS classe_nom, q.titre AS qcm_titre, q.questions_json
+      SELECT s.*, c.nom AS classe_nom, q.titre AS qcm_titre, q.data_json
       FROM seances s
       INNER JOIN classes c ON s.classe_id = c.id
       INNER JOIN qcm_banque q ON s.qcm_id = q.id
@@ -49,7 +49,7 @@ export async function onRequestGet(context) {
 
     let questionsList = [];
     try {
-      questionsList = JSON.parse(seance.questions_json || "[]");
+      questionsList = JSON.parse(seance.data_json || "[]");
     } catch (e) {}
 
     // Récupérer tous les élèves de la classe
@@ -75,9 +75,16 @@ export async function onRequestGet(context) {
 
     const mapCopies = new Map();
     copiesFinales.forEach(cp => {
-      const code = String(cp.code_eleve || "").trim().toUpperCase();
-      if (code) mapCopies.set(code, cp);
-      mapCopies.set(`${String(cp.nom || "").trim().toLowerCase()}_${String(cp.prenom || "").trim().toLowerCase()}`, cp);
+      const nLow = String(cp.nom || "").trim().toLowerCase();
+      const pLow = String(cp.prenom || "").trim().toLowerCase();
+      if (nLow) mapCopies.set(nLow, cp);
+      mapCopies.set(`${nLow}_${pLow}`, cp);
+      elevesClasse.forEach(el => {
+        const cUp = String(el.code_eleve || "").trim().toUpperCase();
+        if (cUp && String(cp.prenom || "").toUpperCase().includes(cUp)) {
+          mapCopies.set(cUp, cp);
+        }
+      });
     });
 
     const nbQuestionsTotal = questionsList.length || 1;
@@ -104,7 +111,7 @@ export async function onRequestGet(context) {
       const codeUpper = String(el.code_eleve || "").trim().toUpperCase();
       const cleNom = `${String(el.nom || "").trim().toLowerCase()}_${String(el.prenom || "").trim().toLowerCase()}`;
       const sv = mapSuivi.get(codeUpper);
-      const cp = mapCopies.get(codeUpper) || mapCopies.get(cleNom);
+      const cp = mapCopies.get(codeUpper) || mapCopies.get(cleNom) || mapCopies.get(String(el.prenom || "").trim().toLowerCase());
 
       let statut = "non_connecte";
       let reponses = [];
@@ -132,14 +139,16 @@ export async function onRequestGet(context) {
           reponses = JSON.parse(sv.reponses_json || "[]");
         } catch (e) {}
 
-        if (cp && cp.note_sur_20 !== undefined && cp.note_sur_20 !== null) {
-          noteSur20 = Number(cp.note_sur_20);
+        if (cp && cp.note !== undefined && cp.note !== null) {
+          const totCp = Number(cp.total) > 0 ? Number(cp.total) : 20;
+          noteSur20 = Math.round(((Number(cp.note) / totCp) * 20) * 10) / 10;
         } else if (scoreMaxCourant > 0) {
           noteSur20 = Math.round(((scoreActuel / scoreMaxCourant) * 20) * 10) / 10;
         }
       } else if (cp) {
         statut = "termine";
-        noteSur20 = Number(cp.note_sur_20 || 0);
+        const totCp = Number(cp.total) > 0 ? Number(cp.total) : 20;
+        noteSur20 = Math.round(((Number(cp.note || 0) / totCp) * 20) * 10) / 10;
         nbSorties = Number(cp.nb_sorties || 0);
         dureeSortiesSec = Number(cp.duree_sorties_sec || 0);
       }
@@ -206,7 +215,7 @@ export async function onRequestGet(context) {
       },
       stats_questions: statsQuestions,
       eleves: fusionEleves
-    }), { headers: { "Content-Type": "application/json" } });
+    }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store, no-cache" } });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
