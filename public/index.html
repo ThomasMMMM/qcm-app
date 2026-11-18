@@ -1317,6 +1317,9 @@
       try {
         const res = await fetch(`/api/fiches?mode=eleve&classe_id=${sessionEleve && sessionEleve.eleve ? sessionEleve.eleve.classe_id : ''}`);
         const fiches = await res.json();
+        window.fichesEleveMemoire = Array.isArray(fiches) ? fiches : [];
+        const badgeFichesNav = document.getElementById('navBadgeEleveFiches');
+        if (badgeFichesNav) badgeFichesNav.innerText = window.fichesEleveMemoire.length;
 
         if (fiches.length === 0) {
           conteneur.innerHTML = "<p style='color:#94a3b8; font-style:italic; padding:10px 0;'>Aucune fiche synthèse disponible pour le moment.</p>";
