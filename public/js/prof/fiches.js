@@ -405,8 +405,9 @@ function afficherTableauFiches() {
           <td>${pilulesClassesHtml}</td>
           <td style="text-align:center;">${new Date(f.date_creation).toLocaleDateString()}</td>
           <td style="text-align:center;">
-            <div style="display:inline-flex; gap:6px; justify-content:center;">
-              <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="previsualiserFiche(${f.id})">👁️ Voir</button>
+            <div style="display:inline-flex; gap:5px; justify-content:center; flex-wrap:nowrap;">
+              <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="previsualiserFiche(${f.id})" title="Aperçu élève">👁️ Voir</button>
+              <button type="button" class="btn" style="background:#0284c7; padding:4px 8px; font-size:0.75rem;" onclick="ouvrirModalEditionFiche(${f.id})" title="Modifier le titre, le contenu ou les classes">✏️ Modifier</button>
               <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerFiche(${f.id}, '${f.titre.replace(/'/g, "\\'")}')">Suppr</button>
             </div>
           </td>

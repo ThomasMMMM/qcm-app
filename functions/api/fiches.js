@@ -304,6 +304,32 @@ export async function onRequest(context) {
         }), { headers: { "Content-Type": "application/json" } });
       }
 
+      if (actionType === "modifier_fiche") {
+        const { fiche_id, matiere_id, titre, contenu_html, competence_code, classe_ids } = body;
+        if (!fiche_id || !matiere_id || !titre || !contenu_html) {
+          return new Response(JSON.stringify({ error: "Tous les champs obligatoires sont requis." }), { status: 400 });
+        }
+
+        const fid = parseInt(fiche_id, 10);
+        const compClean = competence_code ? String(competence_code).trim().toUpperCase() : null;
+        const hasCiblage = Array.isArray(classe_ids);
+
+        await env.DB.prepare(
+          "UPDATE fiches_synthese SET matiere_id = ?, titre = ?, contenu_html = ?, competence_code = ?, ciblage_classes = 1 WHERE id = ?"
+        ).bind(parseInt(matiere_id, 10), titre.trim(), contenu_html.trim(), compClean || null, fid).run();
+
+        if (hasCiblage) {
+          await env.DB.prepare("DELETE FROM fiches_classes WHERE fiche_id = ?").bind(fid).run();
+          for (const cid of classe_ids) {
+            await env.DB.prepare(
+              "INSERT OR IGNORE INTO fiches_classes (fiche_id, classe_id) VALUES (?, ?)"
+            ).bind(fid, parseInt(cid, 10)).run();
+          }
+        }
+
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+      }
+
       if (actionType === "update_fiche_competence") {
         const { fiche_id, competence_code } = body;
         if (!fiche_id) {

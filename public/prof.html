@@ -339,7 +339,7 @@
                   <th>Titre de la Fiche Synthèse</th>
                   <th style="width:230px;">Classes autorisées</th>
                   <th style="text-align:center; width:95px;">Date</th>
-                  <th style="text-align:center; width:130px;">Actions</th>
+                  <th style="text-align:center; width:195px;">Actions</th>
                 </tr>
               </thead>
               <tbody id="tableFichesBody"></tbody>
@@ -730,6 +730,73 @@
     </div>
   </div>
 
+  <!-- MODALE ÉDITION COMPLÈTE D'UNE FICHE SYNTHÈSE -->
+  <div id="modalEditionFiche" class="modal-overlay" onclick="if(event.target===this) fermerModalEditionFiche()">
+    <div class="modal-content" style="max-width:1050px; width:96%; max-height:92vh;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square" style="color:var(--pronote-blue);"></i> Modifier la Fiche Synthèse</h3>
+        <button type="button" class="btn btn-danger" style="margin:0; padding:4px 10px;" onclick="fermerModalEditionFiche()">✖</button>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; padding-right:4px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px;">
+          <div>
+            <label style="font-weight:bold; font-size:0.8rem;">Matière associée * :</label>
+            <select id="editFicheMatiereSelect" class="input-field" style="margin-bottom:0;" onchange="majSelectCompetencesEditionFiche()"></select>
+          </div>
+          <div>
+            <label style="font-weight:bold; font-size:0.8rem;">Compétence liée (Badge élève) :</label>
+            <select id="editFicheCompetenceSelect" class="input-field" style="margin-bottom:0;"></select>
+          </div>
+          <div>
+            <label style="font-weight:bold; font-size:0.8rem;">Titre de la fiche * :</label>
+            <input type="text" id="editFicheTitreInput" class="input-field" style="margin-bottom:0;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px;">
+          <label style="font-weight:bold; font-size:0.8rem; color:#334155; display:block; margin-bottom:6px;">
+            Classes autorisées (décocher tout pour passer en brouillon masqué) :
+          </label>
+          <div id="editFicheZoneClasses" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;"></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:12px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; flex-wrap:wrap;">
+              <label style="font-weight:bold; font-size:0.8rem; color:#475569; margin:0;">Code HTML :</label>
+              <div style="display:flex; gap:5px;">
+                <input type="file" id="inputFichierHtmlEditionFiche" accept=".html,.htm" style="display:none;" onchange="importerFichierHtmlEditionFiche(this)">
+                <button type="button" class="btn" style="background:#0284c7; padding:3px 9px; font-size:0.74rem;" onclick="document.getElementById('inputFichierHtmlEditionFiche').click()">
+                  📁 Remplacer par .html
+                </button>
+                <input type="file" id="inputImageEditionFiche" accept="image/*" style="display:none;" onchange="insererImageDansEditionFiche(this)">
+                <button type="button" class="btn-pdf" style="padding:3px 9px; font-size:0.74rem;" onclick="document.getElementById('inputImageEditionFiche').click()">
+                  🖼️ Image
+                </button>
+              </div>
+            </div>
+            <textarea id="editFicheHtmlInput" class="input-field" rows="14" style="margin:0; width:100%; box-sizing:border-box; font-family:monospace; font-size:0.82rem; line-height:1.4;" oninput="actualiserApercuDirectEditionFiche()"></textarea>
+          </div>
+
+          <div>
+            <div style="font-weight:bold; font-size:0.8rem; color:#475569; margin-bottom:6px;">
+              👁️ Aperçu visuel en direct (rendu élève) :
+            </div>
+            <div id="editFicheApercuLive" class="fiche-document-body" style="border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px; height:315px; overflow-y:auto; background:#ffffff;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; padding-top:10px; border-top:1px solid #e2e8f0;">
+        <button type="button" class="btn btn-pdf" style="padding:9px 16px;" onclick="fermerModalEditionFiche()">Annuler</button>
+        <button type="button" class="btn btn-success" style="padding:9px 20px;" onclick="sauvegarderEditionFiche()">
+          <i class="fa-solid fa-floppy-disk"></i> Enregistrer les modifications
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalApercuFiche" class="fiche-modal-backdrop" onclick="if(event.target===this) fermerApercuFiche()">
     <div class="fiche-modal-card">
       <div class="fiche-modal-topbar">
@@ -766,7 +833,7 @@
 
   <!-- CHARGEMENT DES MODULES JS PROFESSEUR -->
   <script src="/js/prof/auth.js?v=20261118a"></script>
-  <script src="/js/prof/fiches.js?v=20261118e"></script>
+  <script src="/js/prof/fiches.js?v=20261118f"></script>
   <script src="/js/prof/classes.js?v=20261118a"></script>
   <script src="/js/prof/banque.js?v=20261118a"></script>
   <script src="/js/prof/seances.js?v=20261118b"></script>
