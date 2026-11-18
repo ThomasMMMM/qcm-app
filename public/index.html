@@ -2061,6 +2061,8 @@
         document.getElementById('viewEleveQcm').style.display = 'block';
         document.getElementById('simuBannerBox').style.display = 'none';
 
+        window.reponsesDetailleesEleve = [];
+        window.questionsValideesSet = new Set();
         window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
       window.suiviDirectScoreMaxCourant = 0;
       envoyerPingSuiviDirect({
@@ -2702,7 +2704,9 @@
 
       document.getElementById('simuBannerBox').style.display = 'flex';
       document.getElementById('alerteSortieEleve').innerHTML = "ℹ️ <strong>Mode Test Professeur :</strong> Les avertissements s'affichent normalement mais aucun événement n'est transmis au serveur.";
-      window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
+      window.reponsesDetailleesEleve = [];
+        window.questionsValideesSet = new Set();
+        window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
       window.suiviDirectScoreMaxCourant = 0;
       envoyerPingSuiviDirect({
         statut: "en_cours",
@@ -3534,6 +3538,8 @@
         currentQuestionIndex++;
         const dureeSec = (typeof dureeCumuleeSortiesSec !== 'undefined') ? dureeCumuleeSortiesSec : 0;
         sauverEtatQcm(currentCode, currentQuestionIndex, totalScoreObtenu, compteurSortiesEleve, dureeSec);
+        window.reponsesDetailleesEleve = [];
+        window.questionsValideesSet = new Set();
         window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
       window.suiviDirectScoreMaxCourant = 0;
       envoyerPingSuiviDirect({
