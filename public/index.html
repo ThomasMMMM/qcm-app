@@ -3662,19 +3662,20 @@
     window.suiviDirectReponses = [];
     window.suiviDirectScoreMaxCourant = 0;
 
-    async function envoyerPingSuiviDirect(extra = {}) {
+    async async function envoyerPingSuiviDirect(extra = {}) {
       try {
         if (typeof isModeSimulation !== 'undefined' && isModeSimulation) return;
         if (!sessionEleve || !sessionEleve.eleve || !sessionEleve.seance) return;
         const el = sessionEleve.eleve;
         const sc = sessionEleve.seance;
-        if (!sc.id) return;
+        const seanceId = sc.id || sc.seance_id;
+        if (!seanceId) return;
 
         await fetch('/api/suivi_direct', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            seance_id: sc.id,
+            seance_id: seanceId,
             eleve_id: el.id || null,
             code_eleve: el.code_eleve,
             nom_eleve: el.nom || "",
