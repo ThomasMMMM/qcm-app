@@ -3320,57 +3320,6 @@
           const listeOrdreHtml = attendus.map((it, i) => `<div><strong>${i + 1}.</strong> ${it.text}</div>`).join('');
           explications.unshift(`<div style="background:#f0fdf4; border:1px solid #86efac; padding:8px; border-radius:6px; margin-bottom:6px;"><strong>✅ Ordre exact attendu :</strong>${listeOrdreHtml}</div>`);
         }
-      } else if (q.type === "cloze" && Array.isArray(q.etapes)) {
-        let toutRempli = true;
-        q.etapes.forEach((etape, eIdx) => {
-          const field = document.getElementById(`cloze_field_${eIdx}`);
-          if (!field || !field.value.trim()) toutRempli = false;
-        });
-        if (!toutRempli) {
-          alert("Veuillez compléter toutes les étapes avant de valider.");
-          return;
-        }
-
-        let poidsTotal = 0;
-        let poidsObtenu = 0;
-
-        q.etapes.forEach((etape, eIdx) => {
-          const field = document.getElementById(`cloze_field_${eIdx}`);
-          const corrSpan = document.getElementById(`cloze_corr_${eIdx}`);
-          const poids = Number(etape.poids || 1);
-          poidsTotal += poids;
-          field.disabled = true;
-
-          const valEleve = field.value.trim();
-          const bonne = String(etape.bonne_reponse || "").trim();
-          const estJuste = valEleve.toLowerCase() === bonne.toLowerCase();
-
-          if (estJuste) {
-            poidsObtenu += poids;
-            field.style.borderColor = "#16a34a";
-            field.style.background = "#dcfce7";
-            field.style.color = "#15803d";
-            if (corrSpan) {
-              corrSpan.style.display = "inline-block";
-              corrSpan.style.color = "#15803d";
-              corrSpan.innerText = "✓";
-            }
-          } else {
-            field.style.borderColor = "#dc2626";
-            field.style.background = "#fee2e2";
-            field.style.color = "#b91c1c";
-            if (corrSpan) {
-              corrSpan.style.display = "inline-block";
-              corrSpan.style.color = "#15803d";
-              corrSpan.innerText = `→ Attendu : ${bonne}`;
-            }
-          }
-          if (etape.feedback) {
-            explications.push(`<strong>${etape.label || "Étape " + (eIdx + 1)} :</strong> ${etape.feedback}`);
-          }
-        });
-
-        scoreQuestion = q.points * (poidsObtenu / (poidsTotal || 1));
       } else if (q.type === "ordering" && Array.isArray(q.items)) {
         const attendus = q.items.filter(it => !it.distracteur).sort((a, b) => a.ordre - b.ordre);
         if (window.eleveOrderingSelected.length === 0) {
