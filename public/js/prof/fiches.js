@@ -196,6 +196,9 @@ async function supprimerMatiere(matiereId, nom) {
 async function chargerFichesProf() {
   if (!currentProf) return;
   try {
+    if ((!Array.isArray(listeClassesMemoire) || listeClassesMemoire.length === 0) && typeof chargerClassesProf === 'function') {
+      await chargerClassesProf();
+    }
     const res = await fetch(`/api/fiches?prof_id=${currentProf.id}&t=${Date.now()}`, { cache: "no-store" });
     listeFichesMemoire = await res.json();
     alimenterFiltreClassesFiches();
