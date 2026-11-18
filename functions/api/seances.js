@@ -1,4 +1,4 @@
-﻿export async function onRequestGet(context) {
+export async function onRequestGet(context) {
   try {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -59,6 +59,16 @@ export async function onRequestPost(context) {
       INSERT INTO seances (prof_id, qcm_id, classe_id, code_session, actif, date_seance, horaire_seance)
       VALUES (?, ?, ?, ?, 1, ?, ?)
     `).bind(prof_id, qcm_id, classe_id, cleanCode, date_seance || null, horaire_seance || null).run();
+
+    // Déblocage automatique de la fiche synthèse liée au QCM pour cette classe
+    try {
+      const qcmRow = await env.DB.prepare("SELECT fiche_id FROM qcm_banque WHERE id = ?").bind(qcm_id).first();
+      if (qcmRow && qcmRow.fiche_id) {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS fiches_classes (fiche_id INTEGER NOT NULL, classe_id INTEGER NOT NULL, PRIMARY KEY (fiche_id, classe_id))").run();
+        await env.DB.prepare("INSERT OR IGNORE INTO fiches_classes (fiche_id, classe_id) VALUES (?, ?)").bind(qcmRow.fiche_id, classe_id).run();
+        await env.DB.prepare("UPDATE fiches_synthese SET ciblage_classes = 1 WHERE id = ?").bind(qcmRow.fiche_id).run();
+      }
+    } catch (eAutoFiche) {}
 
     return new Response(JSON.stringify({ success: true, id: res.meta.last_row_id }), {
       headers: { "Content-Type": "application/json" }

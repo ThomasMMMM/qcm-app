@@ -315,9 +315,18 @@ document.addEventListener('click', (e) => {
 function afficherTableauFiches() {
   const filtreMatiereId = document.getElementById('filtreMatiereFicheSelect')?.value;
   const filtreClasseId = document.getElementById('filtreClasseFicheSelect')?.value;
+  const rechercheTxt = (document.getElementById('rechercheTitreFicheInput')?.value || "").trim().toLowerCase();
   const classes = (typeof listeClassesMemoire !== 'undefined' && Array.isArray(listeClassesMemoire)) ? listeClassesMemoire : [];
+  const banqueQcms = (typeof listeBanqueQcmMemoire !== 'undefined' && Array.isArray(listeBanqueQcmMemoire)) ? listeBanqueQcmMemoire : [];
 
   let fiches = listeFichesMemoire;
+  if (rechercheTxt) {
+    fiches = fiches.filter(f =>
+      String(f.titre || "").toLowerCase().includes(rechercheTxt) ||
+      String(f.matiere_nom || "").toLowerCase().includes(rechercheTxt) ||
+      String(f.competence_code || "").toLowerCase().includes(rechercheTxt)
+    );
+  }
   if (filtreMatiereId) {
     fiches = fiches.filter(f => String(f.matiere_id) === String(filtreMatiereId));
   }
@@ -401,7 +410,16 @@ function afficherTableauFiches() {
               ${optionsComp}
             </select>
           </td>
-          <td><strong>${f.titre}</strong></td>
+          <td>
+            <strong>${f.titre}</strong>
+            ${(() => {
+              const qcmsLies = banqueQcms.filter(q => Number(q.fiche_id) === Number(f.id));
+              if (qcmsLies.length === 0) return '';
+              return `<div style="margin-top:4px; display:flex; gap:4px; flex-wrap:wrap;">` +
+                qcmsLies.map(q => `<span style="font-size:0.71rem; background:#f3e8ff; color:#6b21a8; border:1px solid #e9d5ff; padding:1px 6px; border-radius:4px; font-weight:600;">🔗 QCM : ${q.titre}</span>`).join('') +
+              `</div>`;
+            })()}
+          </td>
           <td>${pilulesClassesHtml}</td>
           <td style="text-align:center;">${new Date(f.date_creation).toLocaleDateString()}</td>
           <td style="text-align:center;">

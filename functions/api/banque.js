@@ -64,8 +64,8 @@ export async function onRequestPost(context) {
     const compCode = competence_code ? String(competence_code).trim().toUpperCase() : null;
 
     const res = await env.DB.prepare(`
-      INSERT INTO qcm_banque (titre, data_json, document_html, prof_id, matiere_id, competence_code)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO qcm_banque (titre, data_json, document_html, prof_id, matiere_id, competence_code, fiche_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(titre, dataJson, docHtml, prof_id || null, matId, compCode).run();
 
     return new Response(JSON.stringify({ success: true, id: res.meta.last_row_id }), {

@@ -321,10 +321,11 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
             <strong style="font-size:0.9rem; color:#334155;">Fiches disponibles :</strong>
             <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-              <select id="filtreMatiereFicheSelect" class="input-field" style="margin-bottom:0; max-width:210px;" onchange="afficherTableauFiches()">
+              <input type="search" id="rechercheTitreFicheInput" class="input-field" placeholder="🔍 Rechercher une fiche..." style="margin-bottom:0; width:210px;" oninput="afficherTableauFiches()">
+              <select id="filtreMatiereFicheSelect" class="input-field" style="margin-bottom:0; max-width:200px;" onchange="afficherTableauFiches()">
                 <option value="">Toutes les matières</option>
               </select>
-              <select id="filtreClasseFicheSelect" class="input-field" style="margin-bottom:0; max-width:220px;" onchange="afficherTableauFiches()">
+              <select id="filtreClasseFicheSelect" class="input-field" style="margin-bottom:0; max-width:210px;" onchange="afficherTableauFiches()">
                 <option value="">Toutes les classes</option>
               </select>
             </div>
@@ -833,9 +834,9 @@
 
   <!-- CHARGEMENT DES MODULES JS PROFESSEUR -->
   <script src="/js/prof/auth.js?v=20261118a"></script>
-  <script src="/js/prof/fiches.js?v=20261118g"></script>
+  <script src="/js/prof/fiches.js?v=20261118h"></script>
   <script src="/js/prof/classes.js?v=20261118a"></script>
-  <script src="/js/prof/banque.js?v=20261118a"></script>
+  <script src="/js/prof/banque.js?v=20261118b"></script>
   <script src="/js/prof/seances.js?v=20261118b"></script>
   <script src="/js/prof/resultats.js?v=20261118a"></script>
   <script src="/js/prof/export_pronote.js?v=20261118a"></script>
