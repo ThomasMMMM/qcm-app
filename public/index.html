@@ -3666,7 +3666,7 @@
     window.suiviDirectReponses = [];
     window.suiviDirectScoreMaxCourant = 0;
 
-    async async function envoyerPingSuiviDirect(extra = {}) {
+    async function envoyerPingSuiviDirect(extra = {}) {
       try {
         if (typeof isModeSimulation !== 'undefined' && isModeSimulation) return;
         const el = (typeof sessionEleve !== 'undefined' && sessionEleve && sessionEleve.eleve)
