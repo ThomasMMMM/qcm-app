@@ -3069,6 +3069,13 @@
     }
 
     function afficherQuestionCourante() {
+      if (window.questionsValideesSet && window.questionsValideesSet.has(currentQuestionIndex)) {
+        const btnSuiv = document.getElementById('btnQuestionSuivante');
+        if (btnSuiv) btnSuiv.style.display = 'block';
+        const btnVal = document.getElementById('btnValiderQuestion');
+        if (btnVal) btnVal.style.display = 'none';
+        return;
+      }
       const q = preparerQuestionCloze(currentQuestions[currentQuestionIndex]);
       const totalQ = currentQuestions.length;
 
@@ -3189,6 +3196,13 @@
     function moveOrderingEleve(selIdx, delta) { const newIdx = selIdx + delta; if (newIdx < 0 || newIdx >= window.eleveOrderingSelected.length) return; const temp = window.eleveOrderingSelected[selIdx]; window.eleveOrderingSelected[selIdx] = window.eleveOrderingSelected[newIdx]; window.eleveOrderingSelected[newIdx] = temp; renderOrderingEleveZones(false); }
 
     function validerQuestionCourante() {
+      if (window.questionsValideesSet && window.questionsValideesSet.has(currentQuestionIndex)) {
+        const btnSuiv = document.getElementById('btnQuestionSuivante');
+        if (btnSuiv) btnSuiv.style.display = 'block';
+        const btnVal = document.getElementById('btnValiderQuestion');
+        if (btnVal) btnVal.style.display = 'none';
+        return;
+      }
       const q = preparerQuestionCloze(currentQuestions[currentQuestionIndex]);
       let scoreQuestion = 0;
       let explications = [];
@@ -3348,7 +3362,7 @@
 
       scoreQuestion = parseFloat(scoreQuestion) || 0;
       totalScoreObtenu = (parseFloat(totalScoreObtenu) || 0) + scoreQuestion;
-      if (!window.questionsValideesSet) window.questionsValideesSet = new Set(); window.reponsesDetailleesEleve = [];
+      if (!window.questionsValideesSet) window.questionsValideesSet = new Set(); if (!Array.isArray(window.reponsesDetailleesEleve)) window.reponsesDetailleesEleve = [];
       window.questionsValideesSet.add(currentQuestionIndex);
 
       // Enregistrement détaillé pour la consultation ultérieure de la copie corrigée
