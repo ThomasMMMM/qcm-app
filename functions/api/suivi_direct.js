@@ -142,6 +142,22 @@ export async function onRequestGet(context) {
         if (cp && cp.note !== undefined && cp.note !== null) {
           const totCp = Number(cp.total) > 0 ? Number(cp.total) : 20;
           noteSur20 = Math.round(((Number(cp.note) / totCp) * 20) * 10) / 10;
+          if (Number(cp.nb_sorties || 0) > nbSorties) nbSorties = Number(cp.nb_sorties || 0);
+          if (Number(cp.duree_sorties || 0) > dureeSortiesSec) dureeSortiesSec = Number(cp.duree_sorties || 0);
+          if ((!Array.isArray(reponses) || reponses.every(r => !r)) && cp.reponses_json) {
+            try {
+              const det = JSON.parse(cp.reponses_json);
+              if (Array.isArray(det)) {
+                reponses = Array.from({ length: nbQuestionsTotal }, (_, idx) => {
+                  const d = det.find(item => Number(item.index) === idx) || det[idx];
+                  if (!d || d.score === undefined || d.score === null) return null;
+                  const ptsMax = Number(d.points || 1);
+                  const sc = Number(d.score || 0);
+                  return { etat: sc >= ptsMax ? "juste" : (sc > 0 ? "partiel" : "faux"), score: sc, max: ptsMax };
+                });
+              }
+            } catch (e) {}
+          }
         } else if (scoreMaxCourant > 0) {
           noteSur20 = Math.round(((scoreActuel / scoreMaxCourant) * 20) * 10) / 10;
         }
@@ -150,7 +166,21 @@ export async function onRequestGet(context) {
         const totCp = Number(cp.total) > 0 ? Number(cp.total) : 20;
         noteSur20 = Math.round(((Number(cp.note || 0) / totCp) * 20) * 10) / 10;
         nbSorties = Number(cp.nb_sorties || 0);
-        dureeSortiesSec = Number(cp.duree_sorties_sec || 0);
+        dureeSortiesSec = Number(cp.duree_sorties || 0);
+        if (cp.reponses_json) {
+          try {
+            const det = JSON.parse(cp.reponses_json);
+            if (Array.isArray(det)) {
+              reponses = Array.from({ length: nbQuestionsTotal }, (_, idx) => {
+                const d = det.find(item => Number(item.index) === idx) || det[idx];
+                if (!d || d.score === undefined || d.score === null) return null;
+                const ptsMax = Number(d.points || 1);
+                const sc = Number(d.score || 0);
+                return { etat: sc >= ptsMax ? "juste" : (sc > 0 ? "partiel" : "faux"), score: sc, max: ptsMax };
+              });
+            }
+          } catch (e) {}
+        }
       }
 
       if (statut !== "non_connecte") nbConnectes++;
