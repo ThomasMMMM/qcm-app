@@ -139,7 +139,22 @@ function afficherPlanningSemaine() {
     const dd = String(curDate.getDate()).padStart(2, '0');
     const strDateIso = `${yyyy}-${mm}-${dd}`;
 
-    const seancesDuJour = listeSeancesMemoire.filter(s => s.date_seance === strDateIso);
+    const extraireMinutesDebut = (h) => {
+      if (!h) return 9999;
+      const m = String(h).trim().match(/^(\d{1,2})\s*[hH:]\s*(\d{0,2})/);
+      if (!m) return 9999;
+      const heures = parseInt(m[1], 10);
+      const minutes = m[2] ? parseInt(m[2], 10) : 0;
+      return (heures * 60) + minutes;
+    };
+
+    const seancesDuJour = listeSeancesMemoire
+      .filter(s => s.date_seance === strDateIso)
+      .sort((a, b) => {
+        const diffHeure = extraireMinutesDebut(a.horaire_seance) - extraireMinutesDebut(b.horaire_seance);
+        if (diffHeure !== 0) return diffHeure;
+        return (Number(a.id) || 0) - (Number(b.id) || 0);
+      });
     let cartesHtml = "";
 
     if (seancesDuJour.length === 0) {
