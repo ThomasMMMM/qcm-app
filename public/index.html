@@ -3629,6 +3629,16 @@
         }
 
         try {
+          envoyerPingSuiviDirect({
+            statut: "termine",
+            question_courante: questionsTotales,
+            score_actuel: totalScoreObtenu,
+            score_max_courant: totalScorePossible || 20,
+            reponses: Array.isArray(window.suiviDirectReponses) ? window.suiviDirectReponses : [],
+            hors_ecran: 0,
+            nb_sorties: compteurSortiesEleve || 0,
+            duree_sorties_sec: dureeCumuleeSortiesSec || 0
+          });
           fetch('/api/soumettre', {
             keepalive: true,
             method: 'POST',
@@ -3665,19 +3675,23 @@
     async async function envoyerPingSuiviDirect(extra = {}) {
       try {
         if (typeof isModeSimulation !== 'undefined' && isModeSimulation) return;
-        if (!sessionEleve || !sessionEleve.eleve || !sessionEleve.seance) return;
-        const el = sessionEleve.eleve;
-        const sc = sessionEleve.seance;
-        const seanceId = sc.id || sc.seance_id;
-        if (!seanceId) return;
+        const el = (typeof sessionEleve !== 'undefined' && sessionEleve && sessionEleve.eleve)
+          ? sessionEleve.eleve
+          : (typeof eleveInfo !== 'undefined' ? eleveInfo : null);
+        const seanceId = (typeof currentSeanceId !== 'undefined' && currentSeanceId)
+          ? currentSeanceId
+          : (sessionEleve && sessionEleve.seance ? (sessionEleve.seance.id || sessionEleve.seance.seance_id) : null);
+        const codeEl = el ? (el.code_eleve || el.code_perso || "") : "";
+        if (!seanceId || !codeEl) return;
 
         await fetch('/api/suivi_direct', {
+          keepalive: true,
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             seance_id: seanceId,
             eleve_id: el.id || null,
-            code_eleve: el.code_eleve,
+            code_eleve: codeEl,
             nom_eleve: el.nom || "",
             prenom_eleve: el.prenom || "",
             total_questions: Array.isArray(currentQuestions) ? currentQuestions.length : 1,
