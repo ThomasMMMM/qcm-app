@@ -114,9 +114,13 @@
           <span>Résultats & Copies</span>
           <span class="sidebar-badge" id="navBadgeResultats">0</span>
         </button>
-        <button type="button" class="sidebar-link" data-target="rubriqueAnalyse" onclick="ouvrirRubriqueProf('rubriqueAnalyse'); chargerDonneesAnalyse();">
+                <button type="button" class="sidebar-link" data-target="rubriqueAnalyse" onclick="ouvrirRubriqueProf('rubriqueAnalyse'); chargerDonneesAnalyse();">
           <i class="fa-solid fa-chart-pie"></i>
           <span>Analyse & Statistiques</span>
+        </button>
+        <button type="button" class="sidebar-link" data-target="rubriqueSuiviClasses" onclick="ouvrirRubriqueProf('rubriqueSuiviClasses'); chargerSuiviClasses();">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Suivi des classes</span>
         </button>
         <button type="button" class="sidebar-link" data-target="rubriqueAlertes" onclick="ouvrirRubriqueProf('rubriqueAlertes')">
           <i class="fa-solid fa-shield-halved"></i>
@@ -557,6 +561,34 @@
         </div>
       </div>
 
+      <!-- RUBRIQUE 6C : SUIVI DES CLASSES (PROGRESSION & ABSENCES) -->
+      <div id="rubriqueSuiviClasses" class="rubrique-contenu-prof" style="display:none;">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--pronote-light); padding-bottom:10px; margin-bottom:14px;">
+            <div>
+              <h3 style="margin:0; border:none; padding:0;"><i class="fa-solid fa-chart-line"></i> Suivi des Classes — Progression & Présences</h3>
+              <p style="margin:4px 0 0 0; font-size:0.85rem; color:#64748b;">
+                Évolution des résultats au fil des jours et des semaines, participation et relevé des absents par séance.
+              </p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <select id="filtreSuiviClasseSelect" class="input-field" style="margin-bottom:0; min-width:170px; font-weight:700;" onchange="rendreSuiviClasses()">
+                <option value="">Chargement...</option>
+              </select>
+              <select id="filtreSuiviGranularite" class="input-field" style="margin-bottom:0; min-width:165px;" onchange="rendreSuiviClasses()">
+                <option value="seance">Vue par séance (jours)</option>
+                <option value="semaine">Vue par semaine</option>
+              </select>
+              <button type="button" class="btn btn-pdf" style="padding:8px 12px; font-size:0.84rem;" onclick="chargerSuiviClasses()" title="Actualiser">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="zoneContenuSuiviClasses"></div>
+        </div>
+      </div>
+
       <!-- RUBRIQUE 7 : ALERTES -->
       <div id="rubriqueAlertes" class="rubrique-contenu-prof" style="display:none;">
         <div class="card">
@@ -729,6 +761,7 @@
   <script src="/js/prof/export_pronote.js?v=20261118a"></script>
   <script src="/js/prof/simulateur.js?v=20261118a"></script>
   <script src="/js/prof/analyse.js?v=20261118a"></script>
+  <script src="/js/prof/suivi_classes.js?v=20261118a"></script>
   <!-- Modale Compétences par Matière -->
   <div id="modalCompetencesMatiere" class="modal-overlay">
     <div class="modal-content" style="max-width:620px;">
