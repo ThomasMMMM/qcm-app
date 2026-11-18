@@ -110,7 +110,29 @@ export async function onRequestDelete(context) {
       return new Response(JSON.stringify({ error: "Identifiant QCM requis" }), { status: 400 });
     }
 
-    await env.DB.prepare("DELETE FROM qcm_banque WHERE id = ?").bind(qcm_id).run();
+    const qid = parseInt(qcm_id, 10);
+
+    // Nettoyage des dépendances (séances, suivi direct, résultats, cahier de texte) pour éviter le blocage FOREIGN KEY
+    try {
+      await env.DB.prepare("DELETE FROM suivi_direct WHERE seance_id IN (SELECT id FROM seances WHERE qcm_id = ?)").bind(qid).run();
+    } catch (e) {}
+    try {
+      await env.DB.prepare("DELETE FROM absences_seances WHERE seance_id IN (SELECT id FROM seances WHERE qcm_id = ?)").bind(qid).run();
+    } catch (e) {}
+    try {
+      await env.DB.prepare("DELETE FROM resultats_qcm WHERE seance_id IN (SELECT id FROM seances WHERE qcm_id = ?)").bind(qid).run();
+    } catch (e) {}
+    try {
+      await env.DB.prepare("DELETE FROM resultats_qcm WHERE qcm_id = ?").bind(qid).run();
+    } catch (e) {}
+    try {
+      await env.DB.prepare("UPDATE cahier_texte SET qcm_id = NULL WHERE qcm_id = ?").bind(qid).run();
+    } catch (e) {}
+    try {
+      await env.DB.prepare("DELETE FROM seances WHERE qcm_id = ?").bind(qid).run();
+    } catch (e) {}
+
+    await env.DB.prepare("DELETE FROM qcm_banque WHERE id = ?").bind(qid).run();
     return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });

@@ -411,7 +411,19 @@ async function importerDansBanque() {
 }
 
 async function supprimerQcmBanque(qcmId) {
-  if (!confirm("Voulez-vous vraiment supprimer ce QCM de votre banque ?")) return;
-  await fetch('/api/banque?qcm_id=' + qcmId, { method: 'DELETE' });
-  chargerBanqueProf();
+  if (!confirm("Voulez-vous vraiment supprimer ce QCM de votre banque ?\n\n(Les éventuelles séances de test associées seront également nettoyées.)")) return;
+  try {
+    const res = await fetch('/api/banque?qcm_id=' + qcmId, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      alert("Impossible de supprimer ce QCM : " + (data.error || "Erreur serveur"));
+      return;
+    }
+    listeBanqueQcmMemoire = listeBanqueQcmMemoire.filter(q => Number(q.id) !== Number(qcmId));
+    afficherTableauBanqueQcm();
+    await chargerBanqueProf();
+    if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
+  } catch (e) {
+    alert("Erreur réseau lors de la suppression du QCM.");
+  }
 }
