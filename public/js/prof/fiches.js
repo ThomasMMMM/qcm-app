@@ -246,6 +246,21 @@ async function modifierCompetenceFiche(ficheId, nouveauCode) {
 }
 
 async function basculerAccesClasseFiche(ficheId, classeId, active) {
+  const f = listeFichesMemoire.find(item => Number(item.id) === Number(ficheId));
+  if (!f) return;
+
+  // Mise à jour optimiste immédiate dans l'interface
+  const anciensIds = getClassesAutoriseesPourFiche(f);
+  const nouveauxIds = active
+    ? Array.from(new Set([...anciensIds, Number(classeId)]))
+    : anciensIds.filter(id => id !== Number(classeId));
+
+  f.ciblage_classes = 1;
+  f.classe_ids = nouveauxIds;
+  afficherTableauFiches();
+  const menu = document.getElementById('menu-classes-fiche-' + ficheId);
+  if (menu) menu.style.display = 'block';
+
   try {
     const res = await fetch('/api/fiches', {
       method: 'POST',
@@ -259,24 +274,40 @@ async function basculerAccesClasseFiche(ficheId, classeId, active) {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      const f = listeFichesMemoire.find(item => Number(item.id) === Number(ficheId));
-      if (f) {
-        f.ciblage_classes = 1;
-        f.classe_ids = data.classe_ids || [];
-      }
+      f.classe_ids = data.classe_ids || nouveauxIds;
       afficherTableauFiches();
+      const menuApres = document.getElementById('menu-classes-fiche-' + ficheId);
+      if (menuApres) menuApres.style.display = 'block';
+    } else {
+      alert("Erreur serveur : " + (data.error || "Impossible de modifier l'accès."));
     }
-  } catch (e) {}
+  } catch (e) {
+    alert("Erreur réseau lors de la mise à jour.");
+  }
 }
 
 function getClassesAutoriseesPourFiche(f) {
-  const mat = listeMatieresMemoire.find(m => Number(m.id) === Number(f.matiere_id));
-  if (Number(f.ciblage_classes) === 1) {
-    return Array.isArray(f.classe_ids) ? f.classe_ids.map(Number) : [];
+  if (Array.isArray(f.classe_ids)) {
+    return f.classe_ids.map(Number);
   }
-  // Mode hérité (ciblage_classes = 0) : les classes ayant cette matière
+  const mat = listeMatieresMemoire.find(m => Number(m.id) === Number(f.matiere_id));
   return (mat && Array.isArray(mat.classe_ids)) ? mat.classe_ids.map(Number) : [];
 }
+
+function toggleMenuClassesFiche(ficheId, event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('menu-classes-fiche-' + ficheId);
+  if (!menu) return;
+  const etaitOuvert = menu.style.display === 'block';
+  document.querySelectorAll('.menu-classes-fiche-popover').forEach(el => el.style.display = 'none');
+  if (!etaitOuvert) menu.style.display = 'block';
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.wrap-classes-fiche')) {
+    document.querySelectorAll('.menu-classes-fiche-popover').forEach(el => el.style.display = 'none');
+  }
+});
 
 function afficherTableauFiches() {
   const filtreMatiereId = document.getElementById('filtreMatiereFicheSelect')?.value;
@@ -323,22 +354,40 @@ function afficherTableauFiches() {
         comps.map(c => `<option value="${c.code}" ${String(c.code).toUpperCase() === codeActuel ? 'selected' : ''}>🎯 ${c.code} — ${c.libelle}</option>`).join('');
 
       const idsAutorises = getClassesAutoriseesPourFiche(f);
+      const classesActivesObjs = classes.filter(c => idsAutorises.includes(Number(c.id)));
+
       const pilulesClassesHtml = classes.length === 0
         ? `<span style="font-size:0.75rem; color:#94a3b8;">Aucune classe</span>`
-        : `<div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
-            ${classes.map(c => {
-              const cid = Number(c.id);
-              const estActive = idsAutorises.includes(cid);
-              return `
-                <button type="button"
-                        onclick="basculerAccesClasseFiche(${f.id}, ${cid}, ${!estActive})"
-                        title="${estActive ? 'Cliquer pour masquer à ' + c.nom : 'Cliquer pour publier à ' + c.nom}"
-                        style="border:1px solid ${estActive ? '#86efac' : '#cbd5e1'}; background:${estActive ? '#dcfce7' : '#f8fafc'}; color:${estActive ? '#166534' : '#64748b'}; border-radius:999px; padding:2px 8px; font-size:0.74rem; font-weight:700; cursor:pointer; transition:all 0.15s;">
-                  ${estActive ? '✓ ' : '+ '}${c.nom}
-                </button>
-              `;
-            }).join('')}
-            ${idsAutorises.length === 0 ? `<span style="font-size:0.72rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:700;">🔒 Brouillon</span>` : ''}
+        : `<div class="wrap-classes-fiche" style="position:relative; display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+            ${classesActivesObjs.length === 0
+              ? `<span style="font-size:0.74rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:2px 8px; border-radius:999px; font-weight:700;">🔒 Brouillon</span>`
+              : classesActivesObjs.map(c => `
+                  <span style="display:inline-flex; align-items:center; gap:4px; background:#dcfce7; border:1px solid #86efac; color:#166534; border-radius:999px; padding:2px 8px; font-size:0.74rem; font-weight:700;">
+                    ✓ ${c.nom}
+                    <span onclick="basculerAccesClasseFiche(${f.id}, ${Number(c.id)}, false)" title="Retirer ${c.nom}" style="cursor:pointer; color:#15803d; font-weight:900; margin-left:2px;">×</span>
+                  </span>
+                `).join('')
+            }
+            <button type="button" onclick="toggleMenuClassesFiche(${f.id}, event)"
+                    style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; border-radius:999px; padding:2px 8px; font-size:0.73rem; font-weight:700; cursor:pointer;">
+              + Classes
+            </button>
+            <div id="menu-classes-fiche-${f.id}" class="menu-classes-fiche-popover"
+                 style="display:none; position:absolute; top:100%; left:0; z-index:50; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 25px rgba(15,23,42,0.18); padding:8px 10px; min-width:190px; margin-top:4px;">
+              <div style="font-size:0.74rem; font-weight:800; color:#334155; margin-bottom:6px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">
+                Publier aux classes :
+              </div>
+              ${classes.map(c => {
+                const cid = Number(c.id);
+                const estActive = idsAutorises.includes(cid);
+                return `
+                  <label style="display:flex; align-items:center; gap:7px; padding:3px 2px; font-size:0.8rem; cursor:pointer; color:#1e293b; font-weight:${estActive ? '700' : '500'};">
+                    <input type="checkbox" ${estActive ? 'checked' : ''} onchange="basculerAccesClasseFiche(${f.id}, ${cid}, this.checked)" style="accent-color:#16a34a; cursor:pointer;">
+                    <span>${c.nom}</span>
+                  </label>
+                `;
+              }).join('')}
+            </div>
           </div>`;
 
       return `
