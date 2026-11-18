@@ -30,7 +30,7 @@ export async function onRequestGet(context) {
         SELECT r.id, r.seance_id, r.note, r.total, r.note_proportionnelle,
                r.questions_traitees, r.questions_totales, r.reponses_json, r.date_soumission,
                COALESCE(s.actif, 1) AS seance_actif, s.code_session,
-               q.id AS qcm_id, q.titre AS qcm_titre, q.data_json, q.document_html
+               q.id AS qcm_id, q.titre AS qcm_titre, q.data_json, q.document_html, q.fiche_id AS fiche_liee_id, q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
@@ -41,7 +41,7 @@ export async function onRequestGet(context) {
         SELECT r.id, r.seance_id, r.note, r.total, r.note_proportionnelle,
                r.questions_traitees, r.questions_totales, r.reponses_json, r.date_soumission,
                COALESCE(s.actif, 1) AS seance_actif, s.code_session,
-               q.id AS qcm_id, q.titre AS qcm_titre, q.data_json, q.document_html
+               q.id AS qcm_id, q.titre AS qcm_titre, q.data_json, q.document_html, q.fiche_id AS fiche_liee_id, q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id

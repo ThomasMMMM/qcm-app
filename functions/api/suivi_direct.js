@@ -39,7 +39,7 @@ export async function onRequestGet(context) {
       SELECT s.*, c.nom AS classe_nom, q.titre AS qcm_titre, q.data_json
       FROM seances s
       INNER JOIN classes c ON s.classe_id = c.id
-      INNER JOIN qcm_banque q ON s.qcm_id = q.id
+      INNER JOIN qcm_banque q ON s.qcm_id = q.id LEFT JOIN fiches_synthese fs ON q.fiche_id = fs.id
       WHERE s.id = ?
     `).bind(seance_id).first();
 

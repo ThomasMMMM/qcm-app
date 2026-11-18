@@ -2021,7 +2021,7 @@
           window.suiviDirectScoreMaxCourant = 0;
         }
 
-        currentDocumentHtml = data.document_html || null;
+        window.currentSessionData = data; currentDocumentHtml = data.document_html || null;
         const boxDoc = document.getElementById('btnOuvrirDocBox');
         if (boxDoc) boxDoc.style.display = currentDocumentHtml ? 'block' : 'none';
 

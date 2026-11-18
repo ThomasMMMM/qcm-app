@@ -1,4 +1,4 @@
-﻿function melangerTableau(arr) {
+function melangerTableau(arr) {
   const copie = [...arr];
   for (let i = copie.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -83,7 +83,7 @@ export async function onRequestGet(context) {
     // 2. Simulation Séance
     if (simuSeanceId) {
       const seance = await env.DB.prepare(`
-        SELECT s.id, s.code_session, q.titre, q.data_json, q.document_html
+        SELECT s.id, s.code_session, q.titre, q.data_json, q.document_html, q.fiche_id AS fiche_liee_id, q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre
         FROM seances s
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
         WHERE s.id = ?
@@ -108,7 +108,7 @@ export async function onRequestGet(context) {
     const cleanCodeEleve = code_eleve.toUpperCase().trim();
 
     const seance = await env.DB.prepare(`
-      SELECT s.id AS seance_id, s.code_session, s.actif, s.classe_id, q.titre, q.data_json, q.document_html, c.nom AS classe_nom
+      SELECT s.id AS seance_id, s.code_session, s.actif, s.classe_id, q.titre, q.data_json, q.document_html, q.fiche_id AS fiche_liee_id, q.matiere_id, q.competence_code, fs.titre AS fiche_liee_titre, c.nom AS classe_nom
       FROM seances s
       INNER JOIN qcm_banque q ON s.qcm_id = q.id
       INNER JOIN classes c ON s.classe_id = c.id
