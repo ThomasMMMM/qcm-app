@@ -70,6 +70,8 @@ export async function onRequestGet(context) {
       SELECT * FROM resultats_qcm WHERE seance_id = ?
     `).bind(seance_id).all();
 
+    const setAbsents = new Set();
+    try { const { results: absR } = await env.DB.prepare('SELECT eleve_id FROM absences_seances WHERE seance_id = ?').bind(seance_id).all(); (absR || []).forEach(a => setAbsents.add(Number(a.eleve_id))); } catch(e) {}
     const mapSuivi = new Map();
     suivis.forEach(sv => mapSuivi.set(String(sv.code_eleve).trim().toUpperCase(), sv));
 
