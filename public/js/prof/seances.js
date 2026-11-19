@@ -374,9 +374,44 @@ function rendreSuiviDirect(data) {
         <td style="text-align:center;">${badgeStatut}</td>
         <td>${pastillesHtml}</td>
         <td style="text-align:center;">${badgeSorties}</td>
-        <td style="text-align:center;">${noteTxt}</td>
+                <td style="text-align:center;">${noteTxt}</td>
+        <td style="text-align:center;">
+          ${(el.statut === 'termine' || el.statut === 'en_cours') ? `
+            <button type="button" class="btn" style="background:#0284c7; padding:4px 8px; font-size:0.73rem; margin:0; white-space:nowrap;"
+                    onclick="reproposerQcmEleveDirect(${el.id}, '${String(el.nom + ' ' + el.prenom).replace(/'/g, "\\'")}')"
+                    title="Réinitialiser la copie et reproposer ce QCM à l'élève">
+              🔄 Reproposer
+            </button>
+          ` : `<span style="color:#cbd5e1; font-size:0.75rem;">—</span>`}
+        </td>
       </tr>
     `;
   }).join('');
   if (scrollContainer) scrollContainer.scrollTop = prevScrollTop;
+}
+async function reproposerQcmEleveDirect(eleveId, nomComplet) {
+  if (!seanceSuiviDirectId) return;
+  if (!confirm(`Reproposer ce QCM à ${nomComplet} ?\n\nSa copie actuelle (ou progression en cours) sera effacée et il pourra recommencer l'évaluation.`)) {
+    return;
+  }
+  try {
+    const res = await fetch('/api/suivi_direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "reproposer_eleve",
+        seance_id: seanceSuiviDirectId,
+        eleve_id: eleveId
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      alert("Erreur : " + (data.error || "Impossible de reproposer le QCM."));
+      return;
+    }
+    await rafraichirSuiviDirect(true);
+    if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
+  } catch (e) {
+    alert("Erreur réseau lors de la réinitialisation.");
+  }
 }
