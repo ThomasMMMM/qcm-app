@@ -283,17 +283,25 @@ export async function onRequestPost(context) {
         await env.DB.prepare("DELETE FROM absences_seances WHERE seance_id = ? AND eleve_id = ?").bind(sid, eid).run();
       } catch (e) {}
 
-      // Suppression de la copie enregistrée pour cet élève sur cette séance
+      // Suppression exhaustive de toute copie enregistrée pour cet élève sur cette séance (quel que soit le format nom/prénom/code)
       try {
+        const prenomElUp = String(eleve.prenom || "").trim().toUpperCase();
+        const nomElUp = String(eleve.nom || "").trim().toUpperCase();
+
         if (codeElUp) {
           await env.DB.prepare(
-            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(session_code) = ?) AND UPPER(prenom) LIKE ?"
-          ).bind(sid, codeSessUp, `%[${codeElUp}]%`).run();
+            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND (UPPER(prenom) LIKE ? OR UPPER(nom) LIKE ?)"
+          ).bind(sid, codeSessUp, `%${codeElUp}%`, `%${codeElUp}%`).run();
         }
-        if (eleve.nom && eleve.prenom) {
+        if (prenomElUp) {
           await env.DB.prepare(
-            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(session_code) = ?) AND UPPER(TRIM(nom)) = ? AND UPPER(TRIM(prenom)) LIKE ?"
-          ).bind(sid, codeSessUp, String(eleve.nom).trim().toUpperCase(), `${String(eleve.prenom).trim().toUpperCase()}%`).run();
+            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND (UPPER(TRIM(nom)) = ? OR UPPER(TRIM(prenom)) = ? OR UPPER(TRIM(prenom)) LIKE ?)"
+          ).bind(sid, codeSessUp, prenomElUp, prenomElUp, `${prenomElUp} [%`).run();
+        }
+        if (nomElUp && prenomElUp) {
+          await env.DB.prepare(
+            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND UPPER(TRIM(nom)) = ? AND UPPER(TRIM(prenom)) LIKE ?"
+          ).bind(sid, codeSessUp, nomElUp, `${prenomElUp}%`).run();
         }
       } catch (e) {}
 
