@@ -75,9 +75,9 @@ export async function onRequestPost(context) {
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
-        WHERE s.classe_id = ? AND (r.nom = ? OR r.prenom LIKE ?)
+        WHERE (s.classe_id = ? OR r.prenom LIKE ?) AND (r.nom = ? OR r.prenom LIKE ?)
         ORDER BY r.date_soumission DESC
-      `).bind(eleve.classe_id, eleve.prenom, `%${cleanCode}%`).all();
+      `).bind(eleve.classe_id, `%${cleanCode}%`, eleve.prenom, `%${cleanCode}%`).all();
 
       passes = resCopies.results || [];
       seanceIdsPassees = passes.map(p => p.seance_id);

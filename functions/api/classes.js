@@ -92,6 +92,47 @@ export async function onRequestPost(context) {
       }), { headers: { "Content-Type": "application/json" } });
     }
 
+    // Transfert d'un élève vers une autre classe avec conservation de toutes ses données
+    if (body.action === "transferer_eleve" && body.eleve_id && body.nouvelle_classe_id) {
+      const eid = parseInt(body.eleve_id, 10);
+      const destClasseId = parseInt(body.nouvelle_classe_id, 10);
+
+      const eleve = await env.DB.prepare("SELECT id, nom, prenom, code_eleve, classe_id FROM eleves WHERE id = ?").bind(eid).first();
+      const destClasse = await env.DB.prepare("SELECT id, nom FROM classes WHERE id = ?").bind(destClasseId).first();
+      if (!eleve || !destClasse) {
+        return new Response(JSON.stringify({ error: "Élève ou classe de destination introuvable." }), { status: 404 });
+      }
+      if (Number(eleve.classe_id) === destClasseId) {
+        return new Response(JSON.stringify({ success: true, unchanged: true }), { headers: { "Content-Type": "application/json" } });
+      }
+
+      const maxRow = await env.DB.prepare(
+        "SELECT COALESCE(MAX(COALESCE(ordre, id)), 0) AS max_ord FROM eleves WHERE classe_id = ?"
+      ).bind(destClasseId).first();
+      const nextOrdre = (maxRow && maxRow.max_ord ? Number(maxRow.max_ord) : 0) + 1;
+
+      await env.DB.prepare(
+        "UPDATE eleves SET classe_id = ?, ordre = ? WHERE id = ?"
+      ).bind(destClasseId, nextOrdre, eid).run();
+
+      // Mise à jour du nom de classe sur ses copies existantes tout en conservant ses résultats et badges
+      const codeUp = String(eleve.code_eleve || "").trim().toUpperCase();
+      if (codeUp) {
+        try {
+          await env.DB.prepare(
+            "UPDATE resultats_qcm SET classe = ? WHERE UPPER(prenom) LIKE ?"
+          ).bind(destClasse.nom, `%${codeUp}%`).run();
+        } catch (e) {}
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        eleve_id: eid,
+        nouvelle_classe_id: destClasseId,
+        nouvelle_classe_nom: destClasse.nom
+      }), { headers: { "Content-Type": "application/json" } });
+    }
+
     // Suppression individuelle d'un élève
     if (body.action === "supprimer_eleve" && body.eleve_id) {
       await env.DB.prepare("DELETE FROM eleves WHERE id = ?").bind(body.eleve_id).run();

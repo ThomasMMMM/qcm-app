@@ -34,8 +34,8 @@ export async function onRequestGet(context) {
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
-        WHERE r.id = ? AND s.classe_id = ? AND (r.nom = ? OR r.prenom LIKE ?)
-      `).bind(resultatId, eleve.classe_id, eleve.prenom, `%${codeEleve}%`).first();
+        WHERE r.id = ? AND (s.classe_id = ? OR r.prenom LIKE ?) AND (r.nom = ? OR r.prenom LIKE ?)
+      `).bind(resultatId, eleve.classe_id, `%${codeEleve}%`, eleve.prenom, `%${codeEleve}%`).first();
     } else {
       copie = await env.DB.prepare(`
         SELECT r.id, r.seance_id, r.note, r.total, r.note_proportionnelle,
@@ -45,10 +45,10 @@ export async function onRequestGet(context) {
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
-        WHERE r.seance_id = ? AND s.classe_id = ? AND (r.nom = ? OR r.prenom LIKE ?)
+        WHERE r.seance_id = ? AND (s.classe_id = ? OR r.prenom LIKE ?) AND (r.nom = ? OR r.prenom LIKE ?)
         ORDER BY r.date_soumission DESC
         LIMIT 1
-      `).bind(seanceId, eleve.classe_id, eleve.prenom, `%${codeEleve}%`).first();
+      `).bind(seanceId, eleve.classe_id, `%${codeEleve}%`, eleve.prenom, `%${codeEleve}%`).first();
     }
 
     if (!copie) {
