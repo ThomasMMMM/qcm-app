@@ -3394,7 +3394,7 @@
           });
         } else if (q.type === "cloze" && Array.isArray(q.etapes)) {
           q.etapes.forEach((etape, eIdx) => {
-            const field = document.getElementById(`cloze_field_${eIdx}`);
+            const field = document.getElementById(`eleve_cloze_field_${eIdx}`);
             const lbl = etape.label || `Étape ${eIdx + 1}`;
             repEleveList.push(`${lbl} : ${field ? field.value : ""}`);
             bonnesRepList.push(`${lbl} : ${etape.bonne_reponse}`);
@@ -3809,7 +3809,7 @@
 
         const questionsHtml = (data.details || []).map((item, idx) => {
           const estArchiveSansChoix = !!item.archive_sans_choix;
-          const estReussi = !estArchiveSansChoix && Number(item.score) >= Number(item.points);
+          const estReussi = !estArchiveSansChoix && Number(item.score) >= (Number(item.points) - 0.01);
           const estPartiel = !estArchiveSansChoix && Number(item.score) > 0 && Number(item.score) < Number(item.points);
 
           let bordure = "#cbd5e1";
