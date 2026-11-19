@@ -445,20 +445,45 @@ function validerQuestionSimu() {
   totalScoreObtenu += scoreQuestion;
 
   const fbBox = document.getElementById('simuFeedbackContainer');
+  const estJusteSimu = Number(scoreQuestion) >= (Number(q.points || 1) - 0.01);
+  const estPartielSimu = !estJusteSimu && Number(scoreQuestion) > 0;
   let fbHtml = "";
-  if (scoreQuestion >= q.points) {
-    fbHtml += `<div><strong>Bravo !</strong> Réponse correcte (+${scoreQuestion.toFixed(2)} pt).</div>`;
+  if (estJusteSimu) {
+    fbHtml += `<div><strong>✅ Bravo !</strong> Réponse correcte (+${scoreQuestion.toFixed(2)} pt).</div>`;
+  } else if (estPartielSimu) {
+    fbHtml += `<div><strong>⚠️ Partiellement juste :</strong> Vous obtenez ${scoreQuestion.toFixed(2)} / ${q.points} pt.</div>`;
   } else {
-    fbHtml += `<div><strong>Correction :</strong> Vous obtenez ${scoreQuestion.toFixed(2)} / ${q.points} pt.</div>`;
+    fbHtml += `<div><strong>❌ Incorrect :</strong> Vous obtenez 0 / ${q.points} pt.</div>`;
   }
 
   if (q.generalFeedback) fbHtml += `<div style="margin-top:8px;">💡 <strong>Explication :</strong> ${q.generalFeedback}</div>`;
   if (explications.length > 0) fbHtml += `<div style="margin-top:8px;">${explications.join('<br>')}</div>`;
 
-  fbBox.className = `feedback-box ${scoreQuestion >= q.points ? '' : 'has-error'}`;
+  fbBox.className = `feedback-box ${estJusteSimu ? 'is-correct' : 'has-error'}`;
+  if (estJusteSimu) {
+    fbBox.style.background = '#dcfce7';
+    fbBox.style.borderColor = '#16a34a';
+    fbBox.style.borderLeft = '5px solid #16a34a';
+    fbBox.style.color = '#14532d';
+  } else if (estPartielSimu) {
+    fbBox.style.background = '#fef3c7';
+    fbBox.style.borderColor = '#d97706';
+    fbBox.style.borderLeft = '5px solid #d97706';
+    fbBox.style.color = '#78350f';
+  } else {
+    fbBox.style.background = '#fee2e2';
+    fbBox.style.borderColor = '#dc2626';
+    fbBox.style.borderLeft = '5px solid #dc2626';
+    fbBox.style.color = '#7f1d1d';
+  }
   fbBox.innerHTML = fbHtml;
   fbBox.style.display = 'block';
-  if ((fbBox.style.background && fbBox.style.background.includes('dcfce7')) || fbBox.className.includes('is-correct') || (typeof scoreQuestion !== 'undefined' && typeof q !== 'undefined' && scoreQuestion >= (Number(q.points || 1) - 0.01))) { fbBox.style.background = '#dcfce7'; fbBox.style.borderColor = '#16a34a'; fbBox.style.color = '#14532d'; fbBox.classList.remove('anim-bravo-pop'); void fbBox.offsetWidth; fbBox.classList.add('anim-bravo-pop'); lancerMiniConfettisSimu(fbBox); }
+  if (estJusteSimu) {
+    fbBox.classList.remove('anim-bravo-pop');
+    void fbBox.offsetWidth;
+    fbBox.classList.add('anim-bravo-pop');
+    if (typeof lancerMiniConfettisSimu === 'function') lancerMiniConfettisSimu(fbBox);
+  }
 
   document.getElementById('btnValiderQuestionSimu').style.display = 'none';
   const btnSuivant = document.getElementById('btnQuestionSuivanteSimu');
