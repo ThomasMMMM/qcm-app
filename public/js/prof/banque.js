@@ -99,6 +99,43 @@ function majSelectCompetencesImport() {
     comps.map(c => `<option value="${c.code}">${c.code} — ${c.libelle}</option>`).join('');
 }
 
+async function renommerQcmBanque(qcmId) {
+  const q = listeBanqueQcmMemoire.find(item => Number(item.id) === Number(qcmId));
+  if (!q) return;
+  const nouveauTitre = prompt("Nouveau titre du QCM :", q.titre || "");
+  if (nouveauTitre === null) return;
+  const titreNettoye = nouveauTitre.trim();
+  if (!titreNettoye || titreNettoye === q.titre) return;
+
+  try {
+    const res = await fetch('/api/banque', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "update_titre",
+        qcm_id: qcmId,
+        titre: titreNettoye
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      alert("Erreur lors du renommage : " + (data.error || "Erreur serveur"));
+      return;
+    }
+    q.titre = titreNettoye;
+    afficherTableauBanqueQcm();
+    const selQcm = document.getElementById('selectSeanceQcm');
+    if (selQcm) {
+      const valSel = selQcm.value;
+      selQcm.innerHTML = listeBanqueQcmMemoire.map(item => '<option value="' + item.id + '">' + item.titre + '</option>').join('');
+      if (valSel) selQcm.value = valSel;
+    }
+    if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
+  } catch (e) {
+    alert("Erreur réseau lors du renommage.");
+  }
+}
+
 async function modifierFicheLieeQcmInline(qcmId, nouvelleFicheId) {
   try {
     await fetch('/api/banque', {
@@ -171,8 +208,11 @@ function afficherTableauBanqueQcm() {
       return `
         <tr>
           <td>
-            <strong>${q.titre}</strong>
-            ${q.document_html ? '<span class="badge" style="background:#e0f2fe; color:#0369a1; margin-left:4px;">📄 Doc inclus</span>' : ''}
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <strong>${q.titre}</strong>
+              <button type="button" class="btn btn-simu" style="padding:2px 6px; font-size:0.72rem;" onclick="renommerQcmBanque(${q.id})" title="Corriger le titre du QCM">✏️</button>
+              ${q.document_html ? '<span class="badge" style="background:#e0f2fe; color:#0369a1;">📄 Doc inclus</span>' : ''}
+            </div>
           </td>
           <td>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">

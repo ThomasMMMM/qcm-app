@@ -64,6 +64,21 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
     }
 
+    // Modification directe du titre d'un QCM existant
+    if (body.action === "update_titre") {
+      const { qcm_id, titre } = body;
+      const nouveauTitre = String(titre || "").trim();
+      if (!qcm_id || !nouveauTitre) {
+        return new Response(JSON.stringify({ error: "qcm_id et titre requis" }), { status: 400 });
+      }
+      const qid = parseInt(qcm_id, 10);
+      await env.DB.prepare("UPDATE qcm_banque SET titre = ? WHERE id = ?").bind(nouveauTitre, qid).run();
+      try {
+        await env.DB.prepare("UPDATE resultats_qcm SET qcm_titre = ? WHERE seance_id IN (SELECT id FROM seances WHERE qcm_id = ?)").bind(nouveauTitre, qid).run();
+      } catch (e) {}
+      return new Response(JSON.stringify({ success: true, titre: nouveauTitre }), { headers: { "Content-Type": "application/json" } });
+    }
+
     // Liaison / modification directe de la Fiche Synthèse associée à un QCM existant
     if (body.action === "update_fiche_liee") {
       const { qcm_id, fiche_id } = body;
