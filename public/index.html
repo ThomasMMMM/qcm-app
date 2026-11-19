@@ -531,7 +531,106 @@
       z-index: 9999;
       animation: confettiFall 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+      /* Sécurisation mobile 100% visible du bouton de fermeture du Document Ressource */
+    #modalDocRessourceEleve {
+      padding: 8px !important;
+      box-sizing: border-box !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    #modalDocRessourceEleve .fiche-modal-card {
+      width: 100% !important;
+      max-width: 860px !important;
+      height: 92vh !important;
+      height: 92dvh !important;
+      max-height: 92dvh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+    #modalDocRessourceEleve .fiche-modal-topbar {
+      flex-shrink: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 8px !important;
+      padding: 10px 12px !important;
+      background: #f8fafc !important;
+      border-bottom: 1px solid #cbd5e1 !important;
+      position: relative !important;
+      z-index: 10 !important;
+    }
+    #modalDocRessourceEleve .fiche-modal-title-group {
+      min-width: 0 !important;
+      flex: 1 !important;
+      overflow: hidden !important;
+    }
+    #modalDocRessourceEleve .fiche-modal-title {
+      font-size: 0.95rem !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      margin: 0 !important;
+    }
+    #modalDocRessourceEleve .fiche-modal-actions {
+      flex-shrink: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+    }
+    #modalDocRessourceEleve .btn-fiche-close-icon {
+      flex-shrink: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 4px !important;
+      min-width: 40px !important;
+      height: 36px !important;
+      padding: 0 10px !important;
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 8px !important;
+      font-size: 0.92rem !important;
+      font-weight: 800 !important;
+      cursor: pointer !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    #corpsDocRessourceEleve {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      padding: 12px !important;
+    }
+    #corpsDocRessourceEleve img,
+    #corpsDocRessourceEleve table {
+      max-width: 100% !important;
+    }
+    #modalDocRessourceEleve .fiche-modal-footer {
+      flex-shrink: 0 !important;
+      display: flex !important;
+      padding: 10px 12px !important;
+      background: #f8fafc !important;
+      border-top: 1px solid #cbd5e1 !important;
+      position: relative !important;
+      z-index: 10 !important;
+    }
+    #btnPiedModalDocEleve {
+      width: 100% !important;
+      justify-content: center !important;
+      padding: 11px 14px !important;
+      font-size: 0.95rem !important;
+      font-weight: 700 !important;
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
   </style>
+
 
 </head>
 <body>
@@ -2129,7 +2228,21 @@
         if (mode === "fiche") { btnPied.className = "btn btn-pdf"; btnPied.innerHTML = "Fermer la fiche"; }
         else { btnPied.className = "btn btn-success"; btnPied.innerHTML = "✓ Revenir à la question"; }
       }
-      corpsEl.innerHTML = currentDocumentHtml;
+      const docSecurise = String(currentDocumentHtml || "").replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (_, cssText) => {
+        const scoped = cssText.replace(/(^|\})\s*([^{}@]+)\{/g, (m, brace, sel) => {
+          const s = sel.trim();
+          if (!s || s.startsWith('@')) return m;
+          const prefixed = s.split(',').map(part => {
+            const p = part.trim();
+            if (!p) return p;
+            if (/^(html|body|\*)$/i.test(p)) return '#corpsDocRessourceEleve';
+            return `#corpsDocRessourceEleve ${p}`;
+          }).join(', ');
+          return `${brace} ${prefixed} {`;
+        });
+        return `<style>${scoped}</style>`;
+      });
+      corpsEl.innerHTML = docSecurise;
       corpsEl.scrollTop = 0;
       modal.style.display = 'flex';
     }
