@@ -219,11 +219,16 @@ async function ouvrirModalGestionEleves(classeId, nomClasse) {
       return;
     }
 
-    const tableauHtml = '<table><thead><tr><th>N°</th><th>Élève</th><th>Code</th><th style="text-align:center;">Aménagement PAP</th><th style="text-align:center; width:60px;">Retirer</th></tr></thead><tbody>' +
-      eleves.map((e, idx) => `
+    const autresClasses = (listeClassesMemoire || []).filter(c => Number(c.id) !== Number(classeId));
+    const optionsTransfert = autresClasses.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+
+    const tableauHtml = '<table><thead><tr><th>N°</th><th>Élève</th><th>Code</th><th style="text-align:center;">Aménagement PAP</th><th style="text-align:center; width:155px;">Changer de classe</th><th style="text-align:center; width:60px;">Retirer</th></tr></thead><tbody>' +
+      eleves.map((e, idx) => {
+        const nomCompletEleve = `${e.nom ? e.nom + ' ' : ''}${e.prenom}`;
+        return `
         <tr style="background:${e.est_pap ? '#fdf4ff' : 'white'};">
           <td>${idx + 1}</td>
-          <td><strong>${e.nom ? e.nom + ' ' : ''}${e.prenom}</strong>${e.date_naissance ? ` <span style="font-size:0.76rem; color:#64748b;">(${e.date_naissance})</span>` : ''}</td>
+          <td><strong>${nomCompletEleve}</strong>${e.date_naissance ? ` <span style="font-size:0.76rem; color:#64748b;">(${e.date_naissance})</span>` : ''}</td>
           <td><span class="badge-session">${e.code_eleve}</span></td>
           <td style="text-align:center;">
             <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:bold; color:${e.est_pap ? '#7e22ce' : '#64748b'};">
@@ -232,10 +237,20 @@ async function ouvrirModalGestionEleves(classeId, nomClasse) {
             </label>
           </td>
           <td style="text-align:center;">
+            ${autresClasses.length > 0 ? `
+              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; max-width:145px;"
+                      onchange="transfererEleveVersClasse(${e.id}, '${nomCompletEleve.replace(/'/g, "\\'")}', this.value, ${classeId}, '${titreClasseCourant.replace(/'/g, "\\'")}', this)">
+                <option value="">⇄ Transférer...</option>
+                ${optionsTransfert}
+              </select>
+            ` : `<span style="color:#94a3b8; font-size:0.75rem;">—</span>`}
+          </td>
+          <td style="text-align:center;">
             <button type="button" class="btn btn-danger" style="margin:0; padding:3px 7px; font-size:0.74rem;" title="Retirer cet élève de la classe" onclick="retirerEleveDeClasse(${e.id}, '${(e.prenom || '').replace(/'/g, "\\'")}', ${classeId}, '${titreClasseCourant.replace(/'/g, "\\'")}')">🗑️</button>
           </td>
         </tr>
-      `).join('') + '</tbody></table>';
+      `;
+      }).join('') + '</tbody></table>';
 
     cont.innerHTML = formulaireAjoutHtml + tableauHtml;
   } catch(err) {
@@ -356,4 +371,44 @@ async function basculerMatiereClasse(classeId, matiereId, active) {
       body: JSON.stringify({ type: "toggle_classe_matiere", classe_id: classeId, matiere_id: matiereId, active: active })
     });
   } catch(e) {}
+}
+
+async function transfererEleveVersClasse(eleveId, nomComplet, nouvelleClasseId, classeOrigineId, nomClasseOrigine, selectEl) {
+  if (!nouvelleClasseId) return;
+  const destObj = (listeClassesMemoire || []).find(c => Number(c.id) === Number(nouvelleClasseId));
+  const nomDest = destObj ? destObj.nom : "la classe choisie";
+
+  if (!confirm(`Transférer ${nomComplet} vers la classe "${nomDest}" ?\n\nSon code individuel, ses notes, ses copies et ses badges de compétences seront conservés.`)) {
+    if (selectEl) selectEl.value = "";
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/classes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "transferer_eleve",
+        eleve_id: eleveId,
+        nouvelle_classe_id: parseInt(nouvelleClasseId, 10)
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert("Erreur : " + (data.error || "Impossible de transférer l'élève."));
+      if (selectEl) selectEl.value = "";
+      return;
+    }
+
+    await chargerClassesProf();
+    await ouvrirModalGestionEleves(classeOrigineId, nomClasseOrigine);
+    const boxConfirm = document.getElementById('ajoutEleveConfirmation');
+    if (boxConfirm) {
+      boxConfirm.style.display = 'block';
+      boxConfirm.innerHTML = `⇄ <strong>${nomComplet}</strong> a bien été transféré(e) vers <strong>${nomDest}</strong> avec conservation de toutes ses données !`;
+    }
+  } catch (e) {
+    alert("Erreur réseau lors du transfert.");
+    if (selectEl) selectEl.value = "";
+  }
 }
