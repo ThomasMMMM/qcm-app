@@ -52,26 +52,59 @@ export async function onRequestPost(context) {
         await env.DB.prepare(`ALTER TABLE resultats_qcm ADD COLUMN reponses_json TEXT DEFAULT NULL`).run();
       } catch (eCol) {}
 
-      await env.DB.prepare(`
-        INSERT INTO resultats_qcm (
-          seance_id, nom, prenom, session_code, note, total, nb_sorties, duree_sorties,
-          questions_traitees, questions_totales, note_proportionnelle, reponses_json
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).bind(
-        seance_id || null,
-        nom || "",
-        prenom || "",
-        session_code || "",
-        noteFinale,
-        totalMax,
-        sorties,
-        tempsSorties,
-        qTraitees,
-        qTotales,
-        noteProp,
-        reponsesJsonStr
-      ).run();
+      let copieExistanteId = null;
+      const mCodeSoum = String(prenom || "").match(/\[(?:CODE:\s*)?([A-Z0-9_-]+)\]/i);
+      if (seance_id && mCodeSoum) {
+        const cUp = mCodeSoum[1].toUpperCase();
+        const ex = await env.DB.prepare(
+          "SELECT id FROM resultats_qcm WHERE seance_id = ? AND (UPPER(prenom) LIKE ? OR UPPER(prenom) LIKE ?)"
+        ).bind(seance_id, `%[${cUp}]%`, `%[CODE: ${cUp}]%`).first();
+        if (ex) copieExistanteId = ex.id;
+      }
+
+      if (copieExistanteId) {
+        await env.DB.prepare(`
+          UPDATE resultats_qcm
+          SET nom = ?, prenom = ?, session_code = ?, note = ?, total = ?, nb_sorties = ?, duree_sorties = ?,
+              questions_traitees = ?, questions_totales = ?, note_proportionnelle = ?,
+              reponses_json = COALESCE(?, reponses_json)
+          WHERE id = ?
+        `).bind(
+          nom || "",
+          prenom || "",
+          session_code || "",
+          noteFinale,
+          totalMax,
+          sorties,
+          tempsSorties,
+          qTraitees,
+          qTotales,
+          noteProp,
+          reponsesJsonStr,
+          copieExistanteId
+        ).run();
+      } else {
+        await env.DB.prepare(`
+          INSERT INTO resultats_qcm (
+            seance_id, nom, prenom, session_code, note, total, nb_sorties, duree_sorties,
+            questions_traitees, questions_totales, note_proportionnelle, reponses_json
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          seance_id || null,
+          nom || "",
+          prenom || "",
+          session_code || "",
+          noteFinale,
+          totalMax,
+          sorties,
+          tempsSorties,
+          qTraitees,
+          qTotales,
+          noteProp,
+          reponsesJsonStr
+        ).run();
+      }
     } catch (e1) {
       console.error("Erreur insertion resultats_qcm :", e1);
     }

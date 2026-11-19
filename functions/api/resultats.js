@@ -44,8 +44,8 @@ async function synchroniserCopiesDepuisSuiviDirect(db, profId, seanceIdFiltre = 
       if (!codeElUp) continue;
 
       const dejaLa = await db.prepare(
-        "SELECT id FROM resultats_qcm WHERE seance_id = ? AND UPPER(prenom) LIKE ?"
-      ).bind(sd.seance_id, `%[${codeElUp}]%`).first();
+        "SELECT id FROM resultats_qcm WHERE seance_id = ? AND (UPPER(prenom) LIKE ? OR UPPER(prenom) LIKE ?)"
+      ).bind(sd.seance_id, `%[${codeElUp}]%`, `%[CODE: ${codeElUp}]%`).first();
 
       if (!dejaLa) {
         const sc = Number(sd.score_actuel || 0);
@@ -72,6 +72,32 @@ async function synchroniserCopiesDepuisSuiviDirect(db, profId, seanceIdFiltre = 
           Number(sd.total_questions || 1),
           sd.derniere_activite || null
         ).run();
+      }
+    }
+
+    // Nettoyage automatique des doublons synthétiques "Prenom [CODE]" lorsqu'une copie officielle "[Code: CODE]" existe déjà sur la même séance
+    const { results: copiesOffic } = await db.prepare(`
+      SELECT r.id, r.seance_id, r.prenom, COALESCE(r.exporte_pronote, 0) AS exporte_pronote
+      FROM resultats_qcm r
+      INNER JOIN seances s ON r.seance_id = s.id
+      WHERE s.prof_id = ? AND UPPER(r.prenom) LIKE '%[CODE:%'
+    `).bind(profId).all();
+
+    for (const off of (copiesOffic || [])) {
+      const mCode = String(off.prenom || "").match(/\[CODE:\s*([A-Z0-9_-]+)\]/i);
+      if (!mCode) continue;
+      const codeNet = mCode[1].toUpperCase();
+      const doublon = await db.prepare(`
+        SELECT id, COALESCE(exporte_pronote, 0) AS exporte_pronote
+        FROM resultats_qcm
+        WHERE seance_id = ? AND id != ? AND UPPER(prenom) LIKE ? AND UPPER(prenom) NOT LIKE '%[CODE:%'
+      `).bind(off.seance_id, off.id, `%[${codeNet}]%`).first();
+
+      if (doublon) {
+        if (Number(doublon.exporte_pronote) === 1 && Number(off.exporte_pronote) !== 1) {
+          await db.prepare("UPDATE resultats_qcm SET exporte_pronote = 1 WHERE id = ?").bind(off.id).run();
+        }
+        await db.prepare("DELETE FROM resultats_qcm WHERE id = ?").bind(doublon.id).run();
       }
     }
   } catch (eSync) {}
