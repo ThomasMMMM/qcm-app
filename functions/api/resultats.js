@@ -1,3 +1,82 @@
+async function synchroniserCopiesDepuisSuiviDirect(db, profId, seanceIdFiltre = null) {
+  try {
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS resultats_qcm (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        seance_id INTEGER,
+        nom TEXT,
+        prenom TEXT,
+        classe TEXT,
+        qcm_titre TEXT,
+        session_code TEXT,
+        note REAL,
+        total REAL,
+        nb_sorties INTEGER DEFAULT 0,
+        duree_sorties INTEGER DEFAULT 0,
+        questions_traitees INTEGER DEFAULT NULL,
+        questions_totales INTEGER DEFAULT NULL,
+        note_proportionnelle REAL DEFAULT NULL,
+        reponses_json TEXT DEFAULT NULL,
+        exporte_pronote INTEGER DEFAULT 0,
+        date_soumission DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+
+    let sqlSd = `
+      SELECT sd.*, s.code_session, s.classe_id, c.nom AS classe_nom, q.titre AS qcm_titre
+      FROM suivi_direct sd
+      INNER JOIN seances s ON sd.seance_id = s.id
+      LEFT JOIN classes c ON s.classe_id = c.id
+      LEFT JOIN qcm_banque q ON s.qcm_id = q.id
+      WHERE sd.statut = 'termine' AND s.prof_id = ?
+    `;
+    const paramsSd = [profId];
+    if (seanceIdFiltre) {
+      sqlSd += " AND sd.seance_id = ?";
+      paramsSd.push(seanceIdFiltre);
+    }
+
+    const { results: terminesSd } = await db.prepare(sqlSd).bind(...paramsSd).all();
+    if (!Array.isArray(terminesSd) || terminesSd.length === 0) return;
+
+    for (const sd of terminesSd) {
+      const codeElUp = String(sd.code_eleve || "").trim().toUpperCase();
+      if (!codeElUp) continue;
+
+      const dejaLa = await db.prepare(
+        "SELECT id FROM resultats_qcm WHERE seance_id = ? AND UPPER(prenom) LIKE ?"
+      ).bind(sd.seance_id, `%[${codeElUp}]%`).first();
+
+      if (!dejaLa) {
+        const sc = Number(sd.score_actuel || 0);
+        const maxSc = Number(sd.score_max_courant || sd.score_total_possible || 20);
+        const note20 = maxSc > 0 ? Math.round(((sc / maxSc) * 20) * 100) / 100 : 0;
+        const prenomFormate = `${sd.prenom_eleve || 'Élève'} [${codeElUp}]`;
+
+        await db.prepare(`
+          INSERT INTO resultats_qcm (
+            seance_id, nom, prenom, classe, qcm_titre, session_code,
+            note, total, nb_sorties, duree_sorties, questions_traitees, questions_totales, date_soumission
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 20, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
+        `).bind(
+          sd.seance_id,
+          sd.nom_eleve || "",
+          prenomFormate,
+          sd.classe_nom || "",
+          sd.qcm_titre || "",
+          sd.code_session || "",
+          note20,
+          Number(sd.nb_sorties || 0),
+          Number(sd.duree_sorties_sec || 0),
+          Number(sd.total_questions || 1),
+          Number(sd.total_questions || 1),
+          sd.derniere_activite || null
+        ).run();
+      }
+    }
+  } catch (eSync) {}
+}
+
 export async function onRequestGet(context) {
   try {
     const { request, env } = context;
@@ -15,6 +94,8 @@ export async function onRequestGet(context) {
     if (!prof_id) {
       return new Response(JSON.stringify({ notes: [], sorties: [] }), { headers: jsonHeaders });
     }
+
+    await synchroniserCopiesDepuisSuiviDirect(env.DB, prof_id, seance_id || null);
 
     // CAS EXPORT PRONOTE : Rapprochement de tous les élèves de la classe avec les notes
     if (export_pronote && seance_id) {
@@ -86,7 +167,7 @@ export async function onRequestGet(context) {
       paramsNotes.push(classe_id);
     }
 
-    queryNotes += " ORDER BY r.date_soumission DESC LIMIT 200";
+    queryNotes += " ORDER BY r.date_soumission DESC LIMIT 1000";
 
     const { results: notes } = await env.DB.prepare(queryNotes).bind(...paramsNotes).all();
 
