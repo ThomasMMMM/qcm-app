@@ -259,7 +259,7 @@ export async function onRequestPost(context) {
     const { request, env } = context;
     const body = await request.json();
 
-    // Reproposer le QCM à un élève en particulier (réinitialisation de sa tentative sur cette séance)
+    // Reproposer le QCM à un élève en particulier (réinitialisation complète de sa tentative)
     if (body.action === "reproposer_eleve") {
       const sid = parseInt(body.seance_id, 10);
       const eid = parseInt(body.eleve_id, 10);
@@ -267,7 +267,7 @@ export async function onRequestPost(context) {
         return new Response(JSON.stringify({ error: "seance_id et eleve_id requis" }), { status: 400 });
       }
 
-      const seance = await env.DB.prepare("SELECT id, code_session FROM seances WHERE id = ?").bind(sid).first();
+      const seance = await env.DB.prepare("SELECT id, code_session, qcm_id, classe_id FROM seances WHERE id = ?").bind(sid).first();
       const eleve = await env.DB.prepare("SELECT id, nom, prenom, code_eleve FROM eleves WHERE id = ?").bind(eid).first();
       if (!seance || !eleve) {
         return new Response(JSON.stringify({ error: "Séance ou élève introuvable" }), { status: 404 });
@@ -275,37 +275,47 @@ export async function onRequestPost(context) {
 
       const codeElUp = String(eleve.code_eleve || "").trim().toUpperCase();
       const codeSessUp = String(seance.code_session || "").trim().toUpperCase();
+      const prenomElUp = String(eleve.prenom || "").trim().toUpperCase();
+      const nomElUp = String(eleve.nom || "").trim().toUpperCase();
 
       await ensureTableSuiviDirect(env.DB);
-      await env.DB.prepare("DELETE FROM suivi_direct WHERE seance_id = ? AND UPPER(code_eleve) = ?").bind(sid, codeElUp).run();
 
+      // 1. Suppression dans suivi_direct par eleve_id OU code_eleve OU prénom/nom
+      const resSd1 = await env.DB.prepare(
+        "DELETE FROM suivi_direct WHERE seance_id = ? AND (eleve_id = ? OR UPPER(TRIM(code_eleve)) = ? OR (UPPER(TRIM(prenom_eleve)) = ? AND UPPER(TRIM(nom_eleve)) = ?))"
+      ).bind(sid, eid, codeElUp, prenomElUp, nomElUp).run();
+
+      // 2. Suppression dans absences_seances
       try {
         await env.DB.prepare("DELETE FROM absences_seances WHERE seance_id = ? AND eleve_id = ?").bind(sid, eid).run();
       } catch (e) {}
 
-      // Suppression exhaustive de toute copie enregistrée pour cet élève sur cette séance (quel que soit le format nom/prénom/code)
-      try {
-        const prenomElUp = String(eleve.prenom || "").trim().toUpperCase();
-        const nomElUp = String(eleve.nom || "").trim().toUpperCase();
+      // 3. Suppression exhaustive dans resultats_qcm (par seance_id ou code_session)
+      let nbDelRes = 0;
+      if (codeElUp) {
+        const r1 = await env.DB.prepare(
+          "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND (UPPER(prenom) LIKE ? OR UPPER(nom) LIKE ?)"
+        ).bind(sid, codeSessUp, `%${codeElUp}%`, `%${codeElUp}%`).run();
+        nbDelRes += (r1.meta?.changes || 0);
+      }
+      if (prenomElUp) {
+        const r2 = await env.DB.prepare(
+          "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND (UPPER(TRIM(nom)) = ? OR UPPER(TRIM(prenom)) = ? OR UPPER(TRIM(prenom)) LIKE ?)"
+        ).bind(sid, codeSessUp, prenomElUp, prenomElUp, `${prenomElUp} [%`).run();
+        nbDelRes += (r2.meta?.changes || 0);
+      }
+      if (nomElUp && prenomElUp) {
+        const r3 = await env.DB.prepare(
+          "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND UPPER(TRIM(nom)) = ? AND UPPER(TRIM(prenom)) LIKE ?"
+        ).bind(sid, codeSessUp, nomElUp, `${prenomElUp}%`).run();
+        nbDelRes += (r3.meta?.changes || 0);
+      }
 
-        if (codeElUp) {
-          await env.DB.prepare(
-            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND (UPPER(prenom) LIKE ? OR UPPER(nom) LIKE ?)"
-          ).bind(sid, codeSessUp, `%${codeElUp}%`, `%${codeElUp}%`).run();
-        }
-        if (prenomElUp) {
-          await env.DB.prepare(
-            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND (UPPER(TRIM(nom)) = ? OR UPPER(TRIM(prenom)) = ? OR UPPER(TRIM(prenom)) LIKE ?)"
-          ).bind(sid, codeSessUp, prenomElUp, prenomElUp, `${prenomElUp} [%`).run();
-        }
-        if (nomElUp && prenomElUp) {
-          await env.DB.prepare(
-            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(TRIM(session_code)) = ?) AND UPPER(TRIM(nom)) = ? AND UPPER(TRIM(prenom)) LIKE ?"
-          ).bind(sid, codeSessUp, nomElUp, `${prenomElUp}%`).run();
-        }
-      } catch (e) {}
-
-      return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({
+        ok: true,
+        deleted_suivi: resSd1.meta?.changes || 0,
+        deleted_resultats: nbDelRes
+      }), { headers: { "Content-Type": "application/json" } });
     }
 
     // Gestion directe des absences depuis la modale de suivi en direct
