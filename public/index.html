@@ -2133,14 +2133,59 @@
             alert("Reprise de votre devoir : vous reprenez directement à la question " + (currentQuestionIndex + 1) + " sur " + currentQuestions.length + ".");
           }
         } else {
-          currentQuestionIndex = 0;
-          totalScoreObtenu = 0;
-          compteurSortiesEleve = 0;
-          dureeCumuleeSortiesSec = 0;
-          window.questionsValideesSet = new Set();
-          window.reponsesDetailleesEleve = [];
-          window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
-          window.suiviDirectScoreMaxCourant = 0;
+          let reprisDepuisServeur = false;
+          try {
+            const elRec = (typeof sessionEleve !== 'undefined' && sessionEleve && sessionEleve.eleve) ? sessionEleve.eleve : null;
+            const codeRec = elRec ? (elRec.code_eleve || elRec.code_perso || "") : "";
+            const seanceRec = (typeof currentSeanceId !== 'undefined' && currentSeanceId)
+              ? currentSeanceId
+              : (data && data.seance_id ? data.seance_id : null);
+
+            if (seanceRec && codeRec) {
+              const resRec = await fetch(`/api/suivi_direct?seance_id=${encodeURIComponent(seanceRec)}&code_eleve=${encodeURIComponent(codeRec)}`);
+              if (resRec.ok) {
+                const dataRec = await resRec.json();
+                const sv = dataRec && dataRec.suivi ? dataRec.suivi : null;
+                if (sv && sv.statut === "en_cours" && (Number(sv.question_courante || 1) > 1 || Number(sv.score_actuel || 0) > 0)) {
+                  let repsSrv = [];
+                  try { repsSrv = JSON.parse(sv.reponses_json || "[]"); } catch (e) {}
+                  const valideesSrv = [];
+                  if (Array.isArray(repsSrv)) {
+                    repsSrv.forEach((r, idxR) => { if (r && r.etat) valideesSrv.push(idxR); });
+                  }
+                  const idxReprise = Math.min(
+                    Math.max(0, Number(sv.question_courante || 1) - 1),
+                    Math.max(0, currentQuestions.length - 1)
+                  );
+                  currentQuestionIndex = idxReprise;
+                  totalScoreObtenu = Number(sv.score_actuel || 0);
+                  compteurSortiesEleve = Number(sv.nb_sorties || 0);
+                  dureeCumuleeSortiesSec = Number(sv.duree_sorties_sec || 0);
+                  window.questionsValideesSet = new Set(valideesSrv);
+                  window.reponsesDetailleesEleve = [];
+                  window.suiviDirectReponses = (Array.isArray(repsSrv) && repsSrv.length === currentQuestions.length)
+                    ? repsSrv
+                    : Array.from({ length: currentQuestions.length }, (_, k) => (Array.isArray(repsSrv) && repsSrv[k]) ? repsSrv[k] : null);
+                  window.suiviDirectScoreMaxCourant = Number(sv.score_max_courant || 0);
+                  reprisDepuisServeur = true;
+                  if (!repriseSilencieuse) {
+                    alert("Reprise automatique de votre devoir : vous reprenez à la question " + (currentQuestionIndex + 1) + " sur " + currentQuestions.length + ".");
+                  }
+                }
+              }
+            }
+          } catch (eRecSrv) {}
+
+          if (!reprisDepuisServeur) {
+            currentQuestionIndex = 0;
+            totalScoreObtenu = 0;
+            compteurSortiesEleve = 0;
+            dureeCumuleeSortiesSec = 0;
+            window.questionsValideesSet = new Set();
+            window.reponsesDetailleesEleve = [];
+            window.suiviDirectReponses = new Array(currentQuestions.length).fill(null);
+            window.suiviDirectScoreMaxCourant = 0;
+          }
         }
 
         window.currentSessionData = data; currentDocumentHtml = data.document_html || null;

@@ -28,12 +28,26 @@ export async function onRequestGet(context) {
     const { request, env } = context;
     const url = new URL(request.url);
     const seance_id = url.searchParams.get("seance_id");
+    const code_eleve_param = url.searchParams.get("code_eleve");
 
     if (!seance_id) {
       return new Response(JSON.stringify({ error: "seance_id requis" }), { status: 400 });
     }
 
     await ensureTableSuiviDirect(env.DB);
+
+    // Consultation individuelle par un élève pour reprise automatique après déconnexion / changement de navigateur
+    if (code_eleve_param) {
+      const codeClean = String(code_eleve_param).trim().toUpperCase();
+      const svEl = await env.DB.prepare(
+        "SELECT * FROM suivi_direct WHERE seance_id = ? AND UPPER(TRIM(code_eleve)) = ?"
+      ).bind(seance_id, codeClean).first();
+
+      return new Response(JSON.stringify({
+        found: Boolean(svEl),
+        suivi: svEl || null
+      }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store, no-cache" } });
+    }
 
     const seance = await env.DB.prepare(`
       SELECT s.*, c.nom AS classe_nom, q.titre AS qcm_titre, q.data_json
@@ -399,13 +413,19 @@ export async function onRequestPost(context) {
         duree_sorties_sec !== undefined ? duree_sorties_sec : 0
       ).run();
     } else {
-      const nextStatut = statut || existing.statut;
-      const nextQ = question_courante !== undefined ? question_courante : existing.question_courante;
+      const exQ = Number(existing.question_courante || 1);
+      const exSc = Number(existing.score_actuel || 0);
+      const inQ = question_courante !== undefined ? Number(question_courante) : exQ;
+      const inSc = score_actuel !== undefined ? Number(score_actuel) : exSc;
+      const estDemarrageVierge = (statut === "en_cours" && inQ <= 1 && inSc === 0 && (exQ > 1 || exSc > 0));
+
+      const nextStatut = existing.statut === "termine" ? "termine" : (statut || existing.statut);
+      const nextQ = estDemarrageVierge ? exQ : (question_courante !== undefined ? question_courante : existing.question_courante);
       const nextTotQ = total_questions !== undefined ? total_questions : existing.total_questions;
-      const nextScore = score_actuel !== undefined ? score_actuel : existing.score_actuel;
-      const nextScoreMax = score_max_courant !== undefined ? score_max_courant : existing.score_max_courant;
+      const nextScore = estDemarrageVierge ? exSc : (score_actuel !== undefined ? score_actuel : existing.score_actuel);
+      const nextScoreMax = estDemarrageVierge ? Number(existing.score_max_courant || 0) : (score_max_courant !== undefined ? score_max_courant : existing.score_max_courant);
       const nextScoreTot = score_total_possible !== undefined ? score_total_possible : existing.score_total_possible;
-      const nextRepJson = reponses !== undefined ? JSON.stringify(reponses) : existing.reponses_json;
+      const nextRepJson = estDemarrageVierge ? existing.reponses_json : (reponses !== undefined ? JSON.stringify(reponses) : existing.reponses_json);
       const nextHorsEcran = hors_ecran !== undefined ? (hors_ecran ? 1 : 0) : existing.hors_ecran;
       const nextNbSorties = nb_sorties !== undefined ? nb_sorties : existing.nb_sorties;
       const nextDureeSorties = duree_sorties_sec !== undefined ? duree_sorties_sec : existing.duree_sorties_sec;
