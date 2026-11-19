@@ -259,6 +259,47 @@ export async function onRequestPost(context) {
     const { request, env } = context;
     const body = await request.json();
 
+    // Reproposer le QCM à un élève en particulier (réinitialisation de sa tentative sur cette séance)
+    if (body.action === "reproposer_eleve") {
+      const sid = parseInt(body.seance_id, 10);
+      const eid = parseInt(body.eleve_id, 10);
+      if (!sid || !eid) {
+        return new Response(JSON.stringify({ error: "seance_id et eleve_id requis" }), { status: 400 });
+      }
+
+      const seance = await env.DB.prepare("SELECT id, code_session FROM seances WHERE id = ?").bind(sid).first();
+      const eleve = await env.DB.prepare("SELECT id, nom, prenom, code_eleve FROM eleves WHERE id = ?").bind(eid).first();
+      if (!seance || !eleve) {
+        return new Response(JSON.stringify({ error: "Séance ou élève introuvable" }), { status: 404 });
+      }
+
+      const codeElUp = String(eleve.code_eleve || "").trim().toUpperCase();
+      const codeSessUp = String(seance.code_session || "").trim().toUpperCase();
+
+      await ensureTableSuiviDirect(env.DB);
+      await env.DB.prepare("DELETE FROM suivi_direct WHERE seance_id = ? AND UPPER(code_eleve) = ?").bind(sid, codeElUp).run();
+
+      try {
+        await env.DB.prepare("DELETE FROM absences_seances WHERE seance_id = ? AND eleve_id = ?").bind(sid, eid).run();
+      } catch (e) {}
+
+      // Suppression de la copie enregistrée pour cet élève sur cette séance
+      try {
+        if (codeElUp) {
+          await env.DB.prepare(
+            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(session_code) = ?) AND UPPER(prenom) LIKE ?"
+          ).bind(sid, codeSessUp, `%[${codeElUp}]%`).run();
+        }
+        if (eleve.nom && eleve.prenom) {
+          await env.DB.prepare(
+            "DELETE FROM resultats_qcm WHERE (seance_id = ? OR UPPER(session_code) = ?) AND UPPER(TRIM(nom)) = ? AND UPPER(TRIM(prenom)) LIKE ?"
+          ).bind(sid, codeSessUp, String(eleve.nom).trim().toUpperCase(), `${String(eleve.prenom).trim().toUpperCase()}%`).run();
+        }
+      } catch (e) {}
+
+      return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
+    }
+
     // Gestion directe des absences depuis la modale de suivi en direct
     if (body.action === "toggle_absent") {
       const sid = parseInt(body.seance_id, 10);
