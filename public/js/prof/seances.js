@@ -192,7 +192,7 @@ function ouvrirSuiviDirectSeance(seanceId) {
 
   rafraichirSuiviDirect();
   if (intervalSuiviDirect) clearInterval(intervalSuiviDirect);
-  intervalSuiviDirect = setInterval(rafraichirSuiviDirect, 4000);
+  intervalSuiviDirect = setInterval(() => { if (!document.hidden) rafraichirSuiviDirect(); }, 8000);
 }
 
 function fermerSuiviDirectSeance() {
