@@ -3470,6 +3470,12 @@
       fbBox.className = `feedback-box ${scoreQuestion >= q.points ? '' : 'has-error'}`;
       fbBox.innerHTML = fbHtml;
       fbBox.style.display = 'block';
+      if (typeof estJusteFb !== 'undefined' && estJusteFb) {
+        fbBox.classList.remove('anim-bravo-pop');
+        void fbBox.offsetWidth;
+        fbBox.classList.add('anim-bravo-pop');
+        if (typeof lancerMiniConfettisBravo === 'function') lancerMiniConfettisBravo(fbBox);
+      }
 
       document.getElementById('btnValiderQuestion').style.display = 'none';
       const btnSuivant = document.getElementById('btnQuestionSuivante');
