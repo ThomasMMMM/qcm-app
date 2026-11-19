@@ -458,6 +458,7 @@ function validerQuestionSimu() {
   fbBox.className = `feedback-box ${scoreQuestion >= q.points ? '' : 'has-error'}`;
   fbBox.innerHTML = fbHtml;
   fbBox.style.display = 'block';
+  if ((fbBox.style.background && fbBox.style.background.includes('dcfce7')) || fbBox.className.includes('is-correct') || (typeof scoreQuestion !== 'undefined' && typeof q !== 'undefined' && scoreQuestion >= (Number(q.points || 1) - 0.01))) { fbBox.style.background = '#dcfce7'; fbBox.style.borderColor = '#16a34a'; fbBox.style.color = '#14532d'; fbBox.classList.remove('anim-bravo-pop'); void fbBox.offsetWidth; fbBox.classList.add('anim-bravo-pop'); lancerMiniConfettisSimu(fbBox); }
 
   document.getElementById('btnValiderQuestionSimu').style.display = 'none';
   const btnSuivant = document.getElementById('btnQuestionSuivanteSimu');
@@ -475,4 +476,38 @@ function passerQuestionSuivanteSimu() {
     document.getElementById('viewSimulateurFin').style.display = 'block';
     document.getElementById('simuNoteFinaleText').innerText = note20 + " / 20";
   }
+}
+function lancerMiniConfettisSimu(cibleEl) {
+  try {
+    if (!document.getElementById('styleAnimSimuBravo')) {
+      const st = document.createElement('style');
+      st.id = 'styleAnimSimuBravo';
+      st.textContent = `
+        @keyframes popBravoSimu { 0% { transform: scale(0.92); opacity: 0.4; } 55% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); } }
+        .anim-bravo-pop { animation: popBravoSimu 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes confettiFallSimu { 0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6); opacity: 0; } }
+        .mini-confetti-particule { position: fixed; width: 8px; height: 8px; border-radius: 2px; pointer-events: none; z-index: 9999; animation: confettiFallSimu 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      `;
+      document.head.appendChild(st);
+    }
+    const rect = cibleEl.getBoundingClientRect();
+    const originX = rect.left + Math.min(rect.width * 0.35, 140);
+    const originY = rect.top + 14;
+    const couleurs = ['#16a34a', '#22c55e', '#facc15', '#38bdf8', '#f97316', '#a855f7'];
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('span');
+      p.className = 'mini-confetti-particule';
+      const angle = (-Math.PI * 0.85) + (Math.random() * Math.PI * 0.7);
+      const dist = 45 + Math.random() * 75;
+      p.style.left = originX + 'px';
+      p.style.top = originY + 'px';
+      p.style.background = couleurs[i % couleurs.length];
+      if (i % 3 === 0) p.style.borderRadius = '50%';
+      p.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+      p.style.setProperty('--dy', (Math.sin(angle) * dist - 10).toFixed(1) + 'px');
+      p.style.setProperty('--rot', (Math.random() * 540 - 270).toFixed(0) + 'deg');
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 1000);
+    }
+  } catch (e) {}
 }

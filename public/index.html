@@ -3450,6 +3450,53 @@
 
       console.log(`🎯 [Points validés] Question ${currentQuestionIndex + 1} : +${scoreQuestion.toFixed(2)} pt(s) | Cumul total : ${totalScoreObtenu.toFixed(2)} / ${totalScorePossible}`);
 
+      try {
+        if (!Array.isArray(window.suiviDirectReponses)) window.suiviDirectReponses = [];
+        const ptsQ = Number(q.points || 1);
+        const etatQ = scoreQuestion >= (ptsQ - 0.01) ? "juste" : (scoreQuestion > 0 ? "partiel" : "faux");
+        window.suiviDirectReponses[currentQuestionIndex] = {
+          etat: etatQ,
+          score: Number(scoreQuestion.toFixed(2)),
+          max: ptsQ
+        };
+        const scoreMaxCourantCalc = window.suiviDirectReponses.reduce((s, r) => s + (r && r.max ? Number(r.max) : 0), 0);
+        if (typeof envoyerSuiviDirect === 'function') {
+          envoyerSuiviDirect({
+            statut: 'en_cours',
+            question_courante: currentQuestionIndex + 1,
+            score_actuel: Number(totalScoreObtenu.toFixed(2)),
+            score_max_courant: Number(scoreMaxCourantCalc.toFixed(2)),
+            reponses: window.suiviDirectReponses
+          });
+        } else if (!isModeSimulation && typeof currentSeanceId !== 'undefined' && currentSeanceId) {
+          const elLive = (typeof sessionEleve !== 'undefined' && sessionEleve && sessionEleve.eleve) ? sessionEleve.eleve : null;
+          const codeLive = elLive ? (elLive.code_eleve || elLive.code_perso || "") : "";
+          if (codeLive) {
+            fetch('/api/suivi_direct', {
+              keepalive: true,
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                seance_id: currentSeanceId,
+                eleve_id: elLive.id || null,
+                code_eleve: codeLive,
+                nom_eleve: elLive.nom || "",
+                prenom_eleve: elLive.prenom || "",
+                statut: 'en_cours',
+                question_courante: currentQuestionIndex + 1,
+                total_questions: currentQuestions.length,
+                score_actuel: Number(totalScoreObtenu.toFixed(2)),
+                score_max_courant: Number(scoreMaxCourantCalc.toFixed(2)),
+                score_total_possible: Number(totalScorePossible || 0),
+                reponses: window.suiviDirectReponses,
+                nb_sorties: typeof compteurSortiesEleve !== 'undefined' ? compteurSortiesEleve : 0,
+                duree_sorties_sec: typeof dureeCumuleeSortiesSec !== 'undefined' ? dureeCumuleeSortiesSec : 0
+              })
+            }).catch(() => {});
+          }
+        }
+      } catch (eLive) {}
+
       // Sauvegarde de l'état avec le nouveau score cumulé
       const dureeActuelle = (typeof dureeCumuleeSortiesSec !== 'undefined') ? dureeCumuleeSortiesSec : 0;
       if (typeof sauverEtatQcm === 'function') {
