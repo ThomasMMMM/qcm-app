@@ -258,6 +258,32 @@ export async function onRequestPost(context) {
   try {
     const { request, env } = context;
     const body = await request.json();
+
+    // Gestion directe des absences depuis la modale de suivi en direct
+    if (body.action === "toggle_absent") {
+      const sid = parseInt(body.seance_id, 10);
+      const eid = parseInt(body.eleve_id, 10);
+      const absent = Boolean(body.est_absent);
+      if (!sid || !eid) {
+        return new Response(JSON.stringify({ error: "seance_id et eleve_id requis" }), { status: 400 });
+      }
+      await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS absences_seances (
+          seance_id INTEGER NOT NULL,
+          eleve_id INTEGER NOT NULL,
+          PRIMARY KEY (seance_id, eleve_id)
+        )
+      `).run();
+
+      if (absent) {
+        await env.DB.prepare("INSERT OR IGNORE INTO absences_seances (seance_id, eleve_id) VALUES (?, ?)").bind(sid, eid).run();
+      } else {
+        await env.DB.prepare("DELETE FROM absences_seances WHERE seance_id = ? AND eleve_id = ?").bind(sid, eid).run();
+      }
+      return new Response(JSON.stringify({ ok: true, seance_id: sid, eleve_id: eid, est_absent: absent }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     const {
       seance_id,
       eleve_id,

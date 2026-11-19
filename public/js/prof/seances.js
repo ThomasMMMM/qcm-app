@@ -205,15 +205,51 @@ function fermerSuiviDirectSeance() {
   if (modal) modal.style.display = 'none';
 }
 
-async function rafraichirSuiviDirect() {
+let verrouAbsentJusqua = 0;
+
+async function rafraichirSuiviDirect(forcer = false) {
   if (!seanceSuiviDirectId) return;
+  if (!forcer && Date.now() < verrouAbsentJusqua) return;
   try {
-    const res = await fetch(`/api/suivi_direct?seance_id=${seanceSuiviDirectId}`);
+    const res = await fetch(`/api/suivi_direct?seance_id=${seanceSuiviDirectId}&t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return;
     const data = await res.json();
+    if (!forcer && Date.now() < verrouAbsentJusqua) return;
     donneesSuiviDirectCache = data;
     rendreSuiviDirect(data);
   } catch (e) {}
+}
+
+async function toggleAbsentEleveSeance(eleveId, estAbsent) {
+  if (!seanceSuiviDirectId) return;
+  verrouAbsentJusqua = Date.now() + 3500;
+
+  // Mise à jour optimiste immédiate dans le cache local
+  if (donneesSuiviDirectCache && Array.isArray(donneesSuiviDirectCache.eleves)) {
+    const cible = donneesSuiviDirectCache.eleves.find(e => Number(e.id) === Number(eleveId));
+    if (cible) cible.est_absent = Boolean(estAbsent);
+    rendreSuiviDirect(donneesSuiviDirectCache);
+  }
+
+  try {
+    const res = await fetch('/api/suivi_direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "toggle_absent",
+        seance_id: seanceSuiviDirectId,
+        eleve_id: eleveId,
+        est_absent: Boolean(estAbsent)
+      })
+    });
+    if (!res.ok) {
+      alert("Erreur lors de l'enregistrement de l'absence.");
+    }
+    verrouAbsentJusqua = 0;
+    await rafraichirSuiviDirect(true);
+  } catch (e) {
+    verrouAbsentJusqua = 0;
+  }
 }
 
 function rendreSuiviDirect(data) {
@@ -282,6 +318,8 @@ function rendreSuiviDirect(data) {
 
   const tbody = document.getElementById('tableSuiviDirectBody');
   if (!tbody) return;
+  const scrollContainer = tbody.closest('div');
+  const prevScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
   const nbQ = data.seance.total_questions || 1;
 
@@ -340,4 +378,5 @@ function rendreSuiviDirect(data) {
       </tr>
     `;
   }).join('');
+  if (scrollContainer) scrollContainer.scrollTop = prevScrollTop;
 }
