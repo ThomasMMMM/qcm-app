@@ -79,6 +79,35 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ success: true, titre: nouveauTitre }), { headers: { "Content-Type": "application/json" } });
     }
 
+    // Modification complète d'un QCM (titre, document_html, questions)
+    if (body.action === "update_qcm") {
+      const { qcm_id, titre, document_html, questions } = body;
+      const nouveauTitre = String(titre || "").trim();
+      if (!qcm_id || !nouveauTitre) {
+        return new Response(JSON.stringify({ error: "qcm_id et titre requis" }), { status: 400 });
+      }
+      const qid = parseInt(qcm_id, 10);
+      const docHtml = (document_html !== undefined && document_html !== null && String(document_html).trim() !== "")
+        ? String(document_html).trim()
+        : null;
+
+      if (Array.isArray(questions) && questions.length > 0) {
+        await env.DB.prepare(
+          "UPDATE qcm_banque SET titre = ?, document_html = ?, data_json = ? WHERE id = ?"
+        ).bind(nouveauTitre, docHtml, JSON.stringify(questions), qid).run();
+      } else {
+        await env.DB.prepare(
+          "UPDATE qcm_banque SET titre = ?, document_html = ? WHERE id = ?"
+        ).bind(nouveauTitre, docHtml, qid).run();
+      }
+
+      try {
+        await env.DB.prepare("UPDATE resultats_qcm SET qcm_titre = ? WHERE seance_id IN (SELECT id FROM seances WHERE qcm_id = ?)").bind(nouveauTitre, qid).run();
+      } catch (e) {}
+
+      return new Response(JSON.stringify({ success: true, titre: nouveauTitre }), { headers: { "Content-Type": "application/json" } });
+    }
+
     // Liaison / modification directe de la Fiche Synthèse associée à un QCM existant
     if (body.action === "update_fiche_liee") {
       const { qcm_id, fiche_id } = body;

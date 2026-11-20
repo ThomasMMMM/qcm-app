@@ -234,7 +234,8 @@ function afficherTableauBanqueQcm() {
           </td>
           <td style="text-align:center;">${new Date(q.date_creation).toLocaleDateString()}</td>
           <td style="text-align:center;">
-            <div style="display:inline-flex; gap:6px; justify-content:center;">
+            <div style="display:inline-flex; gap:5px; justify-content:center; flex-wrap:wrap;">
+              <button type="button" class="btn" style="background:#0284c7; padding:4px 8px; font-size:0.75rem;" onclick="ouvrirModaleEditionQcm(${q.id})" title="Modifier le titre, le support ou les questions">✏️ Modifier</button>
               <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
               <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerQcmBanque(${q.id})">Suppr</button>
             </div>
@@ -465,5 +466,201 @@ async function supprimerQcmBanque(qcmId) {
     if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
   } catch (e) {
     alert("Erreur réseau lors de la suppression du QCM.");
+  }
+}
+
+
+let qcmEnCoursEdition = null;
+
+function echapperHtmlAttr(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+async function ouvrirModaleEditionQcm(qcmId) {
+  try {
+    const res = await fetch('/api/banque?qcm_id=' + encodeURIComponent(qcmId) + '&t=' + Date.now(), { cache: "no-store" });
+    if (!res.ok) {
+      alert("Impossible de charger ce QCM.");
+      return;
+    }
+    const qcm = await res.json();
+    let questions = [];
+    try {
+      questions = JSON.parse(qcm.data_json || "[]");
+    } catch (e) {}
+
+    qcmEnCoursEdition = {
+      id: qcm.id,
+      titre: qcm.titre || "",
+      document_html: qcm.document_html || "",
+      questions: Array.isArray(questions) ? questions : []
+    };
+
+    document.getElementById('editQcmIdHidden').value = qcmEnCoursEdition.id;
+    document.getElementById('editQcmTitreInput').value = qcmEnCoursEdition.titre;
+    document.getElementById('editQcmDocHtmlInput').value = qcmEnCoursEdition.document_html;
+    document.getElementById('editQcmNbQuestions').innerText = qcmEnCoursEdition.questions.length;
+
+    const cont = document.getElementById('editQcmQuestionsContainer');
+    cont.innerHTML = qcmEnCoursEdition.questions.map((q, idx) => {
+      const typeLabel = q.type === 'multichoice' ? (q.single ? 'QCM (choix unique)' : 'QCM (choix multiples)')
+        : q.type === 'matching' ? 'Appariement'
+        : q.type === 'cloze' ? 'Texte à trous'
+        : q.type === 'ordering' ? 'Mise en ordre'
+        : q.type;
+
+      let blocReponses = '';
+      if (q.type === 'multichoice' && Array.isArray(q.answers)) {
+        blocReponses = `
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:0.78rem; font-weight:700; color:#475569;">Propositions (cochez les bonnes réponses) :</span>
+            ${q.answers.map((a, aIdx) => `
+              <div style="display:flex; gap:6px; align-items:center;">
+                <input type="checkbox" class="edit-q-ans-ok" data-q="${idx}" data-a="${aIdx}" ${Number(a.fraction) > 0 ? 'checked' : ''} title="Réponse correcte">
+                <input type="text" class="input-field edit-q-ans-text" data-q="${idx}" data-a="${aIdx}" value="${echapperHtmlAttr(a.text)}" style="margin:0; padding:5px 8px; font-size:0.84rem; flex:1;">
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (q.type === 'matching' && Array.isArray(q.subquestions)) {
+        blocReponses = `
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:0.78rem; font-weight:700; color:#475569;">Paires à associer :</span>
+            ${q.subquestions.map((sq, sIdx) => `
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <input type="text" class="input-field edit-q-match-q" data-q="${idx}" data-s="${sIdx}" value="${echapperHtmlAttr(sq.question)}" style="margin:0; padding:5px 8px; font-size:0.84rem;">
+                <input type="text" class="input-field edit-q-match-a" data-q="${idx}" data-s="${sIdx}" value="${echapperHtmlAttr(sq.answer)}" style="margin:0; padding:5px 8px; font-size:0.84rem;">
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (q.type === 'ordering' && Array.isArray(q.items)) {
+        blocReponses = `
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:0.78rem; font-weight:700; color:#475569;">Étapes (dans l'ordre chronologique) :</span>
+            ${q.items.map((it, iIdx) => `
+              <div style="display:flex; gap:6px; align-items:center;">
+                <span style="font-size:0.78rem; color:#64748b; width:24px;">#${iIdx + 1}</span>
+                <input type="text" class="input-field edit-q-ord-text" data-q="${idx}" data-i="${iIdx}" value="${echapperHtmlAttr(it.text)}" style="margin:0; padding:5px 8px; font-size:0.84rem; flex:1;">
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      return `
+        <div style="border:1px solid #cbd5e1; border-radius:8px; padding:12px; background:#ffffff;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <span style="font-weight:700; color:var(--pronote-blue); font-size:0.88rem;">Question ${idx + 1} <span class="badge" style="margin-left:4px;">${typeLabel}</span></span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <label style="font-size:0.78rem; color:#475569;">Points :</label>
+              <input type="number" step="0.5" min="0.5" class="input-field edit-q-points" data-q="${idx}" value="${q.points || 1}" style="margin:0; padding:3px 6px; width:65px; font-size:0.84rem;">
+            </div>
+          </div>
+          <div style="margin-bottom:6px;">
+            <input type="text" class="input-field edit-q-title" data-q="${idx}" value="${echapperHtmlAttr(q.title)}" placeholder="Titre court de la question" style="margin:0; padding:5px 8px; font-size:0.84rem; width:100%; box-sizing:border-box;">
+          </div>
+          <div>
+            <textarea class="input-field edit-q-enonce" data-q="${idx}" rows="2" placeholder="Énoncé de la question" style="margin:0; padding:6px 8px; font-size:0.85rem; width:100%; box-sizing:border-box;">${echapperHtmlAttr(q.enonce)}</textarea>
+          </div>
+          ${blocReponses}
+          <div style="margin-top:8px;">
+            <input type="text" class="input-field edit-q-feedback" data-q="${idx}" value="${echapperHtmlAttr(q.generalFeedback || '')}" placeholder="Explication / feedback affiché après validation (optionnel)" style="margin:0; padding:5px 8px; font-size:0.82rem; width:100%; box-sizing:border-box; background:#f8fafc;">
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('modaleEditionQcm').style.display = 'block';
+  } catch (e) {
+    alert("Erreur réseau lors de l'ouverture du QCM.");
+  }
+}
+
+function fermerModaleEditionQcm() {
+  const mod = document.getElementById('modaleEditionQcm');
+  if (mod) mod.style.display = 'none';
+  qcmEnCoursEdition = null;
+}
+
+async function enregistrerModificationsQcm() {
+  if (!qcmEnCoursEdition) return;
+  const nouveauTitre = document.getElementById('editQcmTitreInput').value.trim();
+  if (!nouveauTitre) {
+    alert("Le titre du QCM ne peut pas être vide.");
+    return;
+  }
+  const nouveauDocHtml = document.getElementById('editQcmDocHtmlInput').value;
+
+  const questionsMaj = qcmEnCoursEdition.questions.map((q, idx) => {
+    const copieQ = JSON.parse(JSON.stringify(q));
+    const elTitre = document.querySelector(`.edit-q-title[data-q="${idx}"]`);
+    const elEnonce = document.querySelector(`.edit-q-enonce[data-q="${idx}"]`);
+    const elPoints = document.querySelector(`.edit-q-points[data-q="${idx}"]`);
+    const elFb = document.querySelector(`.edit-q-feedback[data-q="${idx}"]`);
+
+    if (elTitre) copieQ.title = elTitre.value.trim();
+    if (elEnonce) copieQ.enonce = elEnonce.value.trim();
+    if (elPoints) copieQ.points = parseFloat(elPoints.value) || 1;
+    if (elFb) copieQ.generalFeedback = elFb.value.trim();
+
+    if (copieQ.type === 'multichoice' && Array.isArray(copieQ.answers)) {
+      const coches = [];
+      copieQ.answers.forEach((a, aIdx) => {
+        const elTxt = document.querySelector(`.edit-q-ans-text[data-q="${idx}"][data-a="${aIdx}"]`);
+        const elOk = document.querySelector(`.edit-q-ans-ok[data-q="${idx}"][data-a="${aIdx}"]`);
+        if (elTxt) a.text = elTxt.value.trim();
+        if (elOk && elOk.checked) coches.push(aIdx);
+      });
+      if (coches.length > 0) {
+        const frac = Math.round((100 / coches.length) * 100) / 100;
+        copieQ.answers.forEach((a, aIdx) => {
+          a.fraction = coches.includes(aIdx) ? frac : 0;
+        });
+      }
+    } else if (copieQ.type === 'matching' && Array.isArray(copieQ.subquestions)) {
+      copieQ.subquestions.forEach((sq, sIdx) => {
+        const elMq = document.querySelector(`.edit-q-match-q[data-q="${idx}"][data-s="${sIdx}"]`);
+        const elMa = document.querySelector(`.edit-q-match-a[data-q="${idx}"][data-s="${sIdx}"]`);
+        if (elMq) sq.question = elMq.value.trim();
+        if (elMa) sq.answer = elMa.value.trim();
+      });
+    } else if (copieQ.type === 'ordering' && Array.isArray(copieQ.items)) {
+      copieQ.items.forEach((it, iIdx) => {
+        const elOt = document.querySelector(`.edit-q-ord-text[data-q="${idx}"][data-i="${iIdx}"]`);
+        if (elOt) it.text = elOt.value.trim();
+      });
+    }
+    return copieQ;
+  });
+
+  try {
+    const res = await fetch('/api/banque', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "update_qcm",
+        qcm_id: qcmEnCoursEdition.id,
+        titre: nouveauTitre,
+        document_html: nouveauDocHtml,
+        questions: questionsMaj
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      alert("Erreur lors de l'enregistrement : " + (data.error || "Erreur serveur"));
+      return;
+    }
+
+    fermerModaleEditionQcm();
+    await chargerBanqueProf();
+    if (typeof chargerSeancesProf === 'function') chargerSeancesProf();
+    alert("✓ QCM mis à jour avec succès !");
+  } catch (e) {
+    alert("Erreur réseau lors de l'enregistrement.");
   }
 }
