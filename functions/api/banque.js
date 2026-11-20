@@ -28,10 +28,11 @@ export async function onRequestGet(context) {
       LEFT JOIN fiches_synthese fs ON q.fiche_id = fs.id
     `;
     const params = [];
-    if (prof_id) {
-      query += " WHERE q.prof_id = ? OR q.prof_id IS NULL";
-      params.push(prof_id);
+    if (!prof_id) {
+      return new Response(JSON.stringify([]), { headers: { "Content-Type": "application/json" } });
     }
+    query += " WHERE q.prof_id = ? OR q.prof_id IS NULL";
+    params.push(prof_id);
     query += " ORDER BY q.date_creation DESC";
 
     const { results } = await env.DB.prepare(query).bind(...params).all();
