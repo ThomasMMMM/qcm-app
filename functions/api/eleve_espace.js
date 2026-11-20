@@ -64,7 +64,50 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 2. Récupération des copies déjà soumises avec matière et compétence du QCM
+    // 2. Synchronisation de secours depuis suivi_direct si l'élève a terminé le QCM
+    try {
+      const { results: terminesSd } = await env.DB.prepare(`
+        SELECT sd.*, s.code_session, c.nom AS classe_nom, q.titre AS qcm_titre
+        FROM suivi_direct sd
+        INNER JOIN seances s ON sd.seance_id = s.id
+        LEFT JOIN classes c ON s.classe_id = c.id
+        LEFT JOIN qcm_banque q ON s.qcm_id = q.id
+        WHERE UPPER(TRIM(sd.code_eleve)) = ? AND sd.statut = 'termine'
+      `).bind(cleanCode).all();
+
+      for (const sd of (terminesSd || [])) {
+        const dejaLa = await env.DB.prepare(
+          "SELECT id FROM resultats_qcm WHERE seance_id = ? AND (UPPER(prenom) LIKE ? OR UPPER(prenom) LIKE ?)"
+        ).bind(sd.seance_id, `%[${cleanCode}]%`, `%[CODE: ${cleanCode}]%`).first();
+
+        if (!dejaLa) {
+          const sc = Number(sd.score_actuel || 0);
+          const maxSc = Number(sd.score_max_courant || sd.score_total_possible || 20);
+          const note20 = maxSc > 0 ? Math.round(((sc / maxSc) * 20) * 100) / 100 : 0;
+          await env.DB.prepare(`
+            INSERT INTO resultats_qcm (
+              seance_id, nom, prenom, classe, qcm_titre, session_code,
+              note, total, nb_sorties, duree_sorties, questions_traitees, questions_totales, date_soumission
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 20, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
+          `).bind(
+            sd.seance_id,
+            sd.prenom_eleve || eleve.prenom || "",
+            `[Code: ${cleanCode}]`,
+            sd.classe_nom || eleve.classe_nom || "",
+            sd.qcm_titre || "",
+            sd.code_session || "",
+            note20,
+            Number(sd.nb_sorties || 0),
+            Number(sd.duree_sorties_sec || 0),
+            Number(sd.total_questions || 1),
+            Number(sd.total_questions || 1),
+            sd.derniere_activite || null
+          ).run();
+        }
+      }
+    } catch (eSyncEl) {}
+
+    // Récupération des copies déjà soumises avec matière et compétence du QCM
     let passes = [];
     let seanceIdsPassees = [];
 
@@ -75,9 +118,9 @@ export async function onRequestPost(context) {
         FROM resultats_qcm r
         INNER JOIN seances s ON r.seance_id = s.id
         INNER JOIN qcm_banque q ON s.qcm_id = q.id
-        WHERE (s.classe_id = ? OR r.prenom LIKE ?) AND (r.nom = ? OR r.prenom LIKE ?)
+        WHERE s.classe_id = ? AND (UPPER(r.prenom) LIKE ? OR LOWER(TRIM(r.nom)) = ?)
         ORDER BY r.date_soumission DESC
-      `).bind(eleve.classe_id, `%${cleanCode}%`, eleve.prenom, `%${cleanCode}%`).all();
+      `).bind(eleve.classe_id, `%${cleanCode}%`, cleanPrenom).all();
 
       passes = resCopies.results || [];
       seanceIdsPassees = passes.map(p => p.seance_id);
@@ -102,8 +145,9 @@ export async function onRequestPost(context) {
 
     const toutesSeances = resToutesSeances.results || [];
 
+    const setIdsPassees = new Set(seanceIdsPassees.map(id => Number(id)));
     const aFaire = toutesSeances.filter(s =>
-      (s.actif == 1 || s.actif === '1') && !seanceIdsPassees.includes(s.seance_id)
+      (s.actif == 1 || s.actif === '1') && !setIdsPassees.has(Number(s.seance_id))
     );
 
     const cahierTexte = toutesSeances.map(s => {

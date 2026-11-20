@@ -144,6 +144,24 @@ export async function onRequestGet(context) {
 
     if (!eleve) return new Response(JSON.stringify({ error: "Code individuel élève non reconnu dans cette classe." }), { status: 403 });
 
+    // Vérifier si l'élève a déjà rendu sa copie ou terminé cette séance
+    const copieDejaRendue = await env.DB.prepare(
+      "SELECT id FROM resultats_qcm WHERE seance_id = ? AND (UPPER(prenom) LIKE ? OR LOWER(TRIM(nom)) = ?)"
+    ).bind(seance.seance_id, `%${cleanCodeEleve}%`, String(eleve.prenom || "").trim().toLowerCase()).first();
+
+    let suiviDejaTermine = null;
+    try {
+      suiviDejaTermine = await env.DB.prepare(
+        "SELECT id FROM suivi_direct WHERE seance_id = ? AND UPPER(TRIM(code_eleve)) = ? AND statut = 'termine'"
+      ).bind(seance.seance_id, cleanCodeEleve).first();
+    } catch (eSdCheck) {}
+
+    if (copieDejaRendue || suiviDejaTermine) {
+      return new Response(JSON.stringify({
+        error: "Vous avez déjà terminé et rendu votre copie pour cette évaluation."
+      }), { status: 403 });
+    }
+
     const questionsBrutes = JSON.parse(seance.data_json);
     const estPap = eleve.est_pap === 1;
 
