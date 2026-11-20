@@ -210,16 +210,15 @@ function afficherTableauBanqueQcm() {
           <td>
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
               <strong>${q.titre}</strong>
-              <button type="button" class="btn btn-simu" style="padding:2px 6px; font-size:0.72rem;" onclick="renommerQcmBanque(${q.id})" title="Corriger le titre du QCM">✏️</button>
-              ${q.document_html ? '<span class="badge" style="background:#e0f2fe; color:#0369a1;">📄 Doc inclus</span>' : ''}
+              ${q.document_html ? '<span class="badge" style="background:#e0f2fe; color:#0369a1; white-space:nowrap;">📄 Doc inclus</span>' : ''}
             </div>
           </td>
           <td>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:auto; max-width:125px;" onchange="modifierCompetenceQcmInline(${q.id}, this.value, '')">
+            <div style="display:flex; gap:5px; flex-wrap:nowrap; align-items:center;">
+              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:125px;" onchange="modifierCompetenceQcmInline(${q.id}, this.value, '')">
                 ${optionsMat}
               </select>
-              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:auto; max-width:155px;" ${!q.matiere_id ? 'disabled' : ''} onchange="modifierCompetenceQcmInline(${q.id}, '${q.matiere_id || ''}', this.value)">
+              <select class="input-field" style="margin:0; padding:4px 6px; font-size:0.78rem; width:130px;" ${!q.matiere_id ? 'disabled' : ''} onchange="modifierCompetenceQcmInline(${q.id}, '${q.matiere_id || ''}', this.value)">
                 ${optionsComp}
               </select>
             </div>
@@ -233,11 +232,11 @@ function afficherTableauBanqueQcm() {
             </div>
           </td>
           <td style="text-align:center;">${new Date(q.date_creation).toLocaleDateString()}</td>
-          <td style="text-align:center;">
-            <div style="display:inline-flex; gap:5px; justify-content:center; flex-wrap:wrap;">
-              <button type="button" class="btn" style="background:#0284c7; padding:4px 8px; font-size:0.75rem;" onclick="ouvrirModaleEditionQcm(${q.id})" title="Modifier le titre, le support ou les questions">✏️ Modifier</button>
-              <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem;" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
-              <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="supprimerQcmBanque(${q.id})">Suppr</button>
+          <td style="text-align:center; white-space:nowrap;">
+            <div style="display:inline-flex; gap:5px; justify-content:center; align-items:center; flex-wrap:nowrap;">
+              <button type="button" class="btn" style="background:#0284c7; padding:4px 8px; font-size:0.75rem; white-space:nowrap;" onclick="ouvrirModaleEditionQcm(${q.id})" title="Modifier le titre, le support ou les questions">✏️ Modifier</button>
+              <button type="button" class="btn btn-simu" style="padding:4px 8px; font-size:0.75rem; white-space:nowrap;" onclick="lancerSimulationBanque(${q.id})">🔍 Tester</button>
+              <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem; white-space:nowrap;" onclick="supprimerQcmBanque(${q.id})">Suppr</button>
             </div>
           </td>
         </tr>
@@ -341,7 +340,7 @@ async function importerDansBanque() {
     if (matchName && matchName[1]) {
       titreQcm = matchName[1].trim();
     } else if (!brut.startsWith('<') && brut.length > 0) {
-      titreQcm = brut;
+      titreQcm = brut.replace(/^\$course\$\/(?:[^/]+\/)*/i, '').trim() || brut;
     }
   }
 
