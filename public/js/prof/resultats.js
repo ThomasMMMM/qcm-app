@@ -134,12 +134,12 @@ function filtrerResultats() {
           <td>
             ${(n.questions_traitees !== null && n.questions_totales !== null)
               ? (n.questions_traitees < n.questions_totales
-                  ? `<div style="display:inline-block; background:#fef3c7; color:#92400e; padding:3px 7px; border-radius:5px; border:1px solid #fde68a; font-size:0.85rem;">
-                       <strong>${(n.note_proportionnelle !== null ? Number(n.note_proportionnelle).toFixed(2) : '0.00')} / 20</strong>
-                       <span style="display:block; font-size:0.72rem; color:#b45309;">⚠️ ${n.questions_traitees}/${n.questions_totales} Q. faites</span>
+                  ? `<div style="display:inline-block; background:#fef3c7; color:#92400e; padding:4px 8px; border-radius:5px; border:1px solid #fde68a; font-size:0.84rem;">
+                       <strong>Export : ${(((Number(n.note) + Number(n.note_proportionnelle ?? 0)) / 2)).toFixed(2)} / 20</strong>
+                       <span style="display:block; font-size:0.71rem; color:#b45309;">Prorata : ${Number(n.note_proportionnelle ?? 0).toFixed(2)} (${n.questions_traitees}/${n.questions_totales} Q.)</span>
                      </div>`
                   : `<div>
-                       <strong style="color:#15803d; font-size:0.95rem;">${(n.note_proportionnelle !== null ? Number(n.note_proportionnelle).toFixed(2) : Number(n.note).toFixed(2))} / 20</strong>
+                       <strong style="color:#15803d; font-size:0.95rem;">${Number(n.note).toFixed(2)} / 20</strong>
                        <span style="display:block; font-size:0.72rem; color:#475569;">✓ ${n.questions_traitees}/${n.questions_totales} Q.</span>
                      </div>`)
               : `<span style="color:#475569; font-size:0.8rem;">— (avant maj)</span>`

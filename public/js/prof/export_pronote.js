@@ -3,6 +3,7 @@ let copiesIdsDansExportCourant = [];
 
 function obtenirNoteRetenuePourExport(noteFound) {
   if (!noteFound) return null;
+  const noteBrute = Number(noteFound.note);
   const estIncomplet = (
     noteFound.note_proportionnelle !== null &&
     noteFound.note_proportionnelle !== undefined &&
@@ -10,7 +11,11 @@ function obtenirNoteRetenuePourExport(noteFound) {
     noteFound.questions_totales !== null &&
     Number(noteFound.questions_traitees) < Number(noteFound.questions_totales)
   );
-  return estIncomplet ? Number(noteFound.note_proportionnelle) : Number(noteFound.note);
+  if (!estIncomplet) return noteBrute;
+
+  const noteProp = Number(noteFound.note_proportionnelle);
+  const moyenne = (noteBrute + noteProp) / 2;
+  return Math.round(moyenne * 100) / 100;
 }
 
 function obtenirNotesTrieesPourExport() {
@@ -70,7 +75,7 @@ function afficherApercuExport() {
         Number(noteFound.questions_traitees) < Number(noteFound.questions_totales)
       );
       noteStr = estProrata
-        ? `<strong>${noteExport} / ${noteFound.total}</strong> <span style="font-size:0.75rem; color:#b45309;">(${noteFound.questions_traitees}/${noteFound.questions_totales} Q.)</span>`
+        ? `<strong>${noteExport} / ${noteFound.total}</strong> <span style="display:block; font-size:0.72rem; color:#b45309;">Moy. brute ${noteFound.note} & prorata ${Number(noteFound.note_proportionnelle).toFixed(2)} (${noteFound.questions_traitees}/${noteFound.questions_totales} Q.)</span>`
         : `${noteExport} / ${noteFound.total}`;
     }
 
