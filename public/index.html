@@ -1600,7 +1600,9 @@
             item.questions_totales !== null &&
             Number(item.questions_traitees) < Number(item.questions_totales)
           );
-          const noteAffichee = estIncomplet ? Number(item.note_proportionnelle).toFixed(2) : item.note;
+          const noteAffichee = estIncomplet
+            ? (Math.round(((Number(item.note) + Number(item.note_proportionnelle)) / 2) * 100) / 100).toFixed(2)
+            : Number(item.note).toFixed(2);
           badgeStatut = `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">✓ Fait</span>`;
           const mentionPronote = item.exporte_pronote
             ? `<div style="font-size:0.74rem; color:#15803d; font-weight:700; margin-top:2px;">✓ Note sur Pronote</div>`
@@ -1612,7 +1614,7 @@
             <div style="text-align:right;">
               <div style="font-size:1.05rem; font-weight:800; color:var(--pronote-blue);">${noteAffichee} / ${item.total || 20}</div>
               ${mentionMoyenne}
-              ${estIncomplet ? `<div style="font-size:0.72rem; color:#b45309;">Note prop. (${item.questions_traitees}/${item.questions_totales} Q.)</div>` : ''}
+              ${estIncomplet ? `<div style="font-size:0.72rem; color:#b45309;">Moy. Pronote (Brute : ${Number(item.note).toFixed(2)} • Prorata : ${Number(item.note_proportionnelle).toFixed(2)}, ${item.questions_traitees}/${item.questions_totales} Q.)</div>` : ''}
               ${mentionPronote}<div style="margin-top:6px;"><button type="button" class="btn" style="background:#0284c7; padding:5px 10px; font-size:0.76rem;" onclick="ouvrirCopieCorrigeeEleve(${item.resultat_id || 'null'}, ${item.seance_id})">📝 ${item.seance_actif ? 'Corrigé (après clôture)' : 'Revoir ma copie'}</button></div>
             </div>
           `;
