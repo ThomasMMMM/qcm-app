@@ -1645,7 +1645,7 @@
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
               <div>
-                <div style="font-weight:700; color:#1e293b; font-size:0.96rem;">${item.qcm_titre}</div>
+                <div style="font-weight:700; color:#1e293b; font-size:0.96rem;">${String(item.qcm_titre || "").replace(/^\$course\$\/(?:[^/]+\/)*/i, "").trim() || item.qcm_titre}</div>
                 ${item.has_document ? `
                   <button type="button" class="btn btn-simu" style="margin-top:6px; padding:4px 10px; font-size:0.78rem;" onclick="ouvrirSupportSeanceCahierTexte(${item.qcm_id})">
                     📖 Revoir le document support
