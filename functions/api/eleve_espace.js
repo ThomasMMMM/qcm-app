@@ -112,15 +112,22 @@ export async function onRequestPost(context) {
     let seanceIdsPassees = [];
 
     try {
+      const prenomBase = cleanPrenom.split(/\s+/)[0];
       const resCopies = await env.DB.prepare(`
-        SELECT r.id, r.seance_id, r.note, r.total, r.note_proportionnelle, r.questions_traitees, r.questions_totales, COALESCE(r.exporte_pronote, 0) AS exporte_pronote,
-               r.date_soumission, s.code_session, COALESCE(s.actif, 1) AS seance_actif, q.titre AS qcm_titre, q.matiere_id, q.competence_code
+        SELECT DISTINCT r.id, COALESCE(r.seance_id, s.id) AS seance_id, r.note, r.total, r.note_proportionnelle, r.questions_traitees, r.questions_totales, COALESCE(r.exporte_pronote, 0) AS exporte_pronote,
+               r.date_soumission, COALESCE(s.code_session, r.session_code) AS code_session, COALESCE(s.actif, 1) AS seance_actif,
+               COALESCE(q.titre, r.qcm_titre) AS qcm_titre, q.matiere_id, q.competence_code
         FROM resultats_qcm r
-        INNER JOIN seances s ON r.seance_id = s.id
-        INNER JOIN qcm_banque q ON s.qcm_id = q.id
-        WHERE s.classe_id = ? AND (UPPER(r.prenom) LIKE ? OR LOWER(TRIM(r.nom)) = ?)
+        LEFT JOIN seances s ON (r.seance_id = s.id OR UPPER(TRIM(r.session_code)) = UPPER(TRIM(s.code_session)))
+        LEFT JOIN qcm_banque q ON s.qcm_id = q.id
+        WHERE (s.classe_id = ? OR s.classe_id IS NULL)
+          AND (
+            UPPER(r.prenom) LIKE ?
+            OR LOWER(TRIM(r.nom)) = ?
+            OR (LOWER(TRIM(r.nom)) = ? AND s.classe_id = ?)
+          )
         ORDER BY r.date_soumission DESC
-      `).bind(eleve.classe_id, `%${cleanCode}%`, cleanPrenom).all();
+      `).bind(eleve.classe_id, `%${cleanCode}%`, cleanPrenom, prenomBase, eleve.classe_id).all();
 
       passes = resCopies.results || [];
       seanceIdsPassees = passes.map(p => p.seance_id);
