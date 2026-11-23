@@ -175,7 +175,109 @@ function ouvrirDocRessourceSimu() {
   document.getElementById('modalDocRessourceSimu').style.display = 'flex';
 }
 
+let vitesseLectureAudioProf = 1.0;
+let contexteAudioProfActif = null;
+
+function arreterLectureAudioProf() {
+  try {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  } catch (e) {}
+  contexteAudioProfActif = null;
+  document.querySelectorAll('.btn-audio-prof-sync').forEach(btn => {
+    btn.classList.remove('active');
+    btn.innerHTML = '<span>🔊 Écouter</span>';
+  });
+}
+
+function basculerVitesseAudioProf() {
+  vitesseLectureAudioProf = (vitesseLectureAudioProf === 1.0) ? 0.85 : 1.0;
+  document.querySelectorAll('.btn-vitesse-prof-sync').forEach(btn => {
+    btn.innerHTML = `<span>${vitesseLectureAudioProf === 1.0 ? '1×' : '0.85×'}</span>`;
+    btn.classList.toggle('active', vitesseLectureAudioProf !== 1.0);
+  });
+  if ('speechSynthesis' in window && window.speechSynthesis.speaking && contexteAudioProfActif) {
+    const { corpsId, modalId } = contexteAudioProfActif;
+    arreterLectureAudioProf();
+    basculerLectureAudioProf(corpsId, modalId);
+  }
+}
+
+function basculerLectureAudioProf(corpsId, modalId) {
+  if (!('speechSynthesis' in window)) {
+    alert("La synthèse vocale n'est pas prise en charge par ce navigateur.");
+    return;
+  }
+
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+    arreterLectureAudioProf();
+    return;
+  }
+
+  const corpsEl = document.getElementById(corpsId);
+  if (!corpsEl) return;
+
+  const clone = corpsEl.cloneNode(true);
+  clone.querySelectorAll('style, script, noscript').forEach(el => el.remove());
+  clone.querySelectorAll('h1, h2, h3, h4, p, li, tr, br').forEach(el => {
+    el.insertAdjacentText('afterend', '. ');
+  });
+
+  const texteBrut = (clone.innerText || clone.textContent || '')
+    .replace(/\s+/g, ' ')
+    .replace(/\.(\s*\.)+/g, '.')
+    .trim();
+
+  if (!texteBrut) return;
+
+  const phrases = texteBrut.match(/[^.!?]+[.!?]*/g) || [texteBrut];
+  const segments = [];
+  let courant = '';
+  for (const ph of phrases) {
+    if ((courant + ' ' + ph).length > 220 && courant.trim()) {
+      segments.push(courant.trim());
+      courant = ph;
+    } else {
+      courant += ' ' + ph;
+    }
+  }
+  if (courant.trim()) segments.push(courant.trim());
+
+  contexteAudioProfActif = { corpsId, modalId };
+  document.querySelectorAll('.btn-audio-prof-sync').forEach(btn => {
+    btn.classList.add('active');
+    btn.innerHTML = '<span>⏹️ Stop</span>';
+  });
+
+  const voixDisponibles = window.speechSynthesis.getVoices();
+  const voixFr = voixDisponibles.find(v => /^fr(-|_)/i.test(v.lang));
+
+  let indexSeg = 0;
+  function lireSegmentSuivant() {
+    const modal = document.getElementById(modalId);
+    if (!modal || modal.style.display === 'none' || indexSeg >= segments.length) {
+      arreterLectureAudioProf();
+      return;
+    }
+    const utter = new SpeechSynthesisUtterance(segments[indexSeg]);
+    utter.lang = 'fr-FR';
+    utter.rate = vitesseLectureAudioProf;
+    if (voixFr) utter.voice = voixFr;
+
+    utter.onend = () => {
+      indexSeg++;
+      lireSegmentSuivant();
+    };
+    utter.onerror = () => {
+      arreterLectureAudioProf();
+    };
+    window.speechSynthesis.speak(utter);
+  }
+
+  lireSegmentSuivant();
+}
+
 function fermerDocRessourceSimu() {
+  arreterLectureAudioProf();
   document.getElementById('modalDocRessourceSimu').style.display = 'none';
 }
 

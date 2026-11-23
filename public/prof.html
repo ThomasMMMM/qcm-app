@@ -900,6 +900,8 @@
           <h3 id="titreModalApercuFiche" class="fiche-modal-title">Fiche Synthèse</h3>
         </div>
         <div class="fiche-modal-actions">
+          <button type="button" class="btn-dys-toggle btn-audio-prof-sync" onclick="basculerLectureAudioProf('corpsModalApercuFiche', 'modalApercuFiche')" title="Tester la lecture vocale"><span>🔊 Écouter</span></button>
+          <button type="button" class="btn-dys-toggle btn-vitesse-prof-sync" onclick="basculerVitesseAudioProf()" title="Vitesse de lecture vocale" style="padding:5px 8px;"><span>1×</span></button>
           <button type="button" class="btn-dys-toggle btn-dys-sync" onclick="basculerModeDysProf()" title="Tester le rendu Confort Dyslexie"><span>👁️ Confort Dys</span></button>
           <button type="button" class="btn-fiche-print" onclick="imprimerModalFicheProf()" title="Imprimer ou enregistrer en PDF">
             <i class="fa-solid fa-print"></i> <span>Imprimer</span>
@@ -921,6 +923,8 @@
       <div class="modal-header">
         <h3>📖 Document Ressource</h3>
         <div style="display:flex; align-items:center; gap:8px;">
+          <button type="button" class="btn-dys-toggle btn-audio-prof-sync" onclick="basculerLectureAudioProf('corpsDocRessourceSimu', 'modalDocRessourceSimu')" title="Tester la lecture vocale"><span>🔊 Écouter</span></button>
+          <button type="button" class="btn-dys-toggle btn-vitesse-prof-sync" onclick="basculerVitesseAudioProf()" title="Vitesse de lecture vocale" style="padding:5px 8px;"><span>1×</span></button>
           <button type="button" class="btn-dys-toggle btn-dys-sync" onclick="basculerModeDysProf()" title="Tester le rendu Confort Dyslexie"><span>👁️ Confort Dys</span></button>
           <button type="button" class="btn-pdf" style="background:#dc2626; margin:0; padding:6px 12px; font-size:0.85rem;" onclick="fermerDocRessourceSimu()">✖ Fermer</button>
         </div>
@@ -938,7 +942,7 @@
   <script src="/js/prof/seances.js?v=20261119f"></script>
   <script src="/js/prof/resultats.js?v=20261120c"></script>
   <script src="/js/prof/export_pronote.js?v=20261120c"></script>
-  <script src="/js/prof/simulateur.js?v=20261123a"></script>
+  <script src="/js/prof/simulateur.js?v=20261123b"></script>
   <script src="/js/prof/analyse.js?v=20261118a"></script>
   <script src="/js/prof/suivi_classes.js?v=20261119b"></script>
   <!-- Modale Compétences par Matière -->
