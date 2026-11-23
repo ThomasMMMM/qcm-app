@@ -630,6 +630,77 @@
       visibility: visible !important;
       opacity: 1 !important;
     }
+
+    /* ================= MODE CONFORT LECTURE DYSLEXIE ================= */
+    @font-face {
+      font-family: 'OpenDyslexic';
+      src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/OpenDyslexic-Regular.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'OpenDyslexic';
+      src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/OpenDyslexic-Bold.woff') format('woff');
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    .btn-dys-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 10px;
+      border-radius: 7px;
+      border: 1.5px solid #0284c7;
+      background: #f0f9ff;
+      color: #0369a1;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .btn-dys-toggle.active {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+    }
+
+    #corpsDocRessourceEleve.mode-dys-actif {
+      background-color: #fdfbf7 !important;
+      color: #1e293b !important;
+      padding: 18px 20px !important;
+    }
+    #corpsDocRessourceEleve.mode-dys-actif,
+    #corpsDocRessourceEleve.mode-dys-actif * {
+      font-family: 'OpenDyslexic', Verdana, 'Comic Sans MS', sans-serif !important;
+      line-height: 1.85 !important;
+      letter-spacing: 0.06em !important;
+      word-spacing: 0.18em !important;
+      text-align: left !important;
+    }
+    #corpsDocRessourceEleve.mode-dys-actif p,
+    #corpsDocRessourceEleve.mode-dys-actif li,
+    #corpsDocRessourceEleve.mode-dys-actif td,
+    #corpsDocRessourceEleve.mode-dys-actif th {
+      font-size: 1.04rem !important;
+      margin-bottom: 12px !important;
+    }
+    #corpsDocRessourceEleve.mode-dys-actif h1,
+    #corpsDocRessourceEleve.mode-dys-actif h2,
+    #corpsDocRessourceEleve.mode-dys-actif h3 {
+      margin-top: 18px !important;
+      margin-bottom: 10px !important;
+      color: #0f172a !important;
+    }
+    #corpsDocRessourceEleve.mode-dys-actif mark,
+    #corpsDocRessourceEleve.mode-dys-actif strong {
+      background-color: #fef9c3 !important;
+      padding: 1px 4px !important;
+      border-radius: 3px !important;
+    }
   </style>
 
 
