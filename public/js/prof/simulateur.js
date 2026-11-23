@@ -146,9 +146,32 @@ function quitterSimulation() {
   if (typeof actualiserCompteursTuiles === 'function') actualiserCompteursTuiles();
 }
 
+function estModeDysProfActif() {
+  return localStorage.getItem('qcm_pref_mode_dys_prof') === '1';
+}
+
+function appliquerEtatModeDysProf() {
+  const actif = estModeDysProfActif();
+  ['corpsDocRessourceSimu', 'corpsModalApercuFiche', 'editFicheApercuLive'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('mode-dys-actif', actif);
+  });
+  document.querySelectorAll('.btn-dys-sync').forEach(btn => {
+    btn.classList.toggle('active', actif);
+    btn.innerHTML = actif ? '<span>👁️ Confort Dys : ON</span>' : '<span>👁️ Confort Dys</span>';
+  });
+}
+
+function basculerModeDysProf() {
+  const nouvelEtat = !estModeDysProfActif();
+  localStorage.setItem('qcm_pref_mode_dys_prof', nouvelEtat ? '1' : '0');
+  appliquerEtatModeDysProf();
+}
+
 function ouvrirDocRessourceSimu() {
   if (!currentDocumentHtml) return;
   document.getElementById('corpsDocRessourceSimu').innerHTML = currentDocumentHtml;
+  if (typeof appliquerEtatModeDysProf === 'function') appliquerEtatModeDysProf();
   document.getElementById('modalDocRessourceSimu').style.display = 'flex';
 }
 

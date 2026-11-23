@@ -544,6 +544,7 @@ async function previsualiserFiche(ficheId) {
     const corps = document.getElementById('corpsModalApercuFiche');
     corps.innerHTML = fiche.contenu_html;
     corps.scrollTop = 0;
+    if (typeof appliquerEtatModeDysProf === 'function') appliquerEtatModeDysProf();
     document.getElementById('modalApercuFiche').style.display = 'flex';
   } catch (e) {}
 }
@@ -619,6 +620,7 @@ async function ouvrirModalEditionFiche(ficheId) {
           }).join('');
     }
 
+    if (typeof appliquerEtatModeDysProf === 'function') appliquerEtatModeDysProf();
     document.getElementById('modalEditionFiche').style.display = 'flex';
   } catch (e) {
     alert("Erreur lors du chargement de la fiche.");
