@@ -2131,7 +2131,7 @@
       }).join('');
     }
 
-    function afficherEspaceEleve() {
+    function afficherEspaceEleve() { if (window.appliquerEtatModeDysDoc) window.appliquerEtatModeDysDoc();
       document.getElementById('viewEleveLogin').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'none';
       document.getElementById('viewEleveFin').style.display = 'none';
@@ -2437,7 +2437,7 @@
       modal.style.display = 'flex';
     }
 
-    function fermerDocRessourceEleve() {
+    function fermerDocRessourceEleve() { if (window.arreterLectureAudioFiche) window.arreterLectureAudioFiche(); if (window.desactiverRegleLectureDoc) window.desactiverRegleLectureDoc();
       const modal = document.getElementById('modalDocRessourceEleve');
       if (modal) modal.style.display = 'none';
     }
@@ -3400,7 +3400,7 @@
       return q;
     }
 
-    function afficherQuestionCourante() {
+    function afficherQuestionCourante() { if (window.arreterLectureAudioFiche) window.arreterLectureAudioFiche(); if (window.appliquerEtatModeDysDoc) window.appliquerEtatModeDysDoc();
       if (typeof arreterLectureAudioQuestionEleve === 'function') arreterLectureAudioQuestionEleve();
       if (typeof appliquerEtatModeDysDoc === 'function') appliquerEtatModeDysDoc();
       if (window.questionsValideesSet && window.questionsValideesSet.has(currentQuestionIndex)) {
@@ -4337,5 +4337,217 @@
     <div id="regleLectureTopEleve" class="regle-lecture-top"></div>
     <div id="regleLectureBottomEleve" class="regle-lecture-bottom"></div>
   </div>
+  <script>
+    (function() {
+      var vitesseAudio = 1.0;
+      var regleActive = false;
+      var regleY = Math.round(window.innerHeight * 0.45);
+      var zoomPct = parseInt(localStorage.getItem('qcm_pref_zoom_eleve') || '100', 10);
+
+      window.estModeDysActive = function() {
+        var pref = localStorage.getItem('qcm_pref_mode_dys');
+        if (pref === '1') return true;
+        if (pref === '0') return false;
+        try {
+          if (typeof sessionEleve !== 'undefined' && sessionEleve && sessionEleve.eleve && sessionEleve.eleve.est_pap) {
+            return true;
+          }
+          var saved = JSON.parse(localStorage.getItem('qcm_eleve_session') || 'null');
+          if (saved && saved.eleve && saved.eleve.est_pap) return true;
+        } catch (e) {}
+        return false;
+      };
+
+      window.appliquerZoomQcmEleve = function() {
+        var zone = document.getElementById('singleQuestionContainer');
+        var fb = document.getElementById('feedbackContainer');
+        var val = (zoomPct / 100).toFixed(2);
+        if (zone) zone.style.zoom = val;
+        if (fb) fb.style.zoom = val;
+      };
+
+      window.changerZoomQcmEleve = function(delta) {
+        zoomPct = Math.min(140, Math.max(90, zoomPct + delta));
+        localStorage.setItem('qcm_pref_zoom_eleve', String(zoomPct));
+        window.appliquerZoomQcmEleve();
+      };
+
+      window.appliquerEtatModeDysDoc = function() {
+        var actif = window.estModeDysActive();
+        document.body.classList.toggle('mode-dys-global', actif);
+        var corpsEl = document.getElementById('corpsDocRessourceEleve');
+        var qcmEl = document.getElementById('viewEleveQcm');
+        if (corpsEl) corpsEl.classList.toggle('mode-dys-actif', actif);
+        if (qcmEl) qcmEl.classList.toggle('mode-dys-actif', actif);
+
+        var btns = document.querySelectorAll('.btn-dys-eleve-sync');
+        for (var i = 0; i < btns.length; i++) {
+          btns[i].classList.toggle('active', actif);
+          btns[i].innerHTML = actif ? '<span>👁️ Confort Dys : ON</span>' : '<span>👁️ Confort Dys</span>';
+        }
+        window.appliquerZoomQcmEleve();
+      };
+
+      window.basculerModeDysDoc = function() {
+        var nouvelEtat = !window.estModeDysActive();
+        localStorage.setItem('qcm_pref_mode_dys', nouvelEtat ? '1' : '0');
+        window.appliquerEtatModeDysDoc();
+      };
+
+      window.arreterLectureAudioFiche = function() {
+        try {
+          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        } catch (e) {}
+        var ids = ['btnLireFicheAudio', 'btnLireQuestionAudio'];
+        for (var i = 0; i < ids.length; i++) {
+          var btn = document.getElementById(ids[i]);
+          if (btn) {
+            btn.classList.remove('active');
+            btn.innerHTML = '<span>🔊 Écouter</span>';
+          }
+        }
+      };
+
+      window.basculerVitesseAudioFiche = function() {
+        vitesseAudio = (vitesseAudio === 1.0) ? 0.85 : 1.0;
+        var btnV = document.getElementById('btnVitesseAudioFiche');
+        if (btnV) {
+          btnV.innerHTML = '<span>' + (vitesseAudio === 1.0 ? '1×' : '0.85×') + '</span>';
+          btnV.classList.toggle('active', vitesseAudio !== 1.0);
+        }
+        if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+          window.arreterLectureAudioFiche();
+          window.basculerLectureAudioFiche();
+        }
+      };
+
+      function lireTexteFr(texteBrut, btnId, modalIdCondition) {
+        if (!('speechSynthesis' in window)) {
+          alert("La synthèse vocale n'est pas prise en charge par ce navigateur.");
+          return;
+        }
+        if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+          window.arreterLectureAudioFiche();
+          return;
+        }
+        if (!texteBrut) return;
+
+        var phrases = texteBrut.match(/[^.!?]+[.!?]*/g) || [texteBrut];
+        var segments = [];
+        var courant = '';
+        for (var i = 0; i < phrases.length; i++) {
+          var ph = phrases[i];
+          if ((courant + ' ' + ph).length > 220 && courant.trim()) {
+            segments.push(courant.trim());
+            courant = ph;
+          } else {
+            courant += ' ' + ph;
+          }
+        }
+        if (courant.trim()) segments.push(courant.trim());
+
+        var btn = document.getElementById(btnId);
+        if (btn) {
+          btn.classList.add('active');
+          btn.innerHTML = '<span>⏹️ Stop</span>';
+        }
+
+        var voixList = window.speechSynthesis.getVoices();
+        var voixFr = null;
+        for (var j = 0; j < voixList.length; j++) {
+          if (/^fr(-|_)/i.test(voixList[j].lang)) { voixFr = voixList[j]; break; }
+        }
+
+        var indexSeg = 0;
+        function lireSuivant() {
+          if (modalIdCondition) {
+            var modal = document.getElementById(modalIdCondition);
+            if (!modal || modal.style.display === 'none') {
+              window.arreterLectureAudioFiche();
+              return;
+            }
+          }
+          if (indexSeg >= segments.length) {
+            window.arreterLectureAudioFiche();
+            return;
+          }
+          var utter = new SpeechSynthesisUtterance(segments[indexSeg]);
+          utter.lang = 'fr-FR';
+          utter.rate = vitesseAudio;
+          if (voixFr) utter.voice = voixFr;
+          utter.onend = function() { indexSeg++; lireSuivant(); };
+          utter.onerror = function() { window.arreterLectureAudioFiche(); };
+          window.speechSynthesis.speak(utter);
+        }
+        lireSuivant();
+      }
+
+      window.basculerLectureAudioFiche = function() {
+        var corpsEl = document.getElementById('corpsDocRessourceEleve');
+        if (!corpsEl) return;
+        var clone = corpsEl.cloneNode(true);
+        var toRemove = clone.querySelectorAll('style, script, noscript');
+        for (var i = 0; i < toRemove.length; i++) toRemove[i].remove();
+        var blocks = clone.querySelectorAll('h1, h2, h3, h4, p, li, tr, br');
+        for (var j = 0; j < blocks.length; j++) blocks[j].insertAdjacentText('afterend', '. ');
+        var texteBrut = (clone.innerText || clone.textContent || '').replace(/\s+/g, ' ').replace(/\.(\s*\.)+/g, '.').trim();
+        lireTexteFr(texteBrut, 'btnLireFicheAudio', 'modalDocRessourceEleve');
+      };
+
+      window.basculerLectureAudioQuestionEleve = function() {
+        var zone = document.getElementById('singleQuestionContainer');
+        if (!zone) return;
+        var clone = zone.cloneNode(true);
+        var toRemove = clone.querySelectorAll('style, script, select');
+        for (var i = 0; i < toRemove.length; i++) toRemove[i].remove();
+        var blocks = clone.querySelectorAll('.question-enonce, .reponse-label, .matching-row');
+        for (var j = 0; j < blocks.length; j++) blocks[j].insertAdjacentText('afterend', '. ');
+        var texteBrut = (clone.innerText || clone.textContent || '').replace(/\s+/g, ' ').trim();
+        lireTexteFr(texteBrut, 'btnLireQuestionAudio', null);
+      };
+
+      function positionnerRegle(clientY) {
+        if (!regleActive) return;
+        if (typeof clientY === 'number' && !isNaN(clientY)) regleY = clientY;
+        var hauteurBande = 56;
+        var topEl = document.getElementById('regleLectureTopEleve');
+        var botEl = document.getElementById('regleLectureBottomEleve');
+        if (topEl) topEl.style.height = Math.max(0, regleY - hauteurBande / 2) + 'px';
+        if (botEl) botEl.style.top = Math.min(window.innerHeight, regleY + hauteurBande / 2) + 'px';
+      }
+
+      window.basculerRegleLectureDoc = function() {
+        regleActive = !regleActive;
+        var overlay = document.getElementById('regleLectureOverlayEleve');
+        var btn = document.getElementById('btnToggleRegleLectureDoc');
+        if (overlay) overlay.style.display = regleActive ? 'block' : 'none';
+        if (btn) {
+          btn.classList.toggle('active', regleActive);
+          btn.innerHTML = regleActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
+        }
+        if (regleActive) positionnerRegle(Math.round(window.innerHeight * 0.45));
+      };
+
+      window.desactiverRegleLectureDoc = function() {
+        regleActive = false;
+        var overlay = document.getElementById('regleLectureOverlayEleve');
+        var btn = document.getElementById('btnToggleRegleLectureDoc');
+        if (overlay) overlay.style.display = 'none';
+        if (btn) {
+          btn.classList.remove('active');
+          btn.innerHTML = '<span>📏 Règle</span>';
+        }
+      };
+
+      document.addEventListener('mousemove', function(e) { if (regleActive) positionnerRegle(e.clientY); }, { passive: true });
+      document.addEventListener('touchstart', function(e) { if (regleActive && e.touches && e.touches[0]) positionnerRegle(e.touches[0].clientY); }, { passive: true });
+      document.addEventListener('touchmove', function(e) { if (regleActive && e.touches && e.touches[0]) positionnerRegle(e.touches[0].clientY); }, { passive: true });
+
+      window.addEventListener('DOMContentLoaded', function() {
+        window.appliquerEtatModeDysDoc();
+        setTimeout(window.appliquerEtatModeDysDoc, 250);
+      });
+    })();
+  </script>
 </body>
 </html>
