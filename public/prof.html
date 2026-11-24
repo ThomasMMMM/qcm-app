@@ -217,6 +217,19 @@
       border-color: #cbd5e1;
       color: #475569;
     }
+      /* ================= MODE FOCUS SIMULATION PROF ================= */
+    #viewSimulateurProf.mode-focus-actif .progress-bar-container,
+    #viewSimulateurProf.mode-focus-actif #simuProgressionText,
+    #viewSimulateurProf.mode-focus-actif #simuPointsText {
+      display: none !important;
+    }
+    #viewSimulateurProf.mode-focus-actif {
+      max-width: 760px !important;
+    }
+    #viewSimulateurProf.mode-focus-actif .question-enonce {
+      font-size: 1.08rem !important;
+      margin-bottom: 16px !important;
+    }
   </style>
 </head>
 <body>
@@ -855,6 +868,15 @@
         <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="quitterSimulation()">Quitter le test</button>
       </div>
 
+      <div id="barreAccessibiliteSimuProf" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:7px 10px; margin-bottom:12px;">
+        <span style="font-size:0.76rem; font-weight:700; color:#475569;">Aides à la lecture (aperçu élève) :</span>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+          <button type="button" id="btnToggleModeFocusSimuProf" class="btn-dys-toggle" onclick="basculerModeFocusProf()" title="Masquer la barre de progression et les points (mode TDAH)">
+            <span>🧘 Focus</span>
+          </button>
+        </div>
+      </div>
+
       <div id="btnOuvrirDocBox" style="display:none; margin-bottom:12px;">
         <button type="button" class="btn" style="background:#0284c7; width:100%; justify-content:center; padding:10px 14px; font-size:0.95rem;" onclick="ouvrirDocRessourceSimu()">
           📖 Consulter le Document Ressource
@@ -1079,7 +1101,7 @@
   <script src="/js/prof/seances.js?v=20261119f"></script>
   <script src="/js/prof/resultats.js?v=20261120c"></script>
   <script src="/js/prof/export_pronote.js?v=20261120c"></script>
-  <script src="/js/prof/simulateur.js?v=20261124d"></script>
+  <script src="/js/prof/simulateur.js?v=20261124e"></script>
   <script src="/js/prof/analyse.js?v=20261118a"></script>
   <script src="/js/prof/suivi_classes.js?v=20261119b"></script>
   <!-- Modale Compétences par Matière -->

@@ -126,7 +126,7 @@ function demarrerSimulation(questions, titre, docHtml = null) {
   document.getElementById('viewSimulateurProf').style.display = 'block';
   document.getElementById('viewSimulateurFin').style.display = 'none';
 
-  afficherQuestionSimulateur();
+  appliquerEtatModeFocusProf(); afficherQuestionSimulateur();
 }
 
 function quitterSimulation() {
@@ -725,7 +725,7 @@ function validerQuestionSimu() {
 function passerQuestionSuivanteSimu() {
   if (currentQuestionIndex < currentQuestions.length - 1) {
     currentQuestionIndex++;
-    afficherQuestionSimulateur();
+    appliquerEtatModeFocusProf(); afficherQuestionSimulateur();
   } else {
     const note20 = totalScorePossible > 0 ? ((totalScoreObtenu / totalScorePossible) * 20).toFixed(2) : "0.00";
     document.getElementById('viewSimulateurProf').style.display = 'none';
@@ -766,4 +766,25 @@ function lancerMiniConfettisSimu(cibleEl) {
       setTimeout(() => p.remove(), 1000);
     }
   } catch (e) {}
+}
+
+function estModeFocusProfActif() {
+  return localStorage.getItem('qcm_pref_mode_focus_prof') === '1';
+}
+
+function appliquerEtatModeFocusProf() {
+  const actif = estModeFocusProfActif();
+  const simuEl = document.getElementById('viewSimulateurProf');
+  if (simuEl) simuEl.classList.toggle('mode-focus-actif', actif);
+  const btn = document.getElementById('btnToggleModeFocusSimuProf');
+  if (btn) {
+    btn.classList.toggle('active', actif);
+    btn.innerHTML = actif ? '<span>🧘 Focus : ON</span>' : '<span>🧘 Focus</span>';
+  }
+}
+
+function basculerModeFocusProf() {
+  const nouvelEtat = !estModeFocusProfActif();
+  localStorage.setItem('qcm_pref_mode_focus_prof', nouvelEtat ? '1' : '0');
+  appliquerEtatModeFocusProf();
 }

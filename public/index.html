@@ -823,6 +823,35 @@
       border-color: #cbd5e1;
       color: #475569;
     }
+      /* ================= MODE FOCUS (SIMPLIFICATION COGNITIVE TDAH) ================= */
+    body.mode-focus-actif header,
+    body.mode-focus-actif footer,
+    body.mode-focus-actif #footerRgpdMentionEleve {
+      display: none !important;
+    }
+    #viewEleveQcm.mode-focus-actif .progress-bar-container,
+    #viewEleveQcm.mode-focus-actif #progressionText,
+    #viewEleveQcm.mode-focus-actif #pointsText,
+    #viewEleveQcm.mode-focus-actif .alert-box,
+    #viewEleveQcm.mode-focus-actif .warning-banner,
+    #viewEleveQcm.mode-focus-actif [id*="alerte"],
+    #viewEleveQcm.mode-focus-actif [id*="Alerte"],
+    #viewEleveQcm.mode-focus-actif [id*="radar"],
+    #viewEleveQcm.mode-focus-actif [id*="Radar"] {
+      display: none !important;
+    }
+    #viewEleveQcm.mode-focus-actif {
+      max-width: 760px !important;
+      margin: 12px auto !important;
+    }
+    #viewEleveQcm.mode-focus-actif .card {
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08) !important;
+      padding: 22px 20px !important;
+    }
+    #viewEleveQcm.mode-focus-actif .question-enonce {
+      font-size: 1.08rem !important;
+      margin-bottom: 16px !important;
+    }
   </style>
 
 
@@ -1002,6 +1031,9 @@
           </button>
           <button type="button" id="btnToggleModeDysQcm" class="btn-dys-toggle btn-dys-eleve-sync" onclick="basculerModeDysDoc()" title="Police OpenDyslexic, fond crème et espacement aéré">
             <span>👁️ Confort Dys</span>
+          </button>
+          <button type="button" id="btnToggleModeFocusQcm" class="btn-dys-toggle" onclick="basculerModeFocusEleve()" title="Masquer les compteurs, points et distractions autour de la question">
+            <span>🧘 Focus</span>
           </button>
           <button type="button" class="btn-dys-toggle" onclick="changerZoomQcmEleve(-10)" title="Réduire la taille du texte" style="padding:5px 8px;"><span>A-</span></button>
           <button type="button" class="btn-dys-toggle" onclick="changerZoomQcmEleve(10)" title="Agrandir la taille du texte" style="padding:5px 8px;"><span>A+</span></button>
@@ -2214,7 +2246,7 @@
       }).join('');
     }
 
-    function afficherEspaceEleve() { if (window.appliquerEtatModeDysDoc) window.appliquerEtatModeDysDoc();
+    function afficherEspaceEleve() { document.body.classList.remove("mode-focus-actif"); if (window.appliquerEtatModeDysDoc) window.appliquerEtatModeDysDoc();
       document.getElementById('viewEleveLogin').style.display = 'none';
       document.getElementById('viewEleveQcm').style.display = 'none';
       document.getElementById('viewEleveFin').style.display = 'none';
@@ -2590,6 +2622,35 @@
       padding: 10px 14px;
       border-color: #cbd5e1;
       color: #475569;
+    }
+      /* ================= MODE FOCUS (SIMPLIFICATION COGNITIVE TDAH) ================= */
+    body.mode-focus-actif header,
+    body.mode-focus-actif footer,
+    body.mode-focus-actif #footerRgpdMentionEleve {
+      display: none !important;
+    }
+    #viewEleveQcm.mode-focus-actif .progress-bar-container,
+    #viewEleveQcm.mode-focus-actif #progressionText,
+    #viewEleveQcm.mode-focus-actif #pointsText,
+    #viewEleveQcm.mode-focus-actif .alert-box,
+    #viewEleveQcm.mode-focus-actif .warning-banner,
+    #viewEleveQcm.mode-focus-actif [id*="alerte"],
+    #viewEleveQcm.mode-focus-actif [id*="Alerte"],
+    #viewEleveQcm.mode-focus-actif [id*="radar"],
+    #viewEleveQcm.mode-focus-actif [id*="Radar"] {
+      display: none !important;
+    }
+    #viewEleveQcm.mode-focus-actif {
+      max-width: 760px !important;
+      margin: 12px auto !important;
+    }
+    #viewEleveQcm.mode-focus-actif .card {
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08) !important;
+      padding: 22px 20px !important;
+    }
+    #viewEleveQcm.mode-focus-actif .question-enonce {
+      font-size: 1.08rem !important;
+      margin-bottom: 16px !important;
     }
   </style>`;
       });
@@ -4530,7 +4591,7 @@
       window.changerZoomQcmEleve = function(delta) {
         zoomPct = Math.min(140, Math.max(90, zoomPct + delta));
         localStorage.setItem('qcm_pref_zoom_eleve', String(zoomPct));
-        window.appliquerZoomQcmEleve();
+        window.appliquerZoomQcmEleve(); if (window.appliquerEtatModeFocusEleve) window.appliquerEtatModeFocusEleve();
       };
 
       window.appliquerEtatModeDysDoc = function() {
@@ -4546,7 +4607,7 @@
           btns[i].classList.toggle('active', actif);
           btns[i].innerHTML = actif ? '<span>👁️ Confort Dys : ON</span>' : '<span>👁️ Confort Dys</span>';
         }
-        window.appliquerZoomQcmEleve();
+        window.appliquerZoomQcmEleve(); if (window.appliquerEtatModeFocusEleve) window.appliquerEtatModeFocusEleve();
       };
 
       window.basculerModeDysDoc = function() {
