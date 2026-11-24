@@ -68,7 +68,7 @@ export async function onRequestGet(context) {
 
     // Récupérer tous les élèves de la classe
     const { results: elevesClasse } = await env.DB.prepare(`
-      SELECT id, nom, prenom, code_eleve
+      SELECT id, nom, prenom, code_eleve, COALESCE(est_pap, 0) AS est_pap
       FROM eleves
       WHERE classe_id = ?
       ORDER BY nom ASC, prenom ASC
@@ -220,15 +220,24 @@ export async function onRequestGet(context) {
         }
       });
 
+      const estPapEleve = (Number(el.est_pap) === 1 || el.est_pap === true);
+      const nbQuestionsPap = (estPapEleve && nbQuestionsTotal > 1)
+        ? (nbQuestionsTotal - Math.max(1, Math.round(nbQuestionsTotal * 0.25)))
+        : nbQuestionsTotal;
+      const nbQuestionsAttendues = (sv && Number(sv.total_questions) > 0 && Number(sv.total_questions) <= nbQuestionsTotal)
+        ? Number(sv.total_questions)
+        : nbQuestionsPap;
+
       fusionEleves.push({
         id: el.id,
         est_absent: setAbsents.has(Number(el.id)),
+        est_pap: estPapEleve,
         nom: el.nom,
         prenom: el.prenom,
         code_eleve: el.code_eleve,
         statut,
         question_courante: questionCourante,
-        total_questions: nbQuestionsTotal,
+        total_questions: nbQuestionsAttendues,
         reponses,
         note_sur_20: noteSur20,
         hors_ecran: horsEcran,

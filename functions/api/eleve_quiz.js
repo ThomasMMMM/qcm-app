@@ -163,7 +163,7 @@ export async function onRequestGet(context) {
     }
 
     const questionsBrutes = JSON.parse(seance.data_json);
-    const estPap = eleve.est_pap === 1;
+    const estPap = (Number(eleve.est_pap) === 1 || eleve.est_pap === true);
 
     return new Response(JSON.stringify({
       seance_id: seance.seance_id,

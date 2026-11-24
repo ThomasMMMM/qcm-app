@@ -2377,7 +2377,11 @@
         currentQuestions = data.questions;
         totalScorePossible = currentQuestions.reduce((acc, q) => acc + (parseFloat(q.points) || 1), 0);
 
-        const sessionSauvee = chargerEtatQcm(codeSession);
+        let sessionSauvee = chargerEtatQcm(codeSession);
+        if (sessionSauvee && Array.isArray(sessionSauvee.reponses) && sessionSauvee.reponses.length !== currentQuestions.length) {
+          purgerEtatQcm(codeSession);
+          sessionSauvee = null;
+        }
         if (sessionSauvee && (sessionSauvee.index > 0 || (Array.isArray(sessionSauvee.validees) && sessionSauvee.validees.length > 0)) && sessionSauvee.index < currentQuestions.length) {
           currentQuestionIndex = sessionSauvee.index;
           totalScoreObtenu = sessionSauvee.score || 0;
