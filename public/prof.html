@@ -1030,7 +1030,7 @@
   <script src="/js/prof/seances.js?v=20261119f"></script>
   <script src="/js/prof/resultats.js?v=20261120c"></script>
   <script src="/js/prof/export_pronote.js?v=20261120c"></script>
-  <script src="/js/prof/simulateur.js?v=20261124b"></script>
+  <script src="/js/prof/simulateur.js?v=20261124c"></script>
   <script src="/js/prof/analyse.js?v=20261118a"></script>
   <script src="/js/prof/suivi_classes.js?v=20261119b"></script>
   <!-- Modale Compétences par Matière -->
@@ -1150,7 +1150,7 @@
     <div id="regleLectureTopProf" class="regle-lecture-top"></div>
     <div id="regleLectureHandleProf" class="regle-lecture-handle" title="Glisser ou utiliser les flèches pour déplacer la règle">
       <button type="button" onclick="deplacerRegleProf(-28)" aria-label="Monter la règle">▲</button>
-      <span>⇅</span>
+      <button type="button" id="btnHauteurRegleProf" onclick="changerHauteurRegleProf()" title="Changer l'épaisseur de la règle">↕</button>
       <button type="button" onclick="deplacerRegleProf(28)" aria-label="Descendre la règle">▼</button>
     </div>
     <div id="regleLectureBottomProf" class="regle-lecture-bottom"></div>

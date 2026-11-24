@@ -281,9 +281,13 @@ let regleLectureProfY = Math.round(window.innerHeight * 0.45);
 
 let glissementRegleProf = false;
 
+const hauteursRegleProf = [36, 56, 96];
+let hauteurBandeProf = parseInt(localStorage.getItem('qcm_pref_hauteur_regle_prof') || '56', 10);
+if (!hauteursRegleProf.includes(hauteurBandeProf)) hauteurBandeProf = 56;
+
 function positionnerRegleLectureProf(clientY) {
   if (!regleLectureProfActive) return;
-  const hauteurBande = 56;
+  const hauteurBande = hauteurBandeProf;
   if (typeof clientY === 'number' && !isNaN(clientY)) {
     regleLectureProfY = Math.min(window.innerHeight - 60, Math.max(70, clientY));
   }
@@ -294,7 +298,17 @@ function positionnerRegleLectureProf(clientY) {
   const handleEl = document.getElementById('regleLectureHandleProf');
   if (topEl) topEl.style.height = topH + 'px';
   if (botEl) botEl.style.top = botTop + 'px';
-  if (handleEl) handleEl.style.top = topH + 'px';
+  if (handleEl) {
+    handleEl.style.top = topH + 'px';
+    handleEl.style.setProperty('height', hauteurBande + 'px', 'important');
+  }
+}
+
+function changerHauteurRegleProf() {
+  const idxH = hauteursRegleProf.indexOf(hauteurBandeProf);
+  hauteurBandeProf = hauteursRegleProf[(idxH + 1) % hauteursRegleProf.length];
+  localStorage.setItem('qcm_pref_hauteur_regle_prof', String(hauteurBandeProf));
+  positionnerRegleLectureProf(regleLectureProfY);
 }
 
 function deplacerRegleProf(deltaY) {
