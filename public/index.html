@@ -1350,7 +1350,7 @@
           </button>
           <button type="button" id="btnToggleRegleLectureDoc" class="btn-dys-toggle" onclick="basculerRegleLectureDoc()" title="Afficher une règle guide-ligne">
             <span>📏 Règle</span>
-          </button>
+          </button><button type="button" id="btnHauteurRegleEleve" class="btn-dys-toggle" onclick="changerHauteurRegleEleve()" title="Régler la hauteur de la fenêtre de lecture" style="display:none;"><span>↕ Épaisseur : Moy.</span></button>
           <button type="button" id="btnToggleModeDysDoc" class="btn-dys-toggle btn-dys-eleve-sync" onclick="basculerModeDysDoc()" title="Activer la mise en page adaptée aux élèves dyslexiques">
             <span>👁️ Confort Dys</span>
           </button>
@@ -4714,26 +4714,35 @@
         regleActive = !regleActive;
         var overlay = document.getElementById('regleLectureOverlayEleve');
         var btn = document.getElementById('btnToggleRegleLectureDoc');
+        var btnH = document.getElementById('btnHauteurRegleEleve');
+        var barreBas = document.getElementById('barrePilotageRegleEleve');
         if (overlay) overlay.style.display = regleActive ? 'block' : 'none';
         if (btn) {
           btn.classList.toggle('active', regleActive);
           btn.innerHTML = regleActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
         }
-        majLibelleEpaisseurEleve();
+        if (btnH) {
+          btnH.style.display = regleActive ? 'inline-flex' : 'none';
+        }
+        if (barreBas) {
+          barreBas.style.display = regleActive ? 'flex' : 'none';
+        }
         if (regleActive) positionnerRegle(Math.round(window.innerHeight * 0.38));
       };
 
       window.desactiverRegleLectureDoc = function() {
         regleActive = false;
-        glissementRegleEleve = false;
         var overlay = document.getElementById('regleLectureOverlayEleve');
         var btn = document.getElementById('btnToggleRegleLectureDoc');
+        var btnH = document.getElementById('btnHauteurRegleEleve');
+        var barreBas = document.getElementById('barrePilotageRegleEleve');
         if (overlay) overlay.style.display = 'none';
         if (btn) {
           btn.classList.remove('active');
           btn.innerHTML = '<span>📏 Règle</span>';
         }
-        majLibelleEpaisseurEleve();
+        if (btnH) btnH.style.display = 'none';
+        if (barreBas) barreBas.style.display = 'none';
       };
 
       var corpsDocEl = document.getElementById('corpsDocRessourceEleve');

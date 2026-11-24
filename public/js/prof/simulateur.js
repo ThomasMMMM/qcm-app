@@ -330,22 +330,29 @@ function basculerRegleLectureProf() {
     btn.classList.toggle('active', regleLectureProfActive);
     btn.innerHTML = regleLectureProfActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
   });
-  majInterfaceRegleProf();
-  if (regleLectureProfActive) {
-    positionnerRegleLectureProf(Math.round(window.innerHeight * 0.38));
-  }
+  document.querySelectorAll('.btn-hauteur-regle-prof-sync').forEach(btn => {
+    btn.style.display = regleLectureProfActive ? 'inline-flex' : 'none';
+  });
+  document.querySelectorAll('.barre-regle-prof-sync').forEach(bar => {
+    bar.style.display = regleLectureProfActive ? 'flex' : 'none';
+  });
+  if (regleLectureProfActive) positionnerRegleLectureProf(Math.round(window.innerHeight * 0.38));
 }
 
 function desactiverRegleLectureProf() {
   regleLectureProfActive = false;
-  glissementRegleProf = false;
   const overlay = document.getElementById('regleLectureOverlayProf');
   if (overlay) overlay.style.display = 'none';
   document.querySelectorAll('.btn-regle-prof-sync').forEach(btn => {
     btn.classList.remove('active');
     btn.innerHTML = '<span>📏 Règle</span>';
   });
-  majInterfaceRegleProf();
+  document.querySelectorAll('.btn-hauteur-regle-prof-sync').forEach(btn => {
+    btn.style.display = 'none';
+  });
+  document.querySelectorAll('.barre-regle-prof-sync').forEach(bar => {
+    bar.style.display = 'none';
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
