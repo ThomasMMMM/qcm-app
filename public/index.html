@@ -701,6 +701,30 @@
       padding: 1px 4px !important;
       border-radius: 3px !important;
     }
+    /* ================= RÈGLE DE LECTURE (FOCUS DYS / TDAH) ================= */
+    .regle-lecture-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10040;
+      pointer-events: none;
+      display: none;
+    }
+    .regle-lecture-top,
+    .regle-lecture-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.36);
+      transition: height 0.04s linear, top 0.04s linear;
+    }
+    .regle-lecture-top {
+      top: 0;
+      border-bottom: 2px solid #0284c7;
+    }
+    .regle-lecture-bottom {
+      bottom: 0;
+      border-top: 2px solid #0284c7;
+    }
   </style>
 
 
@@ -4261,5 +4285,9 @@
       <strong>Protection des données (RGPD) :</strong> Application à usage strictement pédagogique (évaluations en classe). Aucune donnée n'est cédée ou exploitée à des fins commerciales, et le site n'est pas référencé. Hébergement sécurisé en Union européenne (WEUR). Conservation limitée à l'année scolaire.
     </div>
   </footer>
+  <div id="regleLectureOverlayEleve" class="regle-lecture-overlay" aria-hidden="true">
+    <div id="regleLectureTopEleve" class="regle-lecture-top"></div>
+    <div id="regleLectureBottomEleve" class="regle-lecture-bottom"></div>
+  </div>
 </body>
 </html>

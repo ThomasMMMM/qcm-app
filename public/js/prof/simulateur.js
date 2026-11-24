@@ -276,8 +276,59 @@ function basculerLectureAudioProf(corpsId, modalId) {
   lireSegmentSuivant();
 }
 
+let regleLectureProfActive = false;
+let regleLectureProfY = Math.round(window.innerHeight * 0.45);
+
+function positionnerRegleLectureProf(clientY) {
+  if (!regleLectureProfActive) return;
+  if (typeof clientY === 'number' && !isNaN(clientY)) {
+    regleLectureProfY = clientY;
+  }
+  const hauteurBande = 56;
+  const topH = Math.max(0, regleLectureProfY - hauteurBande / 2);
+  const botTop = Math.min(window.innerHeight, regleLectureProfY + hauteurBande / 2);
+  const topEl = document.getElementById('regleLectureTopProf');
+  const botEl = document.getElementById('regleLectureBottomProf');
+  if (topEl) topEl.style.height = topH + 'px';
+  if (botEl) botEl.style.top = botTop + 'px';
+}
+
+function basculerRegleLectureProf() {
+  regleLectureProfActive = !regleLectureProfActive;
+  const overlay = document.getElementById('regleLectureOverlayProf');
+  if (overlay) overlay.style.display = regleLectureProfActive ? 'block' : 'none';
+  document.querySelectorAll('.btn-regle-prof-sync').forEach(btn => {
+    btn.classList.toggle('active', regleLectureProfActive);
+    btn.innerHTML = regleLectureProfActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
+  });
+  if (regleLectureProfActive) {
+    positionnerRegleLectureProf(Math.round(window.innerHeight * 0.45));
+  }
+}
+
+function desactiverRegleLectureProf() {
+  regleLectureProfActive = false;
+  const overlay = document.getElementById('regleLectureOverlayProf');
+  if (overlay) overlay.style.display = 'none';
+  document.querySelectorAll('.btn-regle-prof-sync').forEach(btn => {
+    btn.classList.remove('active');
+    btn.innerHTML = '<span>📏 Règle</span>';
+  });
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (regleLectureProfActive) positionnerRegleLectureProf(e.clientY);
+}, { passive: true });
+document.addEventListener('touchstart', (e) => {
+  if (regleLectureProfActive && e.touches && e.touches[0]) positionnerRegleLectureProf(e.touches[0].clientY);
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+  if (regleLectureProfActive && e.touches && e.touches[0]) positionnerRegleLectureProf(e.touches[0].clientY);
+}, { passive: true });
+
 function fermerDocRessourceSimu() {
   arreterLectureAudioProf();
+  desactiverRegleLectureProf();
   document.getElementById('modalDocRessourceSimu').style.display = 'none';
 }
 

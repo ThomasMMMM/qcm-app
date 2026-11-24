@@ -551,6 +551,7 @@ async function previsualiserFiche(ficheId) {
 
 function fermerApercuFiche() {
   if (typeof arreterLectureAudioProf === 'function') arreterLectureAudioProf();
+  if (typeof desactiverRegleLectureProf === 'function') desactiverRegleLectureProf();
   const modal = document.getElementById('modalApercuFiche');
   if (modal) modal.style.display = 'none';
 }
