@@ -668,18 +668,38 @@
       box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
     }
 
-    #corpsDocRessourceEleve.mode-dys-actif {
+    #corpsDocRessourceEleve.mode-dys-actif,
+    #viewEleveQcm.mode-dys-actif {
       background-color: #fdfbf7 !important;
       color: #1e293b !important;
+    }
+    #corpsDocRessourceEleve.mode-dys-actif {
       padding: 18px 20px !important;
     }
     #corpsDocRessourceEleve.mode-dys-actif,
-    #corpsDocRessourceEleve.mode-dys-actif * {
+    #corpsDocRessourceEleve.mode-dys-actif *,
+    #viewEleveQcm.mode-dys-actif .question-enonce,
+    #viewEleveQcm.mode-dys-actif .question-enonce *,
+    #viewEleveQcm.mode-dys-actif .reponse-label,
+    #viewEleveQcm.mode-dys-actif .reponse-label *,
+    #viewEleveQcm.mode-dys-actif .matching-row,
+    #viewEleveQcm.mode-dys-actif .matching-row *,
+    #viewEleveQcm.mode-dys-actif .feedback-box,
+    #viewEleveQcm.mode-dys-actif .feedback-box *,
+    #viewEleveQcm.mode-dys-actif select,
+    #viewEleveQcm.mode-dys-actif input[type="text"],
+    #viewEleveQcm.mode-dys-actif button {
       font-family: 'OpenDyslexic', Verdana, 'Comic Sans MS', sans-serif !important;
-      line-height: 1.85 !important;
-      letter-spacing: 0.06em !important;
-      word-spacing: 0.18em !important;
+      line-height: 1.8 !important;
+      letter-spacing: 0.05em !important;
+      word-spacing: 0.16em !important;
       text-align: left !important;
+    }
+    #viewEleveQcm.mode-dys-actif .reponse-label {
+      background-color: #ffffff !important;
+      border-width: 2px !important;
+      padding: 14px !important;
+      margin-bottom: 10px !important;
     }
     #corpsDocRessourceEleve.mode-dys-actif p,
     #corpsDocRessourceEleve.mode-dys-actif li,
@@ -3355,6 +3375,8 @@
     }
 
     function afficherQuestionCourante() {
+      if (typeof arreterLectureAudioQuestionEleve === 'function') arreterLectureAudioQuestionEleve();
+      if (typeof appliquerEtatModeDysDoc === 'function') appliquerEtatModeDysDoc();
       if (window.questionsValideesSet && window.questionsValideesSet.has(currentQuestionIndex)) {
         const btnSuiv = document.getElementById('btnQuestionSuivante');
         if (btnSuiv) btnSuiv.style.display = 'block';
