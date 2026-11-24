@@ -745,6 +745,45 @@
       bottom: 0;
       border-top: 2px solid #0284c7;
     }
+      /* ================= FORCE POIGNÉE RÈGLE DE LECTURE ================= */
+    .regle-lecture-overlay {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 99999 !important;
+      pointer-events: none !important;
+    }
+    .regle-lecture-handle {
+      position: fixed !important;
+      right: 18px !important;
+      height: 56px !important;
+      z-index: 100000 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      padding: 0 10px !important;
+      border-radius: 10px !important;
+      border: 2px solid #ffffff !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+      pointer-events: auto !important;
+      touch-action: none !important;
+      cursor: ns-resize !important;
+      user-select: none !important;
+      font-size: 0.82rem !important;
+      font-weight: 800 !important;
+    }
+    .regle-lecture-handle button {
+      background: rgba(255, 255, 255, 0.25) !important;
+      border: none !important;
+      color: #ffffff !important;
+      border-radius: 5px !important;
+      padding: 5px 8px !important;
+      font-size: 0.78rem !important;
+      font-weight: 800 !important;
+      cursor: pointer !important;
+      pointer-events: auto !important;
+    }
   </style>
 
 
@@ -2430,7 +2469,46 @@
           }).join(', ');
           return `${brace} ${prefixed} {`;
         });
-        return `<style>${scoped}</style>`;
+        return `<style>${scoped}    /* ================= FORCE POIGNÉE RÈGLE DE LECTURE ================= */
+    .regle-lecture-overlay {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 99999 !important;
+      pointer-events: none !important;
+    }
+    .regle-lecture-handle {
+      position: fixed !important;
+      right: 18px !important;
+      height: 56px !important;
+      z-index: 100000 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      padding: 0 10px !important;
+      border-radius: 10px !important;
+      border: 2px solid #ffffff !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+      pointer-events: auto !important;
+      touch-action: none !important;
+      cursor: ns-resize !important;
+      user-select: none !important;
+      font-size: 0.82rem !important;
+      font-weight: 800 !important;
+    }
+    .regle-lecture-handle button {
+      background: rgba(255, 255, 255, 0.25) !important;
+      border: none !important;
+      color: #ffffff !important;
+      border-radius: 5px !important;
+      padding: 5px 8px !important;
+      font-size: 0.78rem !important;
+      font-weight: 800 !important;
+      cursor: pointer !important;
+      pointer-events: auto !important;
+    }
+  </style>`;
       });
       corpsEl.innerHTML = docSecurise;
       corpsEl.scrollTop = 0;
@@ -4557,8 +4635,7 @@
         }
       };
 
-      document.addEventListener('DOMContentLoaded', function() {
-        var handle = document.getElementById('regleLectureHandleEleve');
+      (function() { var handle = document.getElementById('regleLectureHandleEleve');
         if (handle) {
           handle.addEventListener('mousedown', function(e) {
             if (e.target.tagName === 'BUTTON') return;
