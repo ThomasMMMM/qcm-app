@@ -324,6 +324,7 @@ function rendreSuiviDirect(data) {
   const nbQ = data.seance.total_questions || 1;
 
   tbody.innerHTML = eleves.map(el => {
+    const nbQEleve = el.total_questions || nbQ;
     let badgeStatut = `<span style="background:#f1f5f9; color:#64748b; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">⚪ En attente</span>`;
     if (el.est_absent && el.statut === 'non_connecte') {
       badgeStatut = `<span style="background:#e2e8f0; color:#334155; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:800;">🚫 Absent</span>`;
@@ -332,7 +333,7 @@ function rendreSuiviDirect(data) {
     } else if (el.statut === 'termine') {
       badgeStatut = `<span style="background:#dcfce7; color:#15803d; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">✅ Terminé</span>`;
     } else if (el.statut === 'en_cours') {
-      badgeStatut = `<span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">🔵 Q${Math.min(el.question_courante, nbQ)} / ${nbQ}</span>`;
+      badgeStatut = `<span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:99px; font-size:0.75rem; font-weight:700;">🔵 Q${Math.min(el.question_courante, nbQEleve)} / ${nbQEleve}</span>`;
     }
 
     let badgeSorties = `<span style="color:#94a3b8; font-size:0.78rem;">0</span>`;
@@ -340,9 +341,9 @@ function rendreSuiviDirect(data) {
       badgeSorties = `<span style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; padding:2px 7px; border-radius:6px; font-size:0.75rem; font-weight:800;">⚠️ ${el.nb_sorties}x (${el.duree_sorties_sec}s)</span>`;
     }
 
-    // Pastilles Q1..Qn
+    // Pastilles Q1..Qn (adapté au nombre de questions de l'élève, ex: 30 au lieu de 40 si PAP)
     let pastillesHtml = '<div style="display:flex; gap:4px; flex-wrap:wrap;">';
-    for (let i = 0; i < nbQ; i++) {
+    for (let i = 0; i < nbQEleve; i++) {
       const rep = Array.isArray(el.reponses) ? el.reponses[i] : null;
       let bgP = '#e2e8f0';
       let colP = '#475569';
@@ -370,7 +371,7 @@ function rendreSuiviDirect(data) {
                  onchange="toggleAbsentEleveSeance(${el.id}, this.checked)"
                  style="width:17px; height:17px; cursor:pointer; accent-color:#dc2626;">
         </td>
-        <td><strong>${el.nom}</strong> ${el.prenom}</td>
+        <td><strong>${el.nom}</strong> ${el.prenom}${el.est_pap ? ` <span style="background:#fdf4ff; color:#7e22ce; border:1px solid #e9d5ff; padding:1px 6px; border-radius:6px; font-size:0.68rem; font-weight:800; vertical-align:middle;">PAP</span>` : ``}</td>
         <td style="text-align:center;">${badgeStatut}</td>
         <td>${pastillesHtml}</td>
         <td style="text-align:center;">${badgeSorties}</td>

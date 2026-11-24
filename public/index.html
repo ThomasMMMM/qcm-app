@@ -2378,7 +2378,7 @@
         totalScorePossible = currentQuestions.reduce((acc, q) => acc + (parseFloat(q.points) || 1), 0);
 
         let sessionSauvee = chargerEtatQcm(codeSession);
-        if (sessionSauvee && Array.isArray(sessionSauvee.reponses) && sessionSauvee.reponses.length !== currentQuestions.length) {
+        if (sessionSauvee && Array.isArray(sessionSauvee.suivi_reponses) && sessionSauvee.suivi_reponses.length !== currentQuestions.length) {
           purgerEtatQcm(codeSession);
           sessionSauvee = null;
         }
