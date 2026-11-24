@@ -108,13 +108,36 @@
       background: rgba(15, 23, 42, 0.36);
       transition: height 0.04s linear, top 0.04s linear;
     }
-    .regle-lecture-top {
-      top: 0;
-      border-bottom: 2px solid #0284c7;
+    .regle-lecture-top { top: 0; border-bottom: 2px solid #0284c7; }
+    .regle-lecture-bottom { bottom: 0; border-top: 2px solid #0284c7; }
+    .regle-lecture-handle {
+      position: absolute;
+      right: 14px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 0 8px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+      pointer-events: auto;
+      touch-action: none;
+      cursor: ns-resize;
+      user-select: none;
+      font-size: 0.78rem;
+      font-weight: 800;
     }
-    .regle-lecture-bottom {
-      bottom: 0;
-      border-top: 2px solid #0284c7;
+    .regle-lecture-handle button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -968,7 +991,7 @@
   <script src="/js/prof/seances.js?v=20261119f"></script>
   <script src="/js/prof/resultats.js?v=20261120c"></script>
   <script src="/js/prof/export_pronote.js?v=20261120c"></script>
-  <script src="/js/prof/simulateur.js?v=20261124a"></script>
+  <script src="/js/prof/simulateur.js?v=20261124b"></script>
   <script src="/js/prof/analyse.js?v=20261118a"></script>
   <script src="/js/prof/suivi_classes.js?v=20261119b"></script>
   <!-- Modale Compétences par Matière -->
@@ -1086,6 +1109,11 @@
   </footer>
   <div id="regleLectureOverlayProf" class="regle-lecture-overlay" aria-hidden="true">
     <div id="regleLectureTopProf" class="regle-lecture-top"></div>
+    <div id="regleLectureHandleProf" class="regle-lecture-handle" title="Glisser ou utiliser les flèches pour déplacer la règle">
+      <button type="button" onclick="deplacerRegleProf(-28)" aria-label="Monter la règle">▲</button>
+      <span>⇅</span>
+      <button type="button" onclick="deplacerRegleProf(28)" aria-label="Descendre la règle">▼</button>
+    </div>
     <div id="regleLectureBottomProf" class="regle-lecture-bottom"></div>
   </div>
 </body>

@@ -4335,6 +4335,11 @@
   </footer>
   <div id="regleLectureOverlayEleve" class="regle-lecture-overlay" aria-hidden="true">
     <div id="regleLectureTopEleve" class="regle-lecture-top"></div>
+    <div id="regleLectureHandleEleve" class="regle-lecture-handle" title="Glisser ou utiliser les flèches pour déplacer la règle">
+      <button type="button" onclick="deplacerRegleEleve(-28)" aria-label="Monter la règle">▲</button>
+      <span>⇅</span>
+      <button type="button" onclick="deplacerRegleEleve(28)" aria-label="Descendre la règle">▼</button>
+    </div>
     <div id="regleLectureBottomEleve" class="regle-lecture-bottom"></div>
   </div>
   <script>
@@ -4506,15 +4511,27 @@
         lireTexteFr(texteBrut, 'btnLireQuestionAudio', null);
       };
 
+      var glissementRegleEleve = false;
+
       function positionnerRegle(clientY) {
         if (!regleActive) return;
-        if (typeof clientY === 'number' && !isNaN(clientY)) regleY = clientY;
         var hauteurBande = 56;
+        if (typeof clientY === 'number' && !isNaN(clientY)) {
+          regleY = Math.min(window.innerHeight - 60, Math.max(70, clientY));
+        }
+        var topH = Math.max(0, regleY - hauteurBande / 2);
+        var botTop = Math.min(window.innerHeight, regleY + hauteurBande / 2);
         var topEl = document.getElementById('regleLectureTopEleve');
         var botEl = document.getElementById('regleLectureBottomEleve');
-        if (topEl) topEl.style.height = Math.max(0, regleY - hauteurBande / 2) + 'px';
-        if (botEl) botEl.style.top = Math.min(window.innerHeight, regleY + hauteurBande / 2) + 'px';
+        var handleEl = document.getElementById('regleLectureHandleEleve');
+        if (topEl) topEl.style.height = topH + 'px';
+        if (botEl) botEl.style.top = botTop + 'px';
+        if (handleEl) handleEl.style.top = topH + 'px';
       }
+
+      window.deplacerRegleEleve = function(deltaY) {
+        positionnerRegle(regleY + deltaY);
+      };
 
       window.basculerRegleLectureDoc = function() {
         regleActive = !regleActive;
@@ -4525,11 +4542,12 @@
           btn.classList.toggle('active', regleActive);
           btn.innerHTML = regleActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
         }
-        if (regleActive) positionnerRegle(Math.round(window.innerHeight * 0.45));
+        if (regleActive) positionnerRegle(Math.round(window.innerHeight * 0.38));
       };
 
       window.desactiverRegleLectureDoc = function() {
         regleActive = false;
+        glissementRegleEleve = false;
         var overlay = document.getElementById('regleLectureOverlayEleve');
         var btn = document.getElementById('btnToggleRegleLectureDoc');
         if (overlay) overlay.style.display = 'none';
@@ -4539,9 +4557,31 @@
         }
       };
 
-      document.addEventListener('mousemove', function(e) { if (regleActive) positionnerRegle(e.clientY); }, { passive: true });
-      document.addEventListener('touchstart', function(e) { if (regleActive && e.touches && e.touches[0]) positionnerRegle(e.touches[0].clientY); }, { passive: true });
-      document.addEventListener('touchmove', function(e) { if (regleActive && e.touches && e.touches[0]) positionnerRegle(e.touches[0].clientY); }, { passive: true });
+      document.addEventListener('DOMContentLoaded', function() {
+        var handle = document.getElementById('regleLectureHandleEleve');
+        if (handle) {
+          handle.addEventListener('mousedown', function(e) {
+            if (e.target.tagName === 'BUTTON') return;
+            glissementRegleEleve = true;
+            e.preventDefault();
+          });
+          handle.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'BUTTON') return;
+            glissementRegleEleve = true;
+          }, { passive: true });
+        }
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (regleActive && glissementRegleEleve) positionnerRegle(e.clientY);
+      }, { passive: true });
+      document.addEventListener('mouseup', function() { glissementRegleEleve = false; });
+      document.addEventListener('touchmove', function(e) {
+        if (regleActive && glissementRegleEleve && e.touches && e.touches[0]) {
+          positionnerRegle(e.touches[0].clientY);
+        }
+      }, { passive: true });
+      document.addEventListener('touchend', function() { glissementRegleEleve = false; });
 
       window.addEventListener('DOMContentLoaded', function() {
         window.appliquerEtatModeDysDoc();

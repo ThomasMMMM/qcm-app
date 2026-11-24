@@ -279,18 +279,26 @@ function basculerLectureAudioProf(corpsId, modalId) {
 let regleLectureProfActive = false;
 let regleLectureProfY = Math.round(window.innerHeight * 0.45);
 
+let glissementRegleProf = false;
+
 function positionnerRegleLectureProf(clientY) {
   if (!regleLectureProfActive) return;
-  if (typeof clientY === 'number' && !isNaN(clientY)) {
-    regleLectureProfY = clientY;
-  }
   const hauteurBande = 56;
+  if (typeof clientY === 'number' && !isNaN(clientY)) {
+    regleLectureProfY = Math.min(window.innerHeight - 60, Math.max(70, clientY));
+  }
   const topH = Math.max(0, regleLectureProfY - hauteurBande / 2);
   const botTop = Math.min(window.innerHeight, regleLectureProfY + hauteurBande / 2);
   const topEl = document.getElementById('regleLectureTopProf');
   const botEl = document.getElementById('regleLectureBottomProf');
+  const handleEl = document.getElementById('regleLectureHandleProf');
   if (topEl) topEl.style.height = topH + 'px';
   if (botEl) botEl.style.top = botTop + 'px';
+  if (handleEl) handleEl.style.top = topH + 'px';
+}
+
+function deplacerRegleProf(deltaY) {
+  positionnerRegleLectureProf(regleLectureProfY + deltaY);
 }
 
 function basculerRegleLectureProf() {
@@ -302,12 +310,13 @@ function basculerRegleLectureProf() {
     btn.innerHTML = regleLectureProfActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
   });
   if (regleLectureProfActive) {
-    positionnerRegleLectureProf(Math.round(window.innerHeight * 0.45));
+    positionnerRegleLectureProf(Math.round(window.innerHeight * 0.38));
   }
 }
 
 function desactiverRegleLectureProf() {
   regleLectureProfActive = false;
+  glissementRegleProf = false;
   const overlay = document.getElementById('regleLectureOverlayProf');
   if (overlay) overlay.style.display = 'none';
   document.querySelectorAll('.btn-regle-prof-sync').forEach(btn => {
@@ -316,15 +325,31 @@ function desactiverRegleLectureProf() {
   });
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  const handle = document.getElementById('regleLectureHandleProf');
+  if (handle) {
+    handle.addEventListener('mousedown', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      glissementRegleProf = true;
+      e.preventDefault();
+    });
+    handle.addEventListener('touchstart', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      glissementRegleProf = true;
+    }, { passive: true });
+  }
+});
+
 document.addEventListener('mousemove', (e) => {
-  if (regleLectureProfActive) positionnerRegleLectureProf(e.clientY);
+  if (regleLectureProfActive && glissementRegleProf) positionnerRegleLectureProf(e.clientY);
 }, { passive: true });
-document.addEventListener('touchstart', (e) => {
-  if (regleLectureProfActive && e.touches && e.touches[0]) positionnerRegleLectureProf(e.touches[0].clientY);
-}, { passive: true });
+document.addEventListener('mouseup', () => { glissementRegleProf = false; });
 document.addEventListener('touchmove', (e) => {
-  if (regleLectureProfActive && e.touches && e.touches[0]) positionnerRegleLectureProf(e.touches[0].clientY);
+  if (regleLectureProfActive && glissementRegleProf && e.touches && e.touches[0]) {
+    positionnerRegleLectureProf(e.touches[0].clientY);
+  }
 }, { passive: true });
+document.addEventListener('touchend', () => { glissementRegleProf = false; });
 
 function fermerDocRessourceSimu() {
   arreterLectureAudioProf();
