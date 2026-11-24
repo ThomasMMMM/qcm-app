@@ -784,6 +784,45 @@
       cursor: pointer !important;
       pointer-events: auto !important;
     }
+      /* ================= BARRE DE PILOTAGE RÈGLE DE LECTURE (BAS) ================= */
+    .regle-lecture-handle { display: none !important; }
+    .barre-regle-bas {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #eff6ff;
+      border-top: 2px solid #0284c7;
+      padding: 8px 12px;
+      z-index: 100001;
+      position: relative;
+    }
+    .barre-regle-bas button {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #0284c7;
+      background: #ffffff;
+      color: #0369a1;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      user-select: none;
+    }
+    .barre-regle-bas button:active {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .barre-regle-bas button.btn-close-regle {
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
   </style>
 
 
@@ -1325,7 +1364,12 @@
       </div>
       <div id="corpsDocRessourceEleve" class="fiche-document-body"></div>
       <div class="fiche-modal-footer">
-        <button type="button" id="btnPiedModalDocEleve" class="btn btn-success" style="padding:9px 18px;" onclick="fermerDocRessourceEleve()">
+              <div id="barrePilotageRegleEleve" class="barre-regle-bas">
+        <button type="button" onclick="deplacerRegleEleve(-32)" aria-label="Monter la règle">▲ Monter</button>
+        <button type="button" onclick="deplacerRegleEleve(32)" aria-label="Descendre la règle">▼ Descendre</button>
+        <button type="button" class="btn-close-regle" onclick="desactiverRegleLectureDoc()" title="Masquer la règle">✖</button>
+      </div>
+      <button type="button" id="btnPiedModalDocEleve" class="btn btn-success" style="padding:9px 18px;" onclick="fermerDocRessourceEleve()">
           ✓ Revenir à la question
         </button>
       </div>
@@ -2507,6 +2551,45 @@
       font-weight: 800 !important;
       cursor: pointer !important;
       pointer-events: auto !important;
+    }
+      /* ================= BARRE DE PILOTAGE RÈGLE DE LECTURE (BAS) ================= */
+    .regle-lecture-handle { display: none !important; }
+    .barre-regle-bas {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #eff6ff;
+      border-top: 2px solid #0284c7;
+      padding: 8px 12px;
+      z-index: 100001;
+      position: relative;
+    }
+    .barre-regle-bas button {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #0284c7;
+      background: #ffffff;
+      color: #0369a1;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      user-select: none;
+    }
+    .barre-regle-bas button:active {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .barre-regle-bas button.btn-close-regle {
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      border-color: #cbd5e1;
+      color: #475569;
     }
   </style>`;
       });
@@ -4413,11 +4496,6 @@
   </footer>
   <div id="regleLectureOverlayEleve" class="regle-lecture-overlay" aria-hidden="true">
     <div id="regleLectureTopEleve" class="regle-lecture-top"></div>
-    <div id="regleLectureHandleEleve" class="regle-lecture-handle" title="Glisser ou utiliser les flèches pour déplacer la règle">
-      <button type="button" onclick="deplacerRegleEleve(-28)" aria-label="Monter la règle">▲</button>
-      <button type="button" id="btnHauteurRegleEleve" onclick="changerHauteurRegleEleve()" title="Changer l'épaisseur de la règle (Fine / Moyenne / Large)">↕</button>
-      <button type="button" onclick="deplacerRegleEleve(28)" aria-label="Descendre la règle">▼</button>
-    </div>
     <div id="regleLectureBottomEleve" class="regle-lecture-bottom"></div>
   </div>
   <script>
@@ -4591,33 +4669,40 @@
 
       var glissementRegleEleve = false;
 
-      var hauteursRegle = [36, 56, 96];
-      var hauteurBandeEleve = parseInt(localStorage.getItem('qcm_pref_hauteur_regle') || '56', 10);
-      if (hauteursRegle.indexOf(hauteurBandeEleve) === -1) hauteurBandeEleve = 56;
+      var hauteursRegle = [36, 58, 98];
+      var libellesHauteursRegle = { 36: 'Fine', 58: 'Moy.', 98: 'Large' };
+      var hauteurBandeEleve = parseInt(localStorage.getItem('qcm_pref_hauteur_regle') || '58', 10);
+      if (hauteursRegle.indexOf(hauteurBandeEleve) === -1) hauteurBandeEleve = 58;
+
+      function majLibelleEpaisseurEleve() {
+        var btnH = document.getElementById('btnHauteurRegleEleve');
+        if (btnH) {
+          btnH.style.display = regleActive ? 'inline-flex' : 'none';
+          btnH.innerHTML = '<span>↕ Épaisseur : ' + (libellesHauteursRegle[hauteurBandeEleve] || 'Moy.') + '</span>';
+        }
+        var barreBas = document.getElementById('barrePilotageRegleEleve');
+        if (barreBas) barreBas.style.display = regleActive ? 'flex' : 'none';
+      }
 
       function positionnerRegle(clientY) {
         if (!regleActive) return;
         var hauteurBande = hauteurBandeEleve;
         if (typeof clientY === 'number' && !isNaN(clientY)) {
-          regleY = Math.min(window.innerHeight - 60, Math.max(70, clientY));
+          regleY = Math.min(window.innerHeight - 110, Math.max(75, clientY));
         }
         var topH = Math.max(0, regleY - hauteurBande / 2);
         var botTop = Math.min(window.innerHeight, regleY + hauteurBande / 2);
         var topEl = document.getElementById('regleLectureTopEleve');
         var botEl = document.getElementById('regleLectureBottomEleve');
-        var handleEl = document.getElementById('regleLectureHandleEleve');
         if (topEl) topEl.style.height = topH + 'px';
         if (botEl) botEl.style.top = botTop + 'px';
-        if (handleEl) {
-          handleEl.style.top = topH + 'px';
-          handleEl.style.setProperty('height', hauteurBande + 'px', 'important');
-        }
       }
 
       window.changerHauteurRegleEleve = function() {
         var idxH = hauteursRegle.indexOf(hauteurBandeEleve);
         hauteurBandeEleve = hauteursRegle[(idxH + 1) % hauteursRegle.length];
         localStorage.setItem('qcm_pref_hauteur_regle', String(hauteurBandeEleve));
+        majLibelleEpaisseurEleve();
         positionnerRegle(regleY);
       };
 
@@ -4634,6 +4719,7 @@
           btn.classList.toggle('active', regleActive);
           btn.innerHTML = regleActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
         }
+        majLibelleEpaisseurEleve();
         if (regleActive) positionnerRegle(Math.round(window.innerHeight * 0.38));
       };
 
@@ -4647,7 +4733,15 @@
           btn.classList.remove('active');
           btn.innerHTML = '<span>📏 Règle</span>';
         }
+        majLibelleEpaisseurEleve();
       };
+
+      var corpsDocEl = document.getElementById('corpsDocRessourceEleve');
+      if (corpsDocEl) {
+        corpsDocEl.addEventListener('dblclick', function(e) {
+          if (regleActive) positionnerRegle(e.clientY);
+        });
+      }
 
       (function() { var handle = document.getElementById('regleLectureHandleEleve');
         if (handle) {

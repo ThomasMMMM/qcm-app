@@ -281,33 +281,40 @@ let regleLectureProfY = Math.round(window.innerHeight * 0.45);
 
 let glissementRegleProf = false;
 
-const hauteursRegleProf = [36, 56, 96];
-let hauteurBandeProf = parseInt(localStorage.getItem('qcm_pref_hauteur_regle_prof') || '56', 10);
-if (!hauteursRegleProf.includes(hauteurBandeProf)) hauteurBandeProf = 56;
+const hauteursRegleProf = [36, 58, 98];
+const libellesHauteursProf = { 36: 'Fine', 58: 'Moy.', 98: 'Large' };
+let hauteurBandeProf = parseInt(localStorage.getItem('qcm_pref_hauteur_regle_prof') || '58', 10);
+if (!hauteursRegleProf.includes(hauteurBandeProf)) hauteurBandeProf = 58;
+
+function majInterfaceRegleProf() {
+  document.querySelectorAll('.btn-hauteur-regle-prof-sync').forEach(btn => {
+    btn.style.display = regleLectureProfActive ? 'inline-flex' : 'none';
+    btn.innerHTML = '<span>↕ Épaisseur : ' + (libellesHauteursProf[hauteurBandeProf] || 'Moy.') + '</span>';
+  });
+  document.querySelectorAll('.barre-regle-prof-sync').forEach(bar => {
+    bar.style.display = regleLectureProfActive ? 'flex' : 'none';
+  });
+}
 
 function positionnerRegleLectureProf(clientY) {
   if (!regleLectureProfActive) return;
   const hauteurBande = hauteurBandeProf;
   if (typeof clientY === 'number' && !isNaN(clientY)) {
-    regleLectureProfY = Math.min(window.innerHeight - 60, Math.max(70, clientY));
+    regleLectureProfY = Math.min(window.innerHeight - 110, Math.max(75, clientY));
   }
   const topH = Math.max(0, regleLectureProfY - hauteurBande / 2);
   const botTop = Math.min(window.innerHeight, regleLectureProfY + hauteurBande / 2);
   const topEl = document.getElementById('regleLectureTopProf');
   const botEl = document.getElementById('regleLectureBottomProf');
-  const handleEl = document.getElementById('regleLectureHandleProf');
   if (topEl) topEl.style.height = topH + 'px';
   if (botEl) botEl.style.top = botTop + 'px';
-  if (handleEl) {
-    handleEl.style.top = topH + 'px';
-    handleEl.style.setProperty('height', hauteurBande + 'px', 'important');
-  }
 }
 
 function changerHauteurRegleProf() {
   const idxH = hauteursRegleProf.indexOf(hauteurBandeProf);
   hauteurBandeProf = hauteursRegleProf[(idxH + 1) % hauteursRegleProf.length];
   localStorage.setItem('qcm_pref_hauteur_regle_prof', String(hauteurBandeProf));
+  majInterfaceRegleProf();
   positionnerRegleLectureProf(regleLectureProfY);
 }
 
@@ -323,6 +330,7 @@ function basculerRegleLectureProf() {
     btn.classList.toggle('active', regleLectureProfActive);
     btn.innerHTML = regleLectureProfActive ? '<span>📏 Règle : ON</span>' : '<span>📏 Règle</span>';
   });
+  majInterfaceRegleProf();
   if (regleLectureProfActive) {
     positionnerRegleLectureProf(Math.round(window.innerHeight * 0.38));
   }
@@ -337,6 +345,7 @@ function desactiverRegleLectureProf() {
     btn.classList.remove('active');
     btn.innerHTML = '<span>📏 Règle</span>';
   });
+  majInterfaceRegleProf();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
