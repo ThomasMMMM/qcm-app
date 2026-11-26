@@ -830,8 +830,8 @@
       display: none !important;
     }
     #viewEleveQcm.mode-focus-actif .progress-bar-container,
-    #viewEleveQcm.mode-focus-actif #progressionText,
-    #viewEleveQcm.mode-focus-actif #pointsText,
+    #viewEleveQcm.mode-focus-actif #questionProgressionText,
+    #viewEleveQcm.mode-focus-actif #questionPointsText,
     #viewEleveQcm.mode-focus-actif .alert-box,
     #viewEleveQcm.mode-focus-actif .warning-banner,
     #viewEleveQcm.mode-focus-actif [id*="alerte"],
@@ -2646,8 +2646,8 @@
       display: none !important;
     }
     #viewEleveQcm.mode-focus-actif .progress-bar-container,
-    #viewEleveQcm.mode-focus-actif #progressionText,
-    #viewEleveQcm.mode-focus-actif #pointsText,
+    #viewEleveQcm.mode-focus-actif #questionProgressionText,
+    #viewEleveQcm.mode-focus-actif #questionPointsText,
     #viewEleveQcm.mode-focus-actif .alert-box,
     #viewEleveQcm.mode-focus-actif .warning-banner,
     #viewEleveQcm.mode-focus-actif [id*="alerte"],
@@ -3638,7 +3638,7 @@
       return q;
     }
 
-    function afficherQuestionCourante() { if (window.arreterLectureAudioFiche) window.arreterLectureAudioFiche(); if (window.appliquerEtatModeDysDoc) window.appliquerEtatModeDysDoc();
+    function afficherQuestionCourante() { if (window.appliquerEtatModeFocusEleve) window.appliquerEtatModeFocusEleve(); if (window.arreterLectureAudioFiche) window.arreterLectureAudioFiche(); if (window.appliquerEtatModeDysDoc) window.appliquerEtatModeDysDoc();
       if (typeof arreterLectureAudioQuestionEleve === 'function') arreterLectureAudioQuestionEleve();
       if (typeof appliquerEtatModeDysDoc === 'function') appliquerEtatModeDysDoc();
       if (window.questionsValideesSet && window.questionsValideesSet.has(currentQuestionIndex)) {
@@ -4608,6 +4608,29 @@
         zoomPct = Math.min(140, Math.max(90, zoomPct + delta));
         localStorage.setItem('qcm_pref_zoom_eleve', String(zoomPct));
         window.appliquerZoomQcmEleve(); if (window.appliquerEtatModeFocusEleve) window.appliquerEtatModeFocusEleve();
+      };
+
+      window.estModeFocusEleveActif = function() {
+        return localStorage.getItem('qcm_pref_mode_focus') === '1';
+      };
+
+      window.appliquerEtatModeFocusEleve = function() {
+        var actif = window.estModeFocusEleveActif();
+        var qcmEl = document.getElementById('viewEleveQcm');
+        var qcmVisible = qcmEl && qcmEl.style.display !== 'none';
+        document.body.classList.toggle('mode-focus-actif', Boolean(actif && qcmVisible));
+        if (qcmEl) qcmEl.classList.toggle('mode-focus-actif', actif);
+        var btn = document.getElementById('btnToggleModeFocusQcm');
+        if (btn) {
+          btn.classList.toggle('active', actif);
+          btn.innerHTML = actif ? '<span>🧘 Focus : ON</span>' : '<span>🧘 Focus</span>';
+        }
+      };
+
+      window.basculerModeFocusEleve = function() {
+        var nouvelEtat = !window.estModeFocusEleveActif();
+        localStorage.setItem('qcm_pref_mode_focus', nouvelEtat ? '1' : '0');
+        window.appliquerEtatModeFocusEleve();
       };
 
       window.appliquerEtatModeDysDoc = function() {
