@@ -2378,6 +2378,18 @@
         totalScorePossible = currentQuestions.reduce((acc, q) => acc + (parseFloat(q.points) || 1), 0);
 
         let sessionSauvee = chargerEtatQcm(codeSession);
+        if (sessionSauvee) {
+          try {
+            const resVerif = await fetch('/api/suivi_direct?seance_id=' + encodeURIComponent(data.seance_id) + '&code_eleve=' + encodeURIComponent(el.code_eleve));
+            if (resVerif.ok) {
+              const verifData = await resVerif.json();
+              if (verifData && verifData.found === false) {
+                purgerEtatQcm(codeSession);
+                sessionSauvee = null;
+              }
+            }
+          } catch (e) {}
+        }
         if (sessionSauvee && Array.isArray(sessionSauvee.suivi_reponses) && sessionSauvee.suivi_reponses.length !== currentQuestions.length) {
           purgerEtatQcm(codeSession);
           sessionSauvee = null;
