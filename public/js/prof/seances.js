@@ -192,7 +192,7 @@ function ouvrirSuiviDirectSeance(seanceId) {
 
   rafraichirSuiviDirect();
   if (intervalSuiviDirect) clearInterval(intervalSuiviDirect);
-  intervalSuiviDirect = setInterval(() => { if (!document.hidden) rafraichirSuiviDirect(); }, 8000);
+  intervalSuiviDirect = setInterval(() => { if (!document.hidden) rafraichirSuiviDirect(); }, 15000);
 }
 
 function fermerSuiviDirectSeance() {
@@ -321,6 +321,7 @@ function rendreSuiviDirect(data) {
   const scrollContainer = tbody.closest('div');
   const prevScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
+  if (Number(data.seance.actif) === 0 && intervalSuiviDirect) { clearInterval(intervalSuiviDirect); intervalSuiviDirect = null; }
   const nbQ = data.seance.total_questions || 1;
 
   tbody.innerHTML = eleves.map(el => {

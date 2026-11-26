@@ -1,26 +1,40 @@
+let schemaSuiviEtIndexVerifies = false;
+
 async function ensureTableSuiviDirect(db) {
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS suivi_direct (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      seance_id INTEGER NOT NULL,
-      eleve_id INTEGER,
-      code_eleve TEXT NOT NULL,
-      nom_eleve TEXT,
-      prenom_eleve TEXT,
-      statut TEXT DEFAULT 'en_cours',
-      question_courante INTEGER DEFAULT 1,
-      total_questions INTEGER DEFAULT 1,
-      score_actuel REAL DEFAULT 0,
-      score_max_courant REAL DEFAULT 0,
-      score_total_possible REAL DEFAULT 0,
-      reponses_json TEXT DEFAULT '[]',
-      hors_ecran INTEGER DEFAULT 0,
-      nb_sorties INTEGER DEFAULT 0,
-      duree_sorties_sec INTEGER DEFAULT 0,
-      derniere_activite TEXT DEFAULT (datetime('now')),
-      UNIQUE(seance_id, code_eleve)
-    )
-  `).run();
+  if (schemaSuiviEtIndexVerifies) return;
+  await db.batch([
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS suivi_direct (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        seance_id INTEGER NOT NULL,
+        eleve_id INTEGER,
+        code_eleve TEXT NOT NULL,
+        nom_eleve TEXT,
+        prenom_eleve TEXT,
+        statut TEXT DEFAULT 'en_cours',
+        question_courante INTEGER DEFAULT 1,
+        total_questions INTEGER DEFAULT 1,
+        score_actuel REAL DEFAULT 0,
+        score_max_courant REAL DEFAULT 0,
+        score_total_possible REAL DEFAULT 0,
+        reponses_json TEXT DEFAULT '[]',
+        hors_ecran INTEGER DEFAULT 0,
+        nb_sorties INTEGER DEFAULT 0,
+        duree_sorties_sec INTEGER DEFAULT 0,
+        derniere_activite TEXT DEFAULT (datetime('now')),
+        UNIQUE(seance_id, code_eleve)
+      )
+    `),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_suivi_direct_seance ON suivi_direct(seance_id)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_resultats_seance ON resultats_qcm(seance_id)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_resultats_session_code ON resultats_qcm(session_code)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_resultats_classe ON resultats_qcm(classe)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_eleves_classe ON eleves(classe_id)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_seances_prof ON seances(prof_id)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_seances_classe ON seances(classe_id)`),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_qcm_banque_prof ON qcm_banque(prof_id)`)
+  ]);
+  schemaSuiviEtIndexVerifies = true;
 }
 
 export async function onRequestGet(context) {
@@ -40,7 +54,7 @@ export async function onRequestGet(context) {
     if (code_eleve_param) {
       const codeClean = String(code_eleve_param).trim().toUpperCase();
       const svEl = await env.DB.prepare(
-        "SELECT * FROM suivi_direct WHERE seance_id = ? AND UPPER(TRIM(code_eleve)) = ?"
+        "SELECT id, seance_id, eleve_id, code_eleve, statut, question_courante, total_questions, score_actuel, score_max_courant, score_total_possible, reponses_json, nb_sorties, duree_sorties_sec FROM suivi_direct WHERE seance_id = ? AND code_eleve = ?"
       ).bind(seance_id, codeClean).first();
 
       return new Response(JSON.stringify({
@@ -50,10 +64,10 @@ export async function onRequestGet(context) {
     }
 
     const seance = await env.DB.prepare(`
-      SELECT s.*, c.nom AS classe_nom, q.titre AS qcm_titre, q.data_json
+      SELECT s.id, s.code_session, s.classe_id, s.actif, c.nom AS classe_nom, q.titre AS qcm_titre, q.data_json
       FROM seances s
       INNER JOIN classes c ON s.classe_id = c.id
-      INNER JOIN qcm_banque q ON s.qcm_id = q.id LEFT JOIN fiches_synthese fs ON q.fiche_id = fs.id
+      INNER JOIN qcm_banque q ON s.qcm_id = q.id
       WHERE s.id = ?
     `).bind(seance_id).first();
 
@@ -81,7 +95,7 @@ export async function onRequestGet(context) {
 
     // Récupérer aussi les copies déjà soumises dans resultats_qcm
     const { results: copiesFinales } = await env.DB.prepare(`
-      SELECT * FROM resultats_qcm WHERE seance_id = ?
+      SELECT id, nom, prenom, note, total, nb_sorties, duree_sorties, reponses_json FROM resultats_qcm WHERE seance_id = ?
     `).bind(seance_id).all();
 
     const setAbsents = new Set();
