@@ -174,8 +174,22 @@ export async function onRequestGet(context) {
               }
             } catch (e) {}
           }
-        } else if (scoreMaxCourant > 0) {
-          noteSur20 = Math.round(((scoreActuel / scoreMaxCourant) * 20) * 10) / 10;
+        } else {
+          let scCalc = scoreActuel;
+          let maxCalc = scoreMaxCourant;
+          if (maxCalc <= 0 && Array.isArray(reponses)) {
+            scCalc = 0;
+            maxCalc = 0;
+            reponses.forEach(r => {
+              if (r && Number(r.max) > 0) {
+                scCalc += Number(r.score || 0);
+                maxCalc += Number(r.max || 0);
+              }
+            });
+          }
+          if (maxCalc > 0) {
+            noteSur20 = Math.round(((scCalc / maxCalc) * 20) * 10) / 10;
+          }
         }
       } else if (cp) {
         statut = "termine";
@@ -431,8 +445,10 @@ export async function onRequestPost(context) {
       const nextStatut = existing.statut === "termine" ? "termine" : (statut || existing.statut);
       const nextQ = estDemarrageVierge ? exQ : (question_courante !== undefined ? question_courante : existing.question_courante);
       const nextTotQ = total_questions !== undefined ? total_questions : existing.total_questions;
-      const nextScore = estDemarrageVierge ? exSc : (score_actuel !== undefined ? score_actuel : existing.score_actuel);
-      const nextScoreMax = estDemarrageVierge ? Number(existing.score_max_courant || 0) : (score_max_courant !== undefined ? score_max_courant : existing.score_max_courant);
+      const inScoreMax = score_max_courant !== undefined ? Number(score_max_courant) : 0;
+      const conserverAncienScore = estDemarrageVierge || (inScoreMax <= 0 && Number(existing.score_max_courant || 0) > 0);
+      const nextScore = conserverAncienScore ? exSc : (score_actuel !== undefined ? score_actuel : existing.score_actuel);
+      const nextScoreMax = conserverAncienScore ? Number(existing.score_max_courant || 0) : (score_max_courant !== undefined ? score_max_courant : existing.score_max_courant);
       const nextScoreTot = score_total_possible !== undefined ? score_total_possible : existing.score_total_possible;
       const nextRepJson = estDemarrageVierge ? existing.reponses_json : (reponses !== undefined ? JSON.stringify(reponses) : existing.reponses_json);
       const nextHorsEcran = hors_ecran !== undefined ? (hors_ecran ? 1 : 0) : existing.hors_ecran;
