@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+  <title>Lecteur Document Ressource — Accessibilité</title>
+  <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/opendyslexic">
+  <style>
+    :root {
+      --bg-page: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #1e293b;
+      --border-soft: #cbd5e1;
+      --accent: #0284c7;
+      --zoom-doc: 1.05;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      padding-bottom: 90px;
+    }
+
+    /* Barre supérieure fixe tablette */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-soft);
+      padding: 10px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .select-zone {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 1 1 320px;
+      min-width: 240px;
+    }
+
+    .select-zone select {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid #94a3b8;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    .tools-zone {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .btn-tool {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+      border-radius: 8px;
+      padding: 8px 11px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .btn-tool:hover { background: #e2e8f0; }
+    .btn-tool.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0369a1;
+    }
+
+    .speed-select {
+      padding: 7px 6px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.82rem;
+      font-weight: 700;
+      background: #ffffff;
+    }
+
+    /* Mode kiosque : masque le sélecteur de module */
+    body.kiosque-actif .select-zone { display: none; }
+
+    /* Conteneur principal */
+    .container {
+      max-width: 960px;
+      margin: 16px auto;
+      padding: 0 14px;
+    }
+
+    /* Sommaire automatique */
+    .sommaire-bar {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .sommaire-chip {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      border-radius: 99px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Carte du document */
+    .doc-card {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 24px 26px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+
+    .doc-header {
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .doc-matiere {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+    .doc-titre {
+      margin: 6px 0 0 0;
+      font-size: 1.35rem;
+      color: #0f172a;
+    }
+
+    #contenuDocument {
+      font-size: calc(1rem * var(--zoom-doc));
+      line-height: 1.65;
+      overflow-wrap: break-word;
+    }
+    #contenuDocument img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+    #contenuDocument table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+    #contenuDocument th, #contenuDocument td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+    }
+
+    /* Mode Confort Dys */
+    body.mode-dys-actif {
+      --bg-page: #f5ebd6;
+      --bg-card: #fdf6e3;
+      --text-main: #1f2937;
+    }
+    body.mode-dys-actif,
+    body.mode-dys-actif #contenuDocument,
+    body.mode-dys-actif #contenuDocument * {
+      font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+      letter-spacing: 0.04em !important;
+      word-spacing: 0.12em !important;
+      line-height: 1.9 !important;
+    }
+
+    /* Surligneur tactile */
+    mark.surligne-eleve {
+      background: #fef08a;
+      color: inherit;
+      padding: 1px 3px;
+      border-radius: 4px;
+    }
+
+    /* Règle de lecture guide-ligne (fenêtre 100 % dégagée) */
+    #regleLectureOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 950;
+      pointer-events: none;
+    }
+    .regle-voile-haut, .regle-voile-bas {
+      position: fixed;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.42);
+      pointer-events: none;
+    }
+    .regle-voile-haut { top: 0; }
+    .regle-voile-bas { bottom: 0; }
+    .regle-fenetre {
+      position: fixed;
+      left: 0;
+      right: 0;
+      border-top: 2px solid #0284c7;
+      border-bottom: 2px solid #0284c7;
+      background: rgba(255, 255, 255, 0.04);
+      pointer-events: none;
+    }
+
+    /* Barre de pilotage de la règle en bas (zone pouce tablette) */
+    #barrePilotageRegle {
+      display: none;
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 980;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 14px;
+      border-radius: 99px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+      gap: 10px;
+      align-items: center;
+    }
+    .btn-regle-nav {
+      background: #1e293b;
+      color: #ffffff;
+      border: 1px solid #475569;
+      border-radius: 99px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-regle-nav:active { background: #0284c7; }
+    .btn-regle-close {
+      background: #dc2626;
+      color: #ffffff;
+      border: none;
+      border-radius: 99px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="select-zone">
+      <select id="selectModule" onchange="chargerModuleSelectionne(this.value)">
+        <option value="">Chargement des modules ressources...</option>
+      </select>
+    </div>
+
+    <div class="tools-zone">
+      <button type="button" id="btnAudio" class="btn-tool" onclick="basculerAudio()" title="Lire le texte à voix haute">
+        🔊 Écouter
+      </button>
+      <select id="selectVitesse" class="speed-select" title="Vitesse de lecture">
+        <option value="0.85">0,85x</option>
+        <option value="1" selected>1x</option>
+        <option value="1.2">1,2x</option>
+      </select>
+
+      <button type="button" id="btnDys" class="btn-tool" onclick="basculerDys()" title="Police OpenDyslexic et fond crème">
+        👁️ Confort Dys
+      </button>
+
+      <button type="button" id="btnRegle" class="btn-tool" onclick="basculerRegle()" title="Activer la règle de lecture">
+        📏 Règle
+      </button>
+      <button type="button" id="btnEpaisseurRegle" class="btn-tool" onclick="changerEpaisseurRegle()" style="display:none;" title="Changer la hauteur de la fenêtre de lecture">
+        ↕ Moy.
+      </button>
+
+      <button type="button" id="btnSurligner" class="btn-tool" onclick="surlignerSelection()" title="Surligner le texte sélectionné">
+        🖍️ Surligner
+      </button>
+
+      <button type="button" class="btn-tool" onclick="changerZoom(-0.1)" title="Réduire le texte">A-</button>
+      <button type="button" class="btn-tool" onclick="changerZoom(0.1)" title="Agrandir le texte">A+</button>
+
+      <button type="button" id="btnKiosque" class="btn-tool" onclick="basculerKiosque()" title="Masquer/afficher le menu de sélection">
+        🔒 Plein écran
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="sommaireBar" class="sommaire-bar"></div>
+
+    <div class="doc-card">
+      <div id="docHeader" class="doc-header" style="display:none;">
+        <div>
+          <span id="docMatiere" class="doc-matiere"></span>
+          <h1 id="docTitre" class="doc-titre"></h1>
+        </div>
+        <button type="button" class="btn-tool" onclick="effacerSurlignages()" style="font-size:0.78rem;">
+          🧹 Effacer surlignage
+        </button>
+      </div>
+
+      <div id="contenuDocument">
+        <div class="empty-state">
+          <h2>📖 Lecteur de Document Ressource</h2>
+          <p>Sélectionnez un module dans la liste en haut pour l'afficher en grand format avec les aides à la lecture.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Règle de lecture guide-ligne -->
+  <div id="regleLectureOverlay">
+    <div id="regleVoileHaut" class="regle-voile-haut"></div>
+    <div id="regleFenetre" class="regle-fenetre"></div>
+    <div id="regleVoileBas" class="regle-voile-bas"></div>
+  </div>
+
+  <!-- Commandes basses ergonomiques de la règle -->
+  <div id="barrePilotageRegle">
+    <button type="button" class="btn-regle-nav" onclick="deplacerRegle(-38)">▲ Monter</button>
+    <button type="button" class="btn-regle-nav" onclick="deplacerRegle(38)">▼ Descendre</button>
+    <button type="button" class="btn-regle-close" onclick="basculerRegle()">✖</button>
+  </div>
+
+  <script>
+    // ==================== 1. PREFERENCES ACCESSIBILITE ====================
+    let zoomActuel = parseFloat(localStorage.getItem('qcm_pref_zoom_lecteur') || '1.1');
+    let regleActive = false;
+    let regleY = Math.round(window.innerHeight * 0.42);
+    const EPAISSEURS = [
+      { label: 'Fine', px: 38 },
+      { label: 'Moy.', px: 64 },
+      { label: 'Large', px: 105 }
+    ];
+    let idxEpaisseur = parseInt(localStorage.getItem('qcm_pref_epaisseur_regle') || '1', 10);
+    if (isNaN(idxEpaisseur) || !EPAISSEURS[idxEpaisseur]) idxEpaisseur = 1;
+
+    function appliquerPreferences() {
+      document.documentElement.style.setProperty('--zoom-doc', zoomActuel.toFixed(2));
+      const dys = localStorage.getItem('qcm_pref_mode_dys') === '1';
+      document.body.classList.toggle('mode-dys-actif', dys);
+      document.getElementById('btnDys').classList.toggle('active', dys);
+      document.getElementById('btnEpaisseurRegle').textContent = '↕ ' + EPAISSEURS[idxEpaisseur].label;
+    }
+
+    function basculerDys() {
+      const actif = !(localStorage.getItem('qcm_pref_mode_dys') === '1');
+      localStorage.setItem('qcm_pref_mode_dys', actif ? '1' : '0');
+      appliquerPreferences();
+    }
+
+    function changerZoom(delta) {
+      zoomActuel = Math.min(1.65, Math.max(0.85, zoomActuel + delta));
+      localStorage.setItem('qcm_pref_zoom_lecteur', zoomActuel.toFixed(2));
+      appliquerPreferences();
+    }
+
+    function basculerKiosque() {
+      const actif = document.body.classList.toggle('kiosque-actif');
+      const btn = document.getElementById('btnKiosque');
+      btn.classList.toggle('active', actif);
+      btn.textContent = actif ? '🔓 Changer module' : '🔒 Plein écran';
+    }
+
+    // ==================== 2. REGLE DE LECTURE ====================
+    function majPositionRegle() {
+      const h = EPAISSEURS[idxEpaisseur].px;
+      const maxTop = Math.max(0, window.innerHeight - h);
+      regleY = Math.min(maxTop, Math.max(0, regleY));
+
+      document.getElementById('regleVoileHaut').style.height = regleY + 'px';
+      const fen = document.getElementById('regleFenetre');
+      fen.style.top = regleY + 'px';
+      fen.style.height = h + 'px';
+      document.getElementById('regleVoileBas').style.top = (regleY + h) + 'px';
+    }
+
+    function basculerRegle() {
+      regleActive = !regleActive;
+      document.getElementById('regleLectureOverlay').style.display = regleActive ? 'block' : 'none';
+      document.getElementById('barrePilotageRegle').style.display = regleActive ? 'flex' : 'none';
+      document.getElementById('btnEpaisseurRegle').style.display = regleActive ? 'inline-flex' : 'none';
+      document.getElementById('btnRegle').classList.toggle('active', regleActive);
+      if (regleActive) majPositionRegle();
+    }
+
+    function deplacerRegle(deltaPx) {
+      regleY += deltaPx;
+      majPositionRegle();
+    }
+
+    function changerEpaisseurRegle() {
+      idxEpaisseur = (idxEpaisseur + 1) % EPAISSEURS.length;
+      localStorage.setItem('qcm_pref_epaisseur_regle', String(idxEpaisseur));
+      appliquerPreferences();
+      if (regleActive) majPositionRegle();
+    }
+
+    // Double-tap / double-clic pour centrer la règle sur la ligne touchée
+    document.addEventListener('dblclick', (e) => {
+      if (!regleActive) return;
+      const h = EPAISSEURS[idxEpaisseur].px;
+      regleY = e.clientY - Math.round(h / 2);
+      majPositionRegle();
+    });
+    window.addEventListener('resize', () => { if (regleActive) majPositionRegle(); });
+
+    // ==================== 3. SYNTHESE VOCALE ====================
+    let lectureEnCours = false;
+    function basculerAudio() {
+      if (!('speechSynthesis' in window)) {
+        alert("La synthèse vocale n'est pas prise en charge par ce navigateur.");
+        return;
+      }
+      if (lectureEnCours) {
+        window.speechSynthesis.cancel();
+        lectureEnCours = false;
+        document.getElementById('btnAudio').classList.remove('active');
+        document.getElementById('btnAudio').textContent = '🔊 Écouter';
+        return;
+      }
+      const selection = window.getSelection ? window.getSelection().toString().trim() : '';
+      const texte = selection || document.getElementById('contenuDocument').innerText.trim();
+      if (!texte) return;
+
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(texte);
+      utter.lang = 'fr-FR';
+      utter.rate = parseFloat(document.getElementById('selectVitesse').value || '1');
+      utter.onend = utter.onerror = () => {
+        lectureEnCours = false;
+        document.getElementById('btnAudio').classList.remove('active');
+        document.getElementById('btnAudio').textContent = '🔊 Écouter';
+      };
+      lectureEnCours = true;
+      document.getElementById('btnAudio').classList.add('active');
+      document.getElementById('btnAudio').textContent = '⏹ Stop';
+      window.speechSynthesis.speak(utter);
+    }
+
+    // ==================== 4. SURLIGNEUR TACTILE ====================
+    function surlignerSelection() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+        alert("Sélectionnez d'abord un mot ou une phrase avec le doigt, puis appuyez sur Surligner.");
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      const conteneur = document.getElementById('contenuDocument');
+      if (!conteneur.contains(range.commonAncestorContainer)) return;
+
+      const mark = document.createElement('mark');
+      mark.className = 'surligne-eleve';
+      try {
+        range.surroundContents(mark);
+        sel.removeAllRanges();
+      } catch (e) {
+        const frag = range.extractContents();
+        mark.appendChild(frag);
+        range.insertNode(mark);
+        sel.removeAllRanges();
+      }
+    }
+
+    function effacerSurlignages() {
+      document.querySelectorAll('#contenuDocument mark.surligne-eleve').forEach(m => {
+        const parent = m.parentNode;
+        while (m.firstChild) parent.insertBefore(m.firstChild, m);
+        parent.removeChild(m);
+      });
+    }
+
+    // ==================== 5. CHARGEMENT CATALOGUE & DOCUMENTS ====================
+    function construireSommaire() {
+      const bar = document.getElementById('sommaireBar');
+      const titres = document.querySelectorAll('#contenuDocument h1, #contenuDocument h2, #contenuDocument h3');
+      if (titres.length < 2) {
+        bar.style.display = 'none';
+        bar.innerHTML = '';
+        return;
+      }
+      bar.innerHTML = '';
+      titres.forEach((h, i) => {
+        const txt = h.innerText.trim();
+        if (!txt) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sommaire-chip';
+        btn.textContent = txt.length > 36 ? txt.slice(0, 35) + '…' : txt;
+        btn.onclick = () => h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        bar.appendChild(btn);
+      });
+      bar.style.display = bar.children.length > 0 ? 'flex' : 'none';
+    }
+
+    function afficherDocument(doc) {
+      document.getElementById('docHeader').style.display = 'flex';
+      document.getElementById('docMatiere').textContent = doc.matiere_nom || 'Document ressource';
+      document.getElementById('docTitre').textContent = doc.titre || 'Support de lecture';
+      document.getElementById('contenuDocument').innerHTML = doc.html || '<p>Contenu vide.</p>';
+      construireSommaire();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function chargerModuleSelectionne(valeur) {
+      if (!valeur) return;
+      if (lectureEnCours) basculerAudio();
+      const [type, id] = valeur.split(':');
+      const param = type === 'fiche' ? `fiche_id=${encodeURIComponent(id)}` : `qcm_id=${encodeURIComponent(id)}`;
+      const cacheKey = `qcm_lecteur_cache_${type}_${id}`;
+
+      try {
+        const res = await fetch(`/api/lecteur?${param}`);
+        if (!res.ok) throw new Error('Erreur réseau');
+        const data = await res.json();
+        try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) {}
+        afficherDocument(data);
+      } catch (e) {
+        // Secours hors-ligne si déjà ouvert précédemment sur la tablette
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          afficherDocument(JSON.parse(cached));
+        } else {
+          document.getElementById('contenuDocument').innerHTML = '<p style="color:#dc2626; font-weight:700;">Impossible de charger ce document.</p>';
+        }
+      }
+    }
+
+    async function initialiserLecteur() {
+      appliquerPreferences();
+      const params = new URLSearchParams(window.location.search);
+      const qcmIdParam = params.get('qcm_id');
+      const ficheIdParam = params.get('fiche_id');
+
+      try {
+        const res = await fetch('/api/lecteur');
+        const catalogue = await res.json();
+        const select = document.getElementById('selectModule');
+        select.innerHTML = '<option value="">— Choisir un document ressource ou une fiche —</option>';
+
+        if (Array.isArray(catalogue.docs_qcm) && catalogue.docs_qcm.length > 0) {
+          const grpQcm = document.createElement('optgroup');
+          grpQcm.label = '📁 Documents ressources (Évaluations / Modules)';
+          catalogue.docs_qcm.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = `qcm:${d.id}`;
+            opt.textContent = `${d.matiere_nom ? '[' + d.matiere_nom + '] ' : ''}${d.titre}`;
+            grpQcm.appendChild(opt);
+          });
+          select.appendChild(grpQcm);
+        }
+
+        if (Array.isArray(catalogue.fiches) && catalogue.fiches.length > 0) {
+          const grpFiches = document.createElement('optgroup');
+          grpFiches.label = '📘 Fiches de synthèse';
+          catalogue.fiches.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = `fiche:${f.id}`;
+            opt.textContent = `${f.matiere_nom ? '[' + f.matiere_nom + '] ' : ''}${f.titre}`;
+            grpFiches.appendChild(opt);
+          });
+          select.appendChild(grpFiches);
+        }
+
+        if (qcmIdParam) {
+          select.value = `qcm:${qcmIdParam}`;
+          await chargerModuleSelectionne(`qcm:${qcmIdParam}`);
+          basculerKiosque();
+        } else if (ficheIdParam) {
+          select.value = `fiche:${ficheIdParam}`;
+          await chargerModuleSelectionne(`fiche:${ficheIdParam}`);
+          basculerKiosque();
+        }
+      } catch (e) {
+        if (qcmIdParam) await chargerModuleSelectionne(`qcm:${qcmIdParam}`);
+        else if (ficheIdParam) await chargerModuleSelectionne(`fiche:${ficheIdParam}`);
+      }
+    }
+
+    initialiserLecteur();
+  </script>
+</body>
+</html>
